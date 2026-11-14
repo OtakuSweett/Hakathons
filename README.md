@@ -1,27 +1,28 @@
 # 🛰️ Global Crop Rotation & Water Resilience DSS
-### *Desplazamiento de campo: Adaptando granjas con datos de la NASA*
-> **NASA Space Apps Challenge 2026** | **Evento Local:** Querétaro, México  
-> **Área del Desafío:** *Shifting Lands: Adapting Farms with NASA Data*  
-> **Stack:** TypeScript/Node.js (Fastify) + Python 3.12+ (FastAPI, NumPy, SciPy, PuLP, HiGHS) + React 19 / Tailwind CSS v4 + Leaflet & Recharts
+### *Shifting Lands: Adapting Farms with NASA Earth Observations*
+> **NASA International Space Apps Challenge 2026** | **Local Event:** Querétaro, México  
+> **Challenge Track:** *Shifting Lands: Adapting Farms with NASA Data*  
+> **Stack:** TypeScript/Node.js (Fastify) + Python 3.12+ (FastAPI, NumPy, SciPy, PuLP, HiGHS) + React 19 / Tailwind CSS v4 + Leaflet & Recharts  
+> **Language / Idioma:** English (Default) | [🇪🇸 Leer en Español](file:///home/Sweett/hakathon/README.es.md)
 
 ---
 
-## 🌍 1. El Desafío Agronómico Global y Regional
+## 🌍 1. The Global and Regional Agronomic Challenge
 
-Los agricultores de todo el mundo se enfrentan a **cambios drásticos de temperatura, patrones erráticos de lluvia, sobreexplotación de acuíferos, eventos meteorológicos extremos y una acelerada degradación de la salud del suelo**. 
+Farmers worldwide are facing **drastic temperature increases, erratic rainfall regimes, aquifer over-exploitation, severe weather events, and accelerated soil health degradation**.
 
-En regiones agrícolas clave como **El Bajío mexicano (Querétaro y Guanajuato)**, la situación es crítica:
-- **Agotamiento de Acuíferos:** Pozos agrícolas que solían extraer agua a $60\text{ m}$ hoy perforan a más de $200 - 300\text{ m}$, disparando la factura eléctrica de bombeo y concentrando sales en los suelos.
-- **La Trampa del Monocultivo:** La repetición continua de cereales (maíz sobre maíz o maíz sobre sorgo) ha degradado la Materia Orgánica nativa por debajo del $1.5\%$, destruyendo la microbiota del suelo y haciendo al agricultor dependiente de costosos fertilizantes químicos sintéticos (Urea, DAP).
-- **Desplazamiento Agroclimático (Shifting Lands):** Un aumento promedio de $+1.8^\circ\text{C}$ y un retraso de más de 20 días en el temporal de lluvias provocan que las fechas de siembra tradicionales coincidan con olas de calor en floración o heladas prematuras en otoño.
+In critical agricultural regions such as **El Bajío in Central Mexico (Querétaro and Guanajuato)**, the situation has reached a tipping point:
+- **Aquifer Depletion:** Agricultural wells that used to extract water at $60\text{ m}$ now drill deeper than $200 - 300\text{ m}$, multiplying electricity pumping bills fourfold and salinizing topsoils.
+- **The Monoculture Trap:** Continuous monoculture of cereals (maize-on-maize or sorghum-on-maize) has depleted native Soil Organic Matter (SOM) below $1.5\%$, deteriorating soil biology and locking growers into rising costs for synthetic chemical fertilizers (Urea, DAP).
+- **Agroclimatic Displacement (*Shifting Lands*):** A mean $+1.8^\circ\text{C}$ warming trend and a 20+ day delay in summer rains cause traditional planting calendars to clash with mid-season heatwaves or premature autumn frosts.
 
-**Nuestra Solución:** Un **Sistema de Apoyo a la Toma de Decisiones (DSS)** que fusiona observaciones satelitales de la NASA con física matemática rigurosa e investigación operativa para guiar a los agricultores en la transición y **desplazamiento de su explotación hacia rotaciones multianuales resilientes**.
+**Our Solution:** A **Decision Support System (DSS)** that fuses real-time NASA Earth observations with rigorous mathematical physics and operations research to guide growers through the adaptation and **displacement of their agricultural operations toward resilient, multi-year crop rotations**.
 
 ---
 
-## 🧠 2. Arquitectura Matemática y Flujo de Datos
+## 🧠 2. Mathematical Architecture & Data Pipeline
 
-El sistema opera desacoplado en una arquitectura de microservicios guiada por contratos JSON (*Contract-First*):
+The system is decoupled into a microservice architecture governed by strict, validated JSON contracts (*Contract-First*):
 
 ```mermaid
 flowchart TD
@@ -38,20 +39,20 @@ flowchart TD
     end
 
     subgraph PHYS["Track B: Physics Worker (:8001)"]
-        M1["Módulo 1: Splines Cúbicos Naturales<br/>(Algoritmo Thomas TDMA < 1e-9)"]
-        M2["Módulo 2: Integral Térmica GDD<br/>(Simpson 1/3 sobre 24h LST)"]
-        M3["Módulo 3: Balance Hídrico Dinámico<br/>(EDO Runge-Kutta 4to Orden + Pulso EONET)"]
-        M4["Módulo 4: Detección Predictiva de Estrés<br/>(Newton-Raphson para t* y lámina ΔI)"]
+        M1["Module 1: Natural Cubic Splines<br/>(Thomas Algorithm TDMA < 1e-9)"]
+        M2["Module 2: GDD Thermal Integral<br/>(Simpson 1/3 over 24h LST)"]
+        M3["Module 3: Dynamic Water Balance<br/>(RK4 ODE + EONET Extreme Pulse)"]
+        M4["Module 4: Predictive Stress Detection<br/>(Newton-Raphson for t* and depth ΔI)"]
     end
 
     subgraph OPT["Track C: Optimizer Worker (:8002)"]
-        M5["Módulo 5: Pre-Solver Agronómico<br/>(pH, GDD y Bloqueo por Ciclón EONET)"]
-        M6["Módulo 6: Optimizador MILP HiGHS<br/>(3-4 Años, Anti-Monocultivo, Leguminosas N)"]
-        M7["Módulo 7: Análisis Dual de Pareto<br/>(Precio Sombra del Agua y Slider λ ∈ [0, 1])"]
+        M5["Module 5: Agronomic Pre-Solver<br/>(pH, GDD & EONET Storm Block)"]
+        M6["Module 6: HiGHS MILP Optimizer<br/>(3-4 Years, Anti-Monoculture, Legume N)"]
+        M7["Module 7: Pareto Dual Analysis<br/>(Water Shadow Price & Slider λ ∈ [0, 1])"]
     end
 
     subgraph WEB["Track D: Web Dashboard (:5173)"]
-        UI["React 19 + Tailwind v4 + Leaflet & Recharts<br/>(9 Funciones del DSS + Shifting Lands Engine)"]
+        UI["React 19 + Tailwind v4 + Leaflet & Recharts<br/>(9 DSS Functions + Shifting Lands Engine)"]
     end
 
     NASA --> GW
@@ -62,62 +63,62 @@ flowchart TD
 
 ---
 
-## 🚀 3. Las 9 Funciones del Producto (Suite DSS)
+## 🚀 3. The 9 Core Product Functions (DSS Suite)
 
-| # | Función | Módulos Científicos | Descripción para el Agricultor |
+| # | Function | Scientific Modules | Description for Growers & Advisors |
 | :-: | :--- | :---: | :--- |
-| **1** | **Delimitación de Parcela y Mapa de Riesgos** | Ingestión + EONET + GIBS | Mapa interactivo con imágenes satelitales Esri HD, capas GIBS NDVI, pines de tormentas EONET y slider para escalar el polígono real en hectáreas (1 a 200 ha). |
-| **2** | **Alertas Anticipadas de Estrés y Clima** | Módulo 4 (Newton-Raphson) | Banner preventivo que notifica con días de anticipación la fecha crítica de agotamiento $t^*$ y eventos meteorológicos extremos. |
-| **3** | **Recomendaciones Agrícolas (Pre-Solver)** | Módulo 5 (Reglas agronómicas) | Filtro inteligente que clasifica cultivos viables vs descartados según pH de suelo, umbral térmico GDD y tolerancia a sequía o anegamiento. |
-| **4** | **Simulador Climático "What-If"** | Módulo 3 & Módulo 6 | Laboratorio interactivo con controles deslizantes para simular $\pm\Delta P\%$ (lluvia), $+\Delta T^\circ\text{C}$ (calentamiento) y pulso de tormenta EONET con recálculo dinámico. |
-| **5** | **Monitoreo de Cultivos y Curva de Humedad** | Módulos 1 & 3 | Reconstrucción continua de NDVI satelital (eliminando huecos de nubes con Splines) y trayectoria de humedad $W(t)$ frente a Capacidad de Campo y Marchitez. |
-| **6** | **Calendario Inteligente de Rotación** | Módulos 2, 4 & 6 | Cronograma multianual de 3 a 4 años (ciclos Primavera-Verano y Otoño-Invierno), hitos térmicos GDD y programación de riegos recomendados ($\Delta I$). |
-| **7** | **Detector Preventivo de Plagas** | NASA POWER Microclima | Semáforo fitosanitario bio-climático en tiempo real para enfermedades fúngicas e insectos con acciones de manejo agroecológico. |
-| **8** | **Evaluación Económica & Slider de Pareto** | Módulos 6 & 7 (HiGHS) | Margen financiero multianual, visualización del precio sombra dual del agua ($y_{\text{agua}} = \frac{\partial Z^*}{\partial b_k}$) y slider $\lambda \in [0, 1]$ para balancear ganancia vs resiliencia. |
-| **9** | **Reportes de Campo de Agricultores** | Crowdsourcing Ground-Truth | Modal georreferenciado para que el productor reporte etapa fenológica, humedad sentida, plagas y evidencia fotográfica para calibrar los satélites. |
+| **1** | **Field Delimitation & Hazard Map** | Ingestion + EONET + GIBS | Interactive map with high-res Esri satellite imagery, NASA GIBS NDVI layers, real-time EONET storm vectors, and area scaling slider (1 to 200 ha). |
+| **2** | **Early Stress & Weather Warnings** | Module 4 (Newton-Raphson) | Preventative warning banner notifying days ahead of the critical soil moisture depletion date $t^*$ and extreme climate events. |
+| **3** | **Crop Recommendations (Pre-Solver)** | Module 5 (Agronomic rules) | Deterministic filter categorizing viable vs discarded candidate crops based on soil pH range, cumulative GDD thermal requirements, and drought/waterlogging tolerance. |
+| **4** | **"What-If" Climate Simulator** | Module 3 & Module 6 | Interactive testing laboratory with continuous sliders for $\pm\Delta P\%$ (rainfall), $+\Delta T^\circ\text{C}$ (warming), and storm pulse injections with live recomputation. |
+| **5** | **Crop Monitoring & Moisture Trajectory** | Modules 1 & 3 | Continuous reconstruction of satellite NDVI (removing cloud gaps via Natural Splines) and root-zone water content $W(t)$ vs Field Capacity and Wilting Point. |
+| **6** | **Smart Rotation Calendar** | Modules 2, 4 & 6 | 3-to-4 year optimal rotation timeline across summer and winter cycles, GDD thermal milestones, and recommended irrigation schedule ($\Delta I$). |
+| **7** | **Pest & Disease Risk Semaphore** | NASA POWER Microclimate | Bioclimatic risk assessment for fungal pathogens and insect pressure derived from surface humidity, rainfall, and thermal profiles with agroecological recommendations. |
+| **8** | **Economic Evaluation & Pareto Slider** | Modules 6 & 7 (HiGHS) | Projected multi-year financial margin, water dual shadow price ($y_{\text{water}} = \frac{\partial Z^*}{\partial b_k}$), and interactive slider $\lambda \in [0, 1]$ balancing profit vs resilience. |
+| **9** | **Crowdsourced Farmer Field Reports** | Ground-Truth Verification | Georeferenced field observation modal allowing growers to report crop phenological stage, observed moisture, pests, and photo uploads to calibrate satellite models. |
 
 ---
 
-## 🌟 4. Motor de Desplazamiento Agroclimático (*Shifting Lands Engine*)
+## 🌟 4. Shifting Lands Engine
 
-Diseñado específicamente para el desafío oficial de la NASA:
-- **Diagnóstico del Desplazamiento:** Modela el cambio en el nicho bioclimático de la parcela comparando las últimas tres décadas de NASA POWER con las proyecciones estivales ($+1.8^\circ\text{C}$ de temperatura media y $+22\text{ días}$ de retraso en lluvias).
-- **Vulnerabilidad de Monocultivo Tradicional:** Muestra el riesgo del $68\%$ de colapso de rendimiento si el productor continúa sembrando maíz o trigo continuo en secano.
-- **Estrategia Adaptada de la NASA:** Desplaza la planificación hacia una rotación polianual que reduce la demanda hídrica en un $41\%$, fija nitrógeno orgánico y reduce el riesgo de pérdida a menos del $12\%$.
+Tailored specifically for the NASA Space Apps challenge requirements:
+- **Displacement Diagnosis:** Models changes in the parcel's bioclimatic envelope by comparing 30-year NASA POWER climatology against recent seasonal trends ($+1.8^\circ\text{C}$ average temperature rise and $+22\text{ days}$ delayed rain onset).
+- **Monoculture Vulnerability:** Quantifies the $68\%$ yield collapse risk under repeated rainfed cereal monoculture.
+- **NASA-Adapted Strategy:** Shifts land management toward a multi-year rotation that cuts irrigation water demand by up to $41\%$, introduces biological nitrogen fixation, and reduces catastrophic climate risk below $12\%$.
 
 ---
 
-## 🛠️ 5. Instalación y Puesta en Marcha
+## 🛠️ 5. Installation & Setup
 
-### Prerrequisitos
-- **Node.js** v20+ y **pnpm** v10+
-- **Python** 3.12+ con **uv** o entorno virtual estándar
+### Prerequisites
+- **Node.js** v20+ and **pnpm** v10+
+- **Python** 3.12+ with **uv** or virtual environment
 
-### 1. Clonar y Configurar Entorno
+### 1. Clone & Environment Setup
 ```bash
 git clone https://github.com/OtakuSweett/Hakathons.git
 cd Hakathons
 
-# Copiar variables de entorno
+# Copy environment variables
 cp .env.example .env
 ```
 
-### 2. Instalar Dependencias
+### 2. Install Dependencies
 ```bash
-# Dependencias JavaScript (Fastify, React 19, Tailwind v4, Leaflet, Recharts)
+# JavaScript/TypeScript dependencies (Fastify, React 19, Tailwind v4, Leaflet, Recharts)
 pnpm install
 
-# Dependencias Python (FastAPI, NumPy, SciPy, PuLP, HiGHS, Uvicorn, Pytest)
+# Python numerical dependencies (FastAPI, NumPy, SciPy, PuLP, HiGHS, Uvicorn, Pytest)
 cd services/py-workers
 uv sync || python -m venv .venv && source .venv/bin/activate && pip install -r <(echo "fastapi uvicorn numpy scipy pulp highspy pydantic pytest pytest-asyncio anyio")
 cd ../..
 ```
 
-### 3. Iniciar Todo el Monorepo en un Solo Comando
+### 3. Launch the Entire Monorepo (Single Command)
 ```bash
 pnpm dev
 ```
-Este comando arranca concurrentemente:
+This concurrently starts:
 - 🌐 **Web Dashboard:** `http://localhost:5173`
 - ⚡ **Orchestrator Gateway:** `http://localhost:3000`
 - 🧮 **Physics Worker:** `http://localhost:8001`
@@ -125,42 +126,43 @@ Este comando arranca concurrentemente:
 
 ---
 
-## 🧪 6. Batería de Pruebas Automáticas (100% Verde)
+## 🧪 6. Automated Test Suite (100% Green)
 
-El repositorio cuenta con una rigurosa suite de pruebas unitarias y de integración:
+The monorepo includes a complete end-to-end and unit test suite verifying physical and mathematical invariants:
 
 ```bash
-# Ejecutar pruebas TypeScript (Gateway Fastify + Web Frontend Vitest)
+# Run TypeScript tests (Fastify Gateway + Web Frontend Vitest)
 pnpm test
 
-# Ejecutar pruebas numéricas Python (Splines TDMA, Simpson, RK4, Newton, MILP, Pareto)
+# Run Python numerical tests (Splines TDMA, Simpson, RK4, Newton, MILP, Pareto)
 pnpm test:py
 ```
 
-**Resultado verificado:**
+**Verified Test Output:**
 ```
 ✓ tests/orchestrator.test.ts (16 tests) — 100% PASS (FAO-56 Penman-Monteith, Saxton-Rawls, Van Bemmelen, Open-Meteo fallback, geocoding)
-✓ tests/web.test.ts (11 tests) — 100% PASS (Invariante hidráulico, hemisferios, contratos de UI, Pareto tolerante a vacíos)
-✓ test_physics.py & test_optimizer.py (10 tests) — 100% PASS (Exactitud SciPy < 1e-9, Runge-Kutta 4, Newton-Raphson, HiGHS solver)
+✓ tests/web.test.ts (11 tests) — 100% PASS (Hydraulic invariant, hemispheres, UI contracts, empty-state resilience)
+✓ test_physics.py & test_optimizer.py (10 tests) — 100% PASS (SciPy exactness < 1e-9, Runge-Kutta 4, Newton-Raphson, HiGHS solver)
 ======================= 37 passed out of 37 tests in total =======================
 ```
 
 ---
 
-## 🗺️ 7. Casos de Estudio y Demostración
+## 🗺️ 7. Calibration Benchmarks & Ground-Truth Presets
 
-La plataforma incluye 6 presets calibrados como benchmarks de verdad de terreno (`data/presets/`):
-1. **El Marqués, Querétaro (México):** Parcela de 15 ha con acuífero sobreexplotado, rotación maíz $\rightarrow$ garbanzo $\rightarrow$ frijol.
-2. **San Juan del Río, Querétaro (México):** Valle intensivo bajo déficit de temporal.
-3. **Celaya, Guanajuato (México):** Suelos vertisoles de alta productividad agrícola bajo riego.
-4. **Colón Semidesierto, Querétaro (México):** Zona semiárida con cultivos de alta tolerancia a sequía (nopal, sorgo).
-5. **Prairie View, Iowa (Corn Belt, EE. UU.):** Parcela de 65 ha demostrando adaptación global en el hemisferio norte.
-6. **Pergamino, Pampa Húmeda (Argentina):** Parcela de 120 ha con desfase estacional de 6 meses (Hemisferio Sur / Austral).
+The repository ships with 6 offline demonstration presets calibrated with ground truth (`data/presets/`):
+1. **El Marqués, Querétaro (Mexico):** 15-ha parcel over an over-exploited aquifer; maize $\rightarrow$ chickpea $\rightarrow$ common bean rotation.
+2. **San Juan del Río, Querétaro (Mexico):** Intensive agricultural valley under severe rainfed deficit.
+3. **Celaya, Guanajuato (Mexico):** Highly productive vertisol soils under gravity irrigation.
+4. **Colón Semidesert, Querétaro (Mexico):** Semiarid parcel with drought-tolerant crops (nopal, sorghum).
+5. **Prairie View, Iowa (Corn Belt, USA):** 65-ha extensive field demonstrating Northern Hemisphere adaptation.
+6. **Pergamino, Pampa Húmeda (Argentina):** 120-ha Southern Hemisphere parcel with a 6-month seasonal shift (Austral seasons).
 
 ---
 
-## 👥 8. Créditos y Autoría
-- **Proyecto:** NASA Agro-DSS
-- **Hackathon:** NASA International Space Apps Challenge 2026
-- **Sede:** Querétaro, México
-- **Repositorio:** [https://github.com/OtakuSweett/Hakathons](https://github.com/OtakuSweett/Hakathons)
+## 👥 8. Credits & Project Details
+- **Project:** NASA Agro-DSS
+- **Challenge:** NASA International Space Apps Challenge 2026
+- **Local Event:** Querétaro, México
+- **Open-Source Repository:** [https://github.com/OtakuSweett/Hakathons](https://github.com/OtakuSweett/Hakathons)
+- **License:** MIT Open Source
