@@ -97,8 +97,13 @@ uv run --project services/py-workers pytest services/py-workers/physics_worker/t
 
 ---
 
-## §6 End-of-Task Protocol
-> ES: Protocolo de finalización.
+## §6 End-of-Task Protocol & Commit Logging
+> ES: Protocolo de finalización y documentación de commits.
 
-See root [AGENTS.md §6](file:///home/Sweett/hakathon/AGENTS.md#6-agent-protocol).
-Append completed tasks to [docs/AGENT_LOG.md](file:///home/Sweett/hakathon/docs/AGENT_LOG.md) and check off entries in [WORKLIST.md](file:///home/Sweett/hakathon/WORKLIST.md).
+See root [AGENTS.md §6](file:///home/Sweett/hakathon/AGENTS.md#6-agent-protocol--commit-documentation).
+Para cada tarea o cambio completado:
+1. Asegurar que los tests pasen: `uv run --project services/py-workers pytest services/py-workers/physics_worker/tests/`.
+2. Realizar commit con formato Conventional Commits (`git commit -m "feat(track-b): ..."`).
+3. Obtener el hash corto (`git rev-parse --short HEAD`).
+4. Añadir fila en [docs/AGENT_LOG.md](file:///home/Sweett/hakathon/docs/AGENT_LOG.md) con Timestamp, `track-b`, Módulo, Archivos, Pruebas y Hash del commit.
+5. Marcar casilla en [WORKLIST.md](file:///home/Sweett/hakathon/WORKLIST.md).

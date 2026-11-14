@@ -1,72 +1,92 @@
-# Git Workflow — NASA Agro-DSS
-> ES: Flujo de trabajo Git para 4 tracks en paralelo.
+# Git Workflow & Commit Documentation — NASA Agro-DSS
+> ES: Flujo de trabajo Git, protocolo de commits documentados y resolución de conflictos para 4 tracks en paralelo.
 
-## Branch Strategy
-| Prefix | Owner | Merges to |
-|--------|-------|-----------|
-| feat/contracts-\<desc\> | Any (merge FIRST before other tracks start) | main |
-| feat/track-a-\<task\> | Track A only (apps/orchestrator/) | main |
-| feat/track-b-\<task\> | Track B only (services/py-workers/physics_worker/) | main |
-| feat/track-c-\<task\> | Track C only (services/py-workers/optimizer_worker/) | main |
-| feat/track-d-\<task\> | Track D only (apps/web/) | main |
+---
 
-## Directory Ownership (strict)
-- Track A: `apps/orchestrator/` ONLY
-- Track B: `services/py-workers/physics_worker/` ONLY
-- Track C: `services/py-workers/optimizer_worker/` ONLY
-- Track D: `apps/web/` ONLY
-- Contracts: `packages/contracts/` — requires feat/contracts-* branch; ALL tracks review
+## 1. Branch Strategy & Directory Ownership
+> ES: Estrategia de ramas y propiedad estricta de directorios.
 
-Shared files (`WORKLIST.md`, `docs/AGENT_LOG.md`): append/tick your OWN lines only. Never rewrite or reorder.
+| Prefix | Owner | Target Branch | Directory Scope |
+| :--- | :--- | :--- | :--- |
+| `feat/contracts-<desc>` | Cualquiera (revisado por todos) | `main` | `packages/contracts/` ONLY |
+| `feat/track-a-<task>` | Track A (Backend Orchestrator) | `main` | `apps/orchestrator/` ONLY |
+| `feat/track-b-<task>` | Track B (Physics Worker) | `main` | `services/py-workers/physics_worker/` ONLY |
+| `feat/track-c-<task>` | Track C (Optimizer Worker) | `main` | `services/py-workers/optimizer_worker/` ONLY |
+| `feat/track-d-<task>` | Track D (Web Frontend) | `main` | `apps/web/` ONLY |
 
-## Commit Convention (Conventional Commits)
+**Regla de Oro:** Cada agente o desarrollador edita **ÚNICAMENTE** los archivos de su directorio asignado. Está terminantemente prohibido modificar carpetas de otros tracks.
+
+---
+
+## 2. Commit Convention & Commit Documentation Policy
+> ES: Convención de commits y política obligatoria de documentación de cada commit.
+
+Utilizamos **Conventional Commits**:
+- `feat(track-a): add soilgrids client with van bemmelen calculation`
+- `feat(track-b): implement mod3 rk4 soil water balance`
+- `feat(track-c): implement mod6 milp multi-year rotation`
+- `feat(track-d): add risk map with leaflet and gibs wmts overlay`
+- `fix(track-b): clamp w_mm to zero in rk4 loop`
+- `docs: update api reference with live response records`
+- `chore: bootstrap scaffold`
+
+### 📋 Protocolo Obligatorio para Cada Commit / Every Commit Protocol:
+Cada vez que un agente o desarrollador realice un commit de código o documentación, debe seguir estrictamente este orden:
+
 ```
-feat(track-b): mod2 simpson integration
-feat(track-a): nasa power ingestion + cache
-fix(track-c): milp legume constraint infeasibility handling
-feat(contracts): add depletion_p field to crops catalog
-chore: bootstrap scaffold
+[ 1. Ejecutar Pruebas Locales (pnpm test / pytest) ]
+                     │
+                     ▼
+[ 2. Realizar Git Commit con Conventional Commit ]
+     git commit -m "feat(track-x): description"
+                     │
+                     ▼
+[ 3. Obtener el Hash del Commit ]
+     COMMIT_HASH=$(git rev-parse --short HEAD)
+                     │
+                     ▼
+[ 4. Documentar en docs/AGENT_LOG.md ]
+     Añadir fila con Timestamp, Track, Módulo, Archivos, Pruebas y $COMMIT_HASH
+                     │
+                     ▼
+[ 5. Marcar Casilla en WORKLIST.md ]
+     Marcar con [x] el ítem correspondiente
+                     │
+                     ▼
+[ 6. Abrir Pull Request ]
+     Llenar checklist en .github/pull_request_template.md incluyendo $COMMIT_HASH
 ```
 
-## Daily Workflow
-Before starting any module:
-```bash
-git fetch origin
-git rebase origin/main
-```
+---
 
-Before every PR:
-```bash
-git fetch origin
-git rebase origin/main
-pnpm test          # or: uv run pytest  (for Python tracks)
-```
+## 3. Daily Workflow & Pull Request Rules
+> ES: Flujo de trabajo diario y reglas de Pull Requests.
 
-## PR Rules
-- One PR per module (≤1 module per PR)
-- Squash-merge into main
-- NO force-push to main
-- PR checklist: see `.github/pull_request_template.md`
+1. **Antes de empezar un módulo:**
+   ```bash
+   git fetch origin
+   git rebase origin/main
+   ```
+2. **Antes de abrir un PR:**
+   - Asegurarse de que las pruebas pasen al 100%.
+   - Realizar rebase sobre `origin/main` (`git fetch origin && git rebase origin/main`).
+   - El alcance de cada PR debe ser pequeño: **$\le 1$ módulo o función por PR**.
+   - Solo se permite **Squash-Merge** en `main`.
+   - Prohibido hacer `force-push` (`git push -f`) sobre la rama `main`.
 
-## Conflict Playbook
+---
 
-### WORKLIST.md conflict on rebase:
-Keep BOTH conflicting lines. Mark `[x]` on the line you completed.
-Never delete the other track's line.
+## 4. Conflict Playbook / Manual de Resolución de Conflictos
+> ES: Qué hacer en caso de conflictos al hacer rebase.
 
-### AGENT_LOG.md conflict on rebase:
-Keep ALL rows from both sides (append order).
-Rows are timestamped — no information is lost.
+### Conflicto en `WORKLIST.md`:
+- Si dos tracks editaron `WORKLIST.md` al mismo tiempo, **CONSERVA AMBAS LÍNEAS**.
+- Marca `[x]` en tu tarea y respeta las tareas de los demás tracks. Nunca borres líneas ajenas.
 
-### Schema conflict (packages/contracts/):
-Stop. Coordinate on main. The `feat/contracts-*` branch must merge first.
-Post to AGENT_LOG.md: `"⚠ Schema conflict on [field] — blocked on contracts merge"`
+### Conflicto en `docs/AGENT_LOG.md`:
+- Si ambos tracks agregaron una fila al log, **CONSERVA AMBAS FILAS**.
+- Como cada fila tiene timestamp (`ISO-8601 UTC`) y hash de commit, no hay pérdida de información.
 
-## CODEOWNERS (optional — fill in team member names)
-```
-apps/orchestrator/                        @track-a-dev
-apps/web/                                 @track-d-dev
-services/py-workers/physics_worker/       @track-b-dev
-services/py-workers/optimizer_worker/     @track-c-dev
-packages/contracts/                       @all   # everyone reviews schema changes
-```
+### Conflicto en `packages/contracts/`:
+- **ALTO INMEDIATO.** Los contratos se gobiernan en ramas `feat/contracts-*` que se fusionan primero.
+- Si hay un conflicto de esquemas, ningún track debe avanzar hasta que la rama de contratos esté aprobada y fusionada en `main`.

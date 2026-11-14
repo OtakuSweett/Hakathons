@@ -186,10 +186,15 @@ where $p = \text{depletion\_p}$ (default $0.5$) from `crops_catalog.json`.
 
 ---
 
-## §6 Agent Protocol
-> ES: Protocolo de agentes para finalización de tareas.
+## §6 Agent Protocol & Commit Documentation
+> ES: Protocolo de agentes para finalización y documentación de cada commit.
 
 ### End-of-Task Protocol (every agent, every task)
-1. Tick `[x]` in `WORKLIST.md` for completed items.
-2. Append row to `docs/AGENT_LOG.md`: `Timestamp (UTC) | Track/Agent | Module | Files Changed | Tests Passed`.
-3. Complete all checkboxes in `.github/pull_request_template.md` before opening PR.
+Cada vez que un agente o desarrollador complete una tarea o commit, DEBE cumplir esta secuencia:
+1. **Ejecutar Pruebas:** Correr `pnpm test` (Track A y D) o `uv run pytest` (Track B y C) y comprobar que pasen al 100%.
+2. **Generar Commit:** Realizar commit con Conventional Commits (`git commit -m "feat(track-x): desc"`).
+3. **Extraer Hash:** Obtener el hash corto del commit con `git rev-parse --short HEAD`.
+4. **Documentar en `docs/AGENT_LOG.md`:** Añadir obligatoriamente la fila con:
+   `Timestamp (UTC) | Track/Agent | Module | Files Changed | Tests Passed | Git Commit`
+5. **Actualizar `WORKLIST.md`:** Marcar con `[x]` las casillas completadas.
+6. **Pull Request Checklist:** Completar todos los checkboxes en `.github/pull_request_template.md` (incluyendo el hash del commit) antes de solicitar merge.
