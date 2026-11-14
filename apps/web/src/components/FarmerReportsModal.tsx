@@ -402,7 +402,7 @@ export const FarmerReportsModal: React.FC<FarmerReportsModalProps> = ({
               {savedLocally ? t.successLocal : t.success}{savedLocally && fileName && <small className="block mt-1">{t.localPhotoNote}</small>}
             </div>
           )}
-          {submitError && <p className="inline-message" role="alert">{submitError}</p>}
+          {submitError && <p className="inline-message inline-error" role="alert">{submitError}</p>}
 
           {/* Buttons */}
           <div className="flex items-center justify-end gap-3 pt-3 border-t border-white/[0.08]">

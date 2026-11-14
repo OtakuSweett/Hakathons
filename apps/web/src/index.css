@@ -56,7 +56,7 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
 .season-note b, .season-note small { display: block; }
 .season-note b { font-size: 12px; }
 .season-note small { margin-top: 3px; color: #c2d1c0; font-size: 11px; }
-.stepper { position: relative; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); align-items: center; margin: 0 0 24px; padding: 0 8px 14px; border-bottom: 1px solid #d9e2dd; }
+.stepper { position: relative; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: center; margin: 0 0 24px; padding: 0 8px 14px; border-bottom: 1px solid #d9e2dd; }
 .step-item { position: relative; z-index: 1; display: inline-flex; justify-self: start; align-items: center; gap: 9px; padding: 4px 8px 4px 0; color: #75857d; background: transparent; border: 0; font-size: 12px; font-weight: 600; }
 .step-item:not(:first-child) { justify-self: center; }
 .step-item:last-of-type { justify-self: end; }
@@ -202,6 +202,8 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
 .consent-accept { flex: 0 0 auto; padding: 9px 12px; color: #fff; background: #2f6b4f; border: 0; border-radius: 7px; font-size: 12px; white-space: nowrap; }
 .toast-message { position: fixed; z-index: 70; left: 50%; bottom: 22px; transform: translateX(-50%); display: flex; align-items: flex-start; gap: 14px; max-width: min(620px, calc(100vw - 32px)); padding: 13px 15px; color: #5e4c23; background: #fff9e9; border: 1px solid #e7d7ae; border-radius: 8px; box-shadow: 0 6px 20px rgba(49,45,30,.12); font-size: 12px; line-height: 1.5; }
 .toast-message button { padding: 0; color: #77632e; background: transparent; border: 0; font-size: 19px; line-height: 1; }
+.toast-error { color: #672b20; background: #fff0e9; border-color: #e6b3a1; box-shadow: 0 8px 26px rgba(117, 41, 23, .22); }
+.toast-error button { color: #8f3828; }
 
 @media (max-width: 900px) {
   .welcome-panel { grid-template-columns: 1fr minmax(240px, .8fr); gap: 18px; padding: 26px; }
@@ -384,7 +386,7 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
 .map-search-control button { min-height: 32px; flex: 0 0 auto; padding: 0 11px; color: #fff; background: #285e43; border: 0; border-radius: 5px; font-size: 11px; font-weight: 700; }
 .map-search-control button:disabled { cursor: not-allowed; opacity: .55; }
 .map-search > small { color: #64776a; font-size: 11px; line-height: 1.5; }
-.map-search-error { margin: 2px 0 0; color: #865c28 !important; font-size: 11px !important; }
+.map-search-error { margin: 4px 0 0; padding: 9px 11px; color: #762f22 !important; background: #fff0e9; border: 1px solid #e6b3a1; border-left: 4px solid #b74732; border-radius: 6px; font-size: 12px !important; line-height: 1.45; }
 .place-search-results { display: grid; gap: 5px; padding: 8px; background: #fff; border: 1px solid #d7e2da; border-radius: 7px; }
 .place-search-results > strong { padding: 2px 4px 5px; color: #315540; font-size: 11px; }
 .place-search-results > button { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; padding: 8px; color: #294638; background: #f6f9f7; border: 1px solid transparent; border-radius: 5px; text-align: left; cursor: pointer; }

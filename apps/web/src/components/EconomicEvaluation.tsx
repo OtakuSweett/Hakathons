@@ -212,7 +212,9 @@ export const EconomicEvaluation: React.FC<EconomicEvaluationProps> = ({ data, la
             <span className={`self-start sm:self-auto text-[10px] font-bold px-2.5 py-1 rounded-full ${
               isHighShadow ? 'bg-amber-500/10 text-amber-300 border border-amber-500/30' : 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/30'
             }`}>
-              {isHighShadow ? 'Restricción Hídrica Activa' : 'Disponibilidad Hídrica Suficiente'}
+              {lang === 'es'
+                ? (isHighShadow ? 'Restricción hídrica activa' : 'Disponibilidad hídrica suficiente')
+                : (isHighShadow ? 'Active water constraint' : 'Sufficient water availability')}
             </span>
           </div>
           <p className="text-[11px] text-zinc-300 mt-1">{t.shadowPriceDesc}</p>
@@ -253,7 +255,7 @@ export const EconomicEvaluation: React.FC<EconomicEvaluationProps> = ({ data, la
                   contentStyle={{ backgroundColor: '#18181b', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', fontSize: '12px', color: '#f4f4f5' }}
                 />
                 <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
-                <Scatter name="Frontera de Pareto (M7)" data={chartData} fill="#10b981" />
+                <Scatter name={lang === 'es' ? 'Frontera de Pareto (M7)' : 'Pareto Frontier (M7)'} data={chartData} fill="#10b981" />
               </ScatterChart>
             </ResponsiveContainer>
           </div>

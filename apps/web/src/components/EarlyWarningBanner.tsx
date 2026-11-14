@@ -17,9 +17,14 @@ export const EarlyWarningBanner: React.FC<EarlyWarningProps> = ({
   const tStar = trigger.t_star_days;
   const deltaI = trigger.delta_i_mm;
   const isImminent = tStar !== null && tStar <= 15.0;
+  const irrigationReason = trigger.reason === 'W_never_crosses_Wcrit'
+    ? (lang === 'es' ? 'La reserva de agua no cruza el umbral crítico durante el periodo analizado.' : 'Water storage does not cross the critical threshold during the analysis period.')
+    : trigger.reason === 'W_already_below_Wcrit'
+      ? (lang === 'es' ? 'La reserva de agua ya está por debajo del umbral crítico.' : 'Water storage is already below the critical threshold.')
+      : trigger.reason;
 
   return (
-    <div className={`early-warning rounded-xl p-4 sm:p-5 border transition-all ${
+    <div role={isImminent ? 'alert' : 'status'} aria-live={isImminent ? 'assertive' : 'polite'} className={`early-warning rounded-xl p-4 sm:p-5 border transition-all ${
       isImminent
         ? 'bg-gradient-to-r from-amber-950/40 via-zinc-900/60 to-zinc-900/60 border-amber-500/30 shadow-[0_0_25px_rgba(245,158,11,0.08)]'
         : 'bg-gradient-to-r from-emerald-950/30 via-zinc-900/60 to-zinc-900/60 border-emerald-500/20 shadow-[0_0_25px_rgba(16,185,129,0.05)]'
@@ -46,27 +51,27 @@ export const EarlyWarningBanner: React.FC<EarlyWarningProps> = ({
           <div>
             <div className="flex items-center space-x-2">
               <span className="text-[11px] font-semibold text-zinc-400 tracking-wide uppercase">
-                {lang === 'es' ? 'ALERTA · ESTRÉS HÍDRICO' : 'ALERT · WATER STRESS'}
+                {tStar !== null
+                  ? (lang === 'es' ? 'RIEGO SUGERIDO' : 'IRRIGATION SUGGESTION')
+                  : (lang === 'es' ? 'ESTADO DEL AGUA EN EL SUELO' : 'SOIL WATER STATUS')}
               </span>
-              {isImminent && (
-                <span className="text-[10px] bg-rose-500/10 border border-rose-500/30 text-rose-400 font-bold px-2 py-0.5 rounded-full uppercase">
-                  {lang === 'es' ? 'Acción Preventiva' : 'Action Needed'}
-                </span>
-              )}
             </div>
             <h3 className="text-sm sm:text-base font-bold text-white mt-0.5">
               {tStar !== null ? (
-                <>
-                  {lang === 'es' ? 'Riego crítico proyectado para el día:' : 'Critical irrigation projected for day:'}{' '}
-                  <span className="text-emerald-400 font-black font-mono text-base sm:text-lg">t* = +{tStar.toFixed(1)}</span>{' '}
-                  <span className="text-xs text-zinc-400 font-normal">({lang === 'es' ? 'lámina recomendada' : 'depth'}: {deltaI} mm)</span>
-                </>
+                lang === 'es'
+                  ? `Se estima que el suelo llegará a un nivel crítico en unos ${Math.ceil(tStar)} días.`
+                  : `Soil moisture is expected to reach a critical level in about ${Math.ceil(tStar)} days.`
               ) : (
                 <span className="text-zinc-200">
-                  {trigger.reason || (lang === 'es' ? 'Nivel de agua en suelo seguro dentro de la reserva aprovechable.' : 'Soil moisture safely within available water capacity.')}
+                  {irrigationReason || (lang === 'es' ? 'Nivel de agua en suelo seguro dentro de la reserva aprovechable.' : 'Soil moisture safely within available water capacity.')}
                 </span>
               )}
             </h3>
+            {tStar !== null && <p className="mt-1 text-xs text-zinc-300">
+              {deltaI !== null
+                ? (lang === 'es' ? `Riego sugerido: ${deltaI.toFixed(1)} mm para recuperar la reserva de agua del suelo.` : `Suggested irrigation: ${deltaI.toFixed(1)} mm to restore soil water storage.`)
+                : (lang === 'es' ? 'Revisa la humedad del suelo antes de programar el riego.' : 'Check soil moisture before scheduling irrigation.')}
+            </p>}
           </div>
         </div>
 

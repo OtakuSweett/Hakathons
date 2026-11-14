@@ -16,8 +16,8 @@ import { apiFetch } from './services/api.js';
 type WaterRegime = 'temporal' | 'goteo' | 'gravedad';
 type GeoBounds = [[number, number], [number, number]];
 const stepLabels = {
-  es: ['Ubicación', 'Parcela', 'Cultivos', 'Resultados'],
-  en: ['Location', 'Field', 'Crops', 'Results']
+  es: ['Ubicación', 'Cultivos', 'Resultados'],
+  en: ['Location', 'Crops', 'Results']
 };
 const cropNames: Record<Language, Record<string, string>> = {
   es: {
@@ -182,6 +182,9 @@ export const App: React.FC = () => {
       const simData = await res.json();
       setData((prev) => ({ ...prev, physics: simData.physics || prev.physics, optimization: simData.optimization || prev.optimization }));
     } catch {
+      if (!isOfflineMode) {
+        setLocationMessage(text('El servicio de simulación no respondió; aplicamos un cálculo local para que puedas seguir explorando.', 'The simulation service did not respond; a local calculation is active so you can keep exploring.'));
+      }
       setData((prev) => {
         const wb = prev.physics.water_balance;
         const factor = 1 + deltaPrecip / 100;
@@ -239,6 +242,7 @@ export const App: React.FC = () => {
     const requestParcelId = hasCustomPoint ? `custom_${requestCoordinates.lat.toFixed(4)}_${requestCoordinates.lon.toFixed(4)}` : data.parcel_id;
     setIsLoading(true);
     setLocationMessage('');
+    let apiErrorCode = '';
     try {
       const response = await apiFetch('/api/analyze', {
         method: 'POST',
@@ -262,11 +266,16 @@ export const App: React.FC = () => {
         const code = body?.error?.code;
         setParcelRejected(code === 'NON_ARABLE_LAND');
         if (code === 'NON_ARABLE_LAND') setManualSoilOpen(true);
+        const localizedValidationMessage = code === 'INVALID_SOIL_PROFILE'
+          ? text('El análisis requiere arcilla, arena, pH y carbono orgánico válidos; el nitrógeno es opcional.', 'The soil test needs valid clay, sand, pH, and organic carbon values; nitrogen is optional.')
+          : body?.error?.message;
         setLocationMessage(code === 'NON_ARABLE_LAND'
           ? (lang === 'es'
             ? `SoilGrids no tiene datos de suelo para este punto (${requestCoordinates.lat.toFixed(4)}, ${requestCoordinates.lon.toFixed(4)}). Puede ser una zona urbana o sin cobertura; esto no descarta las parcelas agrícolas cercanas. Mueve el marcador al campo o continúa con un análisis de suelo.`
             : `SoilGrids has no soil data for this point (${requestCoordinates.lat.toFixed(4)}, ${requestCoordinates.lon.toFixed(4)}). It may be urban or uncovered; nearby fields may still be valid. Move the marker to the field or continue with a soil test.`)
-          : (body?.error?.message || (lang === 'es' ? 'No se pudo validar la parcela.' : 'The field could not be validated.')));
+          : (localizedValidationMessage || (code
+            ? text(`No se pudo validar la parcela (${code}).`, `The field could not be validated (${code}).`)
+            : text('No se pudo validar la parcela.', 'The field could not be validated.'))));
         setStep(1);
         return;
       }
@@ -275,8 +284,17 @@ export const App: React.FC = () => {
         try {
           const body = await response.json();
           const code = body?.error?.code;
+          apiErrorCode = typeof code === 'string' ? code : '';
           const message = body?.error?.message || body?.message || '';
-          detail = [code, message].filter(Boolean).join(': ');
+          const localizedErrors: Record<string, [string, string]> = {
+            CLIMATE_SOURCES_UNAVAILABLE: ['No pudimos obtener datos meteorológicos para esta ubicación.', 'Weather data are unavailable for this location.'],
+            SOILGRIDS_UNAVAILABLE: ['El servicio de suelo no respondió. Intenta de nuevo o captura un análisis de laboratorio.', 'The soil service is unavailable. Retry or enter soil test results.'],
+            INVALID_SOIL_PROFILE: ['Revisa los valores del análisis de suelo.', 'Check the soil test values.'],
+            INTERNAL_SERVER_ERROR: ['El servidor no pudo completar el análisis.', 'The server could not complete the analysis.']
+          };
+          detail = code && localizedErrors[code]
+            ? `${code}: ${localizedErrors[code][lang === 'es' ? 0 : 1]}`
+            : code ? text(`El servidor devolvió el error ${code}.`, `The server returned error ${code}.`) : message;
         } catch { /* The gateway may return an empty or non-JSON error. */ }
         throw new Error(detail || `HTTP ${response.status}`);
       }
@@ -288,6 +306,17 @@ export const App: React.FC = () => {
       setStep(3);
     } catch (error) {
       setServiceAvailable(false);
+      if (apiErrorCode === 'SOILGRIDS_UNAVAILABLE') {
+        setParcelRejected(true);
+        setManualSoilOpen(true);
+        setMapRequestFailed(false);
+        setStep(1);
+        setLocationMessage(text(
+          'SoilGrids no está disponible ahora para esta parcela. Puedes capturar un análisis de suelo y volver a consultar el clima y las alertas.',
+          'SoilGrids is unavailable for this field right now. Enter a soil test to continue querying climate and hazard data.'
+        ));
+        return;
+      }
       setMapRequestFailed(true);
       const reason = error instanceof TypeError
         ? (lang === 'es' ? 'no hay conexión con el servicio de análisis' : 'the analysis service is unreachable')
@@ -335,6 +364,7 @@ export const App: React.FC = () => {
     && Math.abs(selectedCoordinates.lon - data.coordinates.lon) < 0.00001;
   const needsLiveAnalysis = !isOfflineMode && !sameAsAnalyzed;
   const needsBenchmarkReset = isOfflineMode && !sameAsAnalyzed;
+  const visibleStep = step === 3 ? 2 : step >= 2 ? 1 : 0;
 
   const requestLocation = () => {
     if (!navigator.geolocation) { setLocationMessage(text('Este navegador no ofrece ubicación. Escribe las coordenadas de tu parcela.', 'Location is unavailable in this browser. Enter your field coordinates.')); return; }
@@ -344,7 +374,7 @@ export const App: React.FC = () => {
         setMapRegionCenter({ lat: coords.latitude, lon: coords.longitude });
         setMapSelectionBounds(null);
         void handleMapCoordinateSelect(coords.latitude, coords.longitude);
-        setStep(1);
+        setStep(0);
         if (reportAfterLocation) {
           setIsReportModalOpen(true);
           setReportAfterLocation(false);
@@ -411,8 +441,8 @@ export const App: React.FC = () => {
         </section>
 
         <nav className="stepper" aria-label={text('Pasos del análisis', 'Analysis steps')}>
-          {stepLabels[lang].map((label, index) => <button key={label} type="button" className={`step-item ${step === index ? 'active' : ''} ${step > index ? 'complete' : ''}`} onClick={() => index <= step && setStep(index)} aria-current={step === index ? 'step' : undefined}><span className="step-number">{step > index ? '✓' : index + 1}</span><span>{label}</span></button>)}
-          <span className="step-progress" aria-hidden="true"><i style={{ width: `${(step / 3) * 100}%` }} /></span>
+          {stepLabels[lang].map((label, index) => <button key={label} type="button" className={`step-item ${visibleStep === index ? 'active' : ''} ${visibleStep > index ? 'complete' : ''}`} onClick={() => index <= visibleStep && setStep([0, 2, 3][index])} aria-current={visibleStep === index ? 'step' : undefined}><span className="step-number">{visibleStep > index ? '✓' : index + 1}</span><span>{label}</span></button>)}
+          <span className="step-progress" aria-hidden="true"><i style={{ width: `${(visibleStep / 2) * 100}%` }} /></span>
         </nav>
 
         {hasStarted && isLoading && <div className="loading-line" role="status" aria-live="polite"><i /><span><b>{text('Consultando datos de tu parcela', 'Checking your field data')}</b><small>{text('Suelo, clima y alertas. Conservamos tu selección mientras termina.', 'Soil, climate, and alerts. Your selection stays saved while this runs.')}</small></span></div>}
@@ -423,7 +453,7 @@ export const App: React.FC = () => {
           {locationMessage && <p className="inline-message" role="alert">{locationMessage}</p>}
           <div className="location-map-heading"><div><b>{text('O marca el punto en el mapa', 'Or mark the point on the map')}</b><small>{text('Acerca el mapa y toca el centro aproximado de tu parcela.', 'Zoom in and tap near the center of your field.')}</small></div><span className="coordinate-readout">{selectedCoordinates.lat.toFixed(4)}°, {selectedCoordinates.lon.toFixed(4)}°</span></div>
           <RiskMap lat={selectedCoordinates.lat} lon={selectedCoordinates.lon} regionLat={mapRegionCenter.lat} regionLon={mapRegionCenter.lon} selectionBounds={mapSelectionBounds} parcelName={text('Centro de parcela', 'Field center')} eonetAlerts={[]} areaHa={areaHa} selectedCropIds={selectedCrops} onAreaChange={setAreaHa} waterRegime={waterRegime} onWaterRegimeChange={setWaterRegime} lang={lang} onMapClick={handleMapCoordinateSelect} onLocationSearch={handleLocationSearch} />
-          <div className="panel-actions"><span className="coordinate-readout">{text('Ubicación elegida', 'Selected location')} <b>{selectedCoordinates.lat.toFixed(4)}°, {selectedCoordinates.lon.toFixed(4)}°</b></span><button className="primary-button" type="button" onClick={() => setStep(1)}>{text('Confirmar ubicación', 'Confirm location')} <span aria-hidden="true">→</span></button></div>
+          <div className="panel-actions"><span className="coordinate-readout">{text('Ubicación elegida', 'Selected location')} <b>{selectedCoordinates.lat.toFixed(4)}°, {selectedCoordinates.lon.toFixed(4)}°</b></span><button className="primary-button" type="button" onClick={() => setStep(2)}>{text('Elegir cultivos', 'Choose crops')} <span aria-hidden="true">→</span></button></div>
           <details className="demo-options"><summary>{text('Abrir ejemplos guardados (sin conexión)', 'Open saved examples (offline)')}</summary><div className="region-options" role="radiogroup" aria-label={text('Ejemplos regionales guardados', 'Saved regional examples')}>
             {DEMO_PRESETS_LIST.map((preset) => <button key={preset.presetId} type="button" role="radio" aria-checked={selectedPresetId === preset.presetId} onClick={() => {
               const benchmark = getMockAnalysis(preset.presetId);
@@ -434,7 +464,7 @@ export const App: React.FC = () => {
               setSelectedCoordinates(benchmark.coordinates);
               setSelectedCrops(presetCropSelection(preset.presetId, benchmark));
               setIsOfflineMode(true);
-              setStep(1);
+              setStep(2);
             }} className={`region-option ${selectedPresetId === preset.presetId ? 'selected' : ''}`}>
               <span className="region-info"><b>{preset.region}</b><small>{preset.country} · {preset.lat.toFixed(2)}°, {preset.lon.toFixed(2)}°</small><em>{cropLabel(preset.cropId, lang)} · {preset.areaHa} ha</em></span><span className="radio-mark" />
             </button>)}
@@ -442,7 +472,7 @@ export const App: React.FC = () => {
         </section>}
 
         {step === 1 && <section className="setup-panel map-panel">
-          <div className="setup-heading"><div><span className="step-kicker">{text('PASO 2 · PARCELA', 'STEP 2 · FIELD')}</span><h2>{text('Revisa la ubicación de tu parcela', 'Review your field location')}</h2><p>{text('Este es el punto que marcaste en el mapa. No necesitas seleccionarlo otra vez; vuelve al mapa solo si quieres corregirlo.', 'This is the point you marked on the map. You do not need to select it again; return to the map only to change it.')}</p></div><button className="text-action" type="button" onClick={() => setStep(0)}>← {text('Volver al mapa', 'Back to map')}</button></div>
+          <div className="setup-heading"><div><span className="step-kicker">{text('VALIDACIÓN DE PARCELA', 'FIELD VALIDATION')}</span><h2>{text('Revisa el punto o aporta datos de suelo', 'Check the location or enter soil results')}</h2><p>{text('Esta pantalla aparece solo si no encontramos datos de suelo para tu punto.', 'This screen appears only when soil data are unavailable for your point.')}</p></div><button className="text-action" type="button" onClick={() => setStep(0)}>← {text('Volver al mapa', 'Back to map')}</button></div>
           {locationMessage && <div className={`inline-message ${parcelRejected ? 'inline-error' : ''}`} role={parcelRejected || mapRequestFailed ? 'alert' : 'status'}><span>{locationMessage}</span>{mapRequestFailed && <button type="button" className="fallback-button" onClick={useRegionalBenchmark}>{text('Abrir ejemplo guardado', 'Open saved example')}</button>}</div>}
           {parcelRejected && <section className="manual-soil-panel" aria-labelledby="manual-soil-title">
             <div><h3 id="manual-soil-title">{text('¿Tienes un análisis de suelo?', 'Do you have a soil test?')}</h3><p>{text('Puedes capturar los resultados de laboratorio. Se usarán solo para esta parcela y quedarán identificados como datos proporcionados por ti.', 'Enter your lab results. They will be used only for this field and labeled as grower-provided data.')}</p></div>
@@ -488,18 +518,18 @@ export const App: React.FC = () => {
               : text('El análisis se limitará a los cultivos que marcaste.', 'The analysis will be limited to the crops you selected.')}</p>
           {(data.optimization?.presolver_summary?.discarded?.length || 0) > 0 && <details className="discarded-list"><summary>{text('Ver por qué no se recomiendan', 'See why some are not recommended')}</summary><p>{data.optimization.presolver_summary.discarded.map((crop) => `${cropLabel(crop.crop_id, lang)}: ${lang === 'es' ? crop.reason_text_es : crop.reason_text_en}`).join(' · ')}</p></details>}
           {needsLiveAnalysis && <p className="selection-note">{text('Compatibilidad orientativa de la región de referencia. Tu punto se evaluará al calcular el análisis.', 'Suitability is based on the regional reference. Your selected point will be evaluated when analysis runs.')}</p>}
-          {mapRequestFailed && locationMessage && <div className="inline-message" role="status"><span>{locationMessage}</span><button type="button" className="fallback-button" disabled={isLoading} onClick={() => void applyCropSelection()}>{text('Reintentar análisis', 'Retry analysis')}</button></div>}
-          <div className="panel-actions"><button className="text-action" type="button" onClick={() => setStep(1)}>← {text('Volver al mapa', 'Back to map')}</button><button className="primary-button" type="button" disabled={!selectedCrops.length || isLoading} onClick={() => void applyCropSelection()}>{isOfflineMode ? text('Ver ejemplo guardado', 'View saved example') : text('Calcular análisis', 'Calculate field analysis')} <span aria-hidden="true">→</span></button></div>
+          {mapRequestFailed && locationMessage && <div className="inline-message inline-error" role="alert"><span>{locationMessage}</span><button type="button" className="fallback-button" disabled={isLoading} onClick={() => void applyCropSelection()}>{text('Reintentar análisis', 'Retry analysis')}</button></div>}
+          <div className="panel-actions"><button className="text-action" type="button" onClick={() => setStep(0)}>← {text('Volver al mapa', 'Back to map')}</button><button className="primary-button" type="button" disabled={!selectedCrops.length || isLoading} onClick={() => void applyCropSelection()}>{isOfflineMode ? text('Ver ejemplo guardado', 'View saved example') : text('Calcular análisis', 'Calculate field analysis')} <span aria-hidden="true">→</span></button></div>
         </section>}
 
         {step === 3 && <>
           {isOfflineMode && <div className="offline-note" role="status"><strong>{text('Demo local', 'Local demo')}</strong><span>{text('El paquete conserva suelo, clima y rotación regional. El simulador climático calcula escenarios aquí mismo; para analizar coordenadas nuevas o recalcular cultivos, vuelve a conectar.', 'The package includes regional soil, climate, and rotation data. The climate simulator runs scenarios here; reconnect to analyze new coordinates or recalculate crop choices.')}</span></div>}
-          <div className="analysis-heading"><div><span className="step-kicker">{text('ANÁLISIS DE PARCELA', 'FIELD ANALYSIS')}</span><h2>{currentPresetName}</h2><p>{data.coordinates.lat.toFixed(4)}°, {data.coordinates.lon.toFixed(4)}° <span>·</span> {areaHa.toFixed(1)} ha <span>·</span> {selectedCrops.map((crop) => crop.replaceAll('_', ' ')).join(', ') || text('sin cultivos seleccionados', 'no crops selected')}</p></div><button className="outline-button" type="button" onClick={() => setStep(1)}>{text('Editar parcela', 'Edit field')}</button></div>
+          <div className="analysis-heading"><div><span className="step-kicker">{text('ANÁLISIS DE PARCELA', 'FIELD ANALYSIS')}</span><h2>{currentPresetName}</h2><p>{data.coordinates.lat.toFixed(4)}°, {data.coordinates.lon.toFixed(4)}° <span>·</span> {areaHa.toFixed(1)} ha <span>·</span> {selectedCrops.map((crop) => cropLabel(crop, lang)).join(', ') || text('sin cultivos seleccionados', 'no crops selected')}</p></div><button className="outline-button" type="button" onClick={() => setStep(0)}>{text('Editar parcela', 'Edit field')}</button></div>
           {provenanceMessages(data, lang).length > 0 && <aside className="data-quality-notice" role="status"><b>{text('Origen y disponibilidad de los datos', 'Data source and availability')}</b>{provenanceMessages(data, lang).map((message) => <p key={message}>{message}</p>)}</aside>}
           <EarlyWarningBanner trigger={data.physics?.irrigation_trigger || { t_star_days: null, delta_i_mm: null, reason: null }} eonetCount={data.eonet_hazard_alerts?.length || 0} meanTempC={data.climate_summary?.mean_temperature_c || 21} lang={lang} />
           <ShiftingLands data={data} areaHa={areaHa} waterRegime={waterRegime} lang={lang} />
           <section className="analysis-grid main-analysis-grid">
-            <div className="span-7"><RiskMap lat={data.coordinates.lat} lon={data.coordinates.lon} regionLat={mapRegionCenter.lat} regionLon={mapRegionCenter.lon} selectionBounds={mapSelectionBounds} parcelName={currentPresetName} eonetAlerts={data.eonet_hazard_alerts || []} areaHa={areaHa} selectedCropIds={selectedCrops} onAreaChange={setAreaHa} waterRegime={waterRegime} onWaterRegimeChange={setWaterRegime} lang={lang} onMapClick={(lat, lon) => { handleMapCoordinateSelect(lat, lon); setStep(1); }} onLocationSearch={(lat, lon, bounds) => { handleLocationSearch(lat, lon, bounds); setStep(1); }} /></div>
+            <div className="span-7"><RiskMap lat={data.coordinates.lat} lon={data.coordinates.lon} regionLat={mapRegionCenter.lat} regionLon={mapRegionCenter.lon} selectionBounds={mapSelectionBounds} parcelName={currentPresetName} eonetAlerts={data.eonet_hazard_alerts || []} areaHa={areaHa} selectedCropIds={selectedCrops} onAreaChange={setAreaHa} waterRegime={waterRegime} onWaterRegimeChange={setWaterRegime} lang={lang} onMapClick={(lat, lon) => { handleMapCoordinateSelect(lat, lon); setStep(0); }} onLocationSearch={(lat, lon, bounds) => { handleLocationSearch(lat, lon, bounds); setStep(0); }} /></div>
             <div className="span-5"><CropAdvisor viableCropIds={data.optimization?.presolver_summary?.feasible_crop_ids || []} discarded={data.optimization?.presolver_summary?.discarded || []} soilPh={data.soil_hydraulics?.soil_ph || 6.8} lang={lang} /></div>
           </section>
           <section className="analysis-grid"><div className="span-7"><CropMonitor data={data} lang={lang} /></div><div className="span-5"><ClimateSimulator onSimulate={handleSimulate} isLoading={isLoading} lang={lang} /></div></section>
@@ -512,7 +542,7 @@ export const App: React.FC = () => {
       {cookieNotice && <aside className="consent-note" aria-label={text('Aviso de privacidad', 'Privacy notice')}><p>{text('Guardamos tu idioma y este aviso. Si buscas por nombre, enviamos la consulta al servicio de geocodificación; tus coordenadas se consultan al solicitar un análisis o reportar una observación. Consulta', 'We store your language and this notice. Place-name searches are sent to the geocoding service; coordinates are queried when you request an analysis or submit an observation. Read our')} <button type="button" className="inline-link" onClick={() => setLocationMessage(text('Condiciones de uso: recomendaciones orientativas; contrasta decisiones con asesoría agronómica local. Privacidad: la búsqueda de lugares se envía al proveedor de geocodificación configurado; las coordenadas se envían al orquestador al solicitar análisis o reportar una observación. Los reportes pendientes se guardan localmente si falla el servicio. No usamos cookies de seguimiento.', 'Terms: recommendations are guidance; verify decisions with local agronomic advice. Privacy: place searches are sent to the configured geocoding provider; coordinates are sent to the orchestrator for requested analyses or reports. Pending reports are stored locally if the service fails. We do not use tracking cookies.'))}>{text('términos y privacidad', 'terms and privacy')}</button>.</p><button type="button" className="consent-accept" onClick={() => { localStorage.setItem('agro-dss-notice', 'accepted'); setCookieNotice(false); }}>{text('Entendido', 'Got it')}</button></aside>}
       <footer className="site-footer"><span>Campo Claro <span>·</span> {text('Planificación agrícola informada', 'Evidence-led field planning')}</span><span>NASA POWER · SoilGrids · EONET · FAO-56</span><button type="button" onClick={() => setLocationMessage(text('Condiciones de uso: recomendaciones orientativas. Privacidad: la búsqueda de lugares se envía al geocodificador configurado; las coordenadas se envían cuando solicitas análisis o reportes. No usamos cookies de seguimiento.', 'Terms: recommendations are guidance. Privacy: place searches go to the configured geocoder; coordinates are sent when you request analyses or reports. We do not use tracking cookies.'))}>{text('Términos y privacidad', 'Terms and privacy')}</button></footer>
       <FarmerReportsModal isOpen={isReportModalOpen} onClose={() => setIsReportModalOpen(false)} lat={selectedCoordinates.lat} lon={selectedCoordinates.lon} parcelId={dataSource === 'live' && sameAsAnalyzed ? data.parcel_id : isOfflineMode ? data.parcel_id : `custom_${selectedCoordinates.lat.toFixed(4)}_${selectedCoordinates.lon.toFixed(4)}`} cropOptions={orderedCropOptions} lang={lang} />
-      {locationMessage && ((step === 0 && !hasStarted) || step > 1) && <div className="toast-message" role="status"><span>{locationMessage}</span><button type="button" onClick={() => setLocationMessage('')} aria-label={text('Cerrar aviso', 'Dismiss notice')}>×</button></div>}
+      {locationMessage && ((step === 0 && !hasStarted) || step > 1) && <div className={`toast-message ${mapRequestFailed ? 'toast-error' : ''}`} role={mapRequestFailed ? 'alert' : 'status'}><span>{locationMessage}</span><button type="button" onClick={() => setLocationMessage('')} aria-label={text('Cerrar aviso', 'Dismiss notice')}>×</button></div>}
     </div>
   );
 };

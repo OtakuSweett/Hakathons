@@ -19,6 +19,14 @@ export const CropAdvisor: React.FC<CropAdvisorProps> = ({
   soilPh,
   lang
 }) => {
+  const cropNames: Record<string, [string, string]> = {
+    maize: ['Maíz', 'Maize'], sorghum: ['Sorgo', 'Sorghum'], wheat: ['Trigo', 'Wheat'], barley: ['Cebada', 'Barley'], beans: ['Frijol', 'Beans'], chickpea: ['Garbanzo', 'Chickpea'],
+    alfalfa: ['Alfalfa', 'Alfalfa'], broccoli: ['Brócoli', 'Broccoli'], tomato: ['Jitomate', 'Tomato'], onion: ['Cebolla', 'Onion'], garlic: ['Ajo', 'Garlic'], strawberry: ['Fresa', 'Strawberry'],
+    oats: ['Avena', 'Oats'], vetch: ['Veza', 'Vetch'], chili_pepper: ['Chile', 'Chili pepper'], asparagus: ['Espárrago', 'Asparagus'], soybean: ['Soya', 'Soybean'],
+    sunflower: ['Girasol', 'Sunflower'], potato: ['Papa', 'Potato'], canola: ['Canola', 'Canola']
+  };
+  const cropLabel = (id: string) => cropNames[id]?.[lang === 'es' ? 0 : 1] || id.replaceAll('_', ' ');
+
   return (
     <div className="bento-card p-5 h-full flex flex-col justify-between">
       <div>
@@ -44,7 +52,7 @@ export const CropAdvisor: React.FC<CropAdvisorProps> = ({
                 </svg>
                 {lang === 'es' ? `Cultivos Viables (${viableCropIds.length})` : `Feasible Species (${viableCropIds.length})`}
               </span>
-              <span className="text-[10px] text-zinc-400">GDD & pH OK</span>
+              <span className="text-[10px] text-zinc-400">{lang === 'es' ? 'GDD y pH adecuados' : 'GDD & pH suitable'}</span>
             </div>
             <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto pr-1">
               {viableCropIds.map((cid) => (
@@ -52,7 +60,7 @@ export const CropAdvisor: React.FC<CropAdvisorProps> = ({
                   key={cid}
                   className="text-xs px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 font-medium capitalize hover:border-emerald-500/40 transition-colors"
                 >
-                  {cid.replace('_', ' ')}
+                  {cropLabel(cid)}
                 </span>
               ))}
             </div>
@@ -67,7 +75,7 @@ export const CropAdvisor: React.FC<CropAdvisorProps> = ({
                 </svg>
                 {lang === 'es' ? `Cultivos Descartados (${discarded.length})` : `Filtered Out (${discarded.length})`}
               </span>
-              <span className="text-[10px] text-zinc-500">Motivos Agronómicos</span>
+              <span className="text-[10px] text-zinc-500">{lang === 'es' ? 'Motivos agronómicos' : 'Agronomic reasons'}</span>
             </div>
             <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
               {discarded.slice(0, 6).map((disc) => (
@@ -76,7 +84,7 @@ export const CropAdvisor: React.FC<CropAdvisorProps> = ({
                   className="text-[11px] p-2 rounded-lg bg-zinc-900/60 border border-white/[0.05] text-zinc-300 flex items-start justify-between gap-2"
                 >
                   <span className="font-semibold text-zinc-200 capitalize shrink-0">
-                    {disc.crop_id.replace('_', ' ')}:
+                    {cropLabel(disc.crop_id)}:
                   </span>
                   <span className="text-zinc-400 text-right truncate">
                     {lang === 'es' ? disc.reason_text_es : disc.reason_text_en}
@@ -90,7 +98,7 @@ export const CropAdvisor: React.FC<CropAdvisorProps> = ({
 
       <div className="mt-4 pt-3 border-t border-white/[0.05] text-[10px] text-zinc-400 flex items-center justify-between">
         <span>FAO-56 Eco-Crop Rules</span>
-        <span className="text-emerald-400 font-mono">Status: Evaluado</span>
+        <span className="text-emerald-400 font-mono">{lang === 'es' ? 'Estado: evaluado' : 'Status: evaluated'}</span>
       </div>
     </div>
   );

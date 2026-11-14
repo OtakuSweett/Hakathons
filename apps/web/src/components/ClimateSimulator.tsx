@@ -57,9 +57,9 @@ export const ClimateSimulator: React.FC<ClimateSimulatorProps> = ({
               className="w-full h-1.5 bg-zinc-800 rounded-lg appearance-none cursor-pointer"
             />
             <div className="flex justify-between text-[10px] text-zinc-500 mt-1">
-              <span>-40% (Sequía Severa)</span>
-              <span>Normal</span>
-              <span>+40% (Lluvias Extra)</span>
+              <span>{lang === 'es' ? '-40% (Sequía severa)' : '-40% (Severe drought)'}</span>
+              <span>{lang === 'es' ? 'Normal' : 'Normal'}</span>
+              <span>{lang === 'es' ? '+40% (Lluvias extra)' : '+40% (Extra rainfall)'}</span>
             </div>
           </div>
 
@@ -83,9 +83,9 @@ export const ClimateSimulator: React.FC<ClimateSimulatorProps> = ({
               className="w-full h-1.5 bg-zinc-800 rounded-lg appearance-none cursor-pointer"
             />
             <div className="flex justify-between text-[10px] text-zinc-500 mt-1">
-              <span>0°C (Base)</span>
-              <span>+2°C (Olas Calor)</span>
-              <span>+4°C (Crítico)</span>
+              <span>{lang === 'es' ? '0°C (Base)' : '0°C (Baseline)'}</span>
+              <span>{lang === 'es' ? '+2°C (Olas de calor)' : '+2°C (Heat waves)'}</span>
+              <span>{lang === 'es' ? '+4°C (Crítico)' : '+4°C (Critical)'}</span>
             </div>
           </div>
 
@@ -125,8 +125,8 @@ export const ClimateSimulator: React.FC<ClimateSimulatorProps> = ({
       </div>
 
       <div className="mt-4 pt-3 border-t border-white/[0.05] text-[10px] text-zinc-400 flex items-center justify-between">
-        <span>Runge-Kutta 4th Order ODE</span>
-        <span className="text-cyan-400 font-mono">ΔP/ΔT Perturbation</span>
+        <span>{lang === 'es' ? 'EDO Runge-Kutta de 4.º orden' : 'Runge-Kutta 4th order ODE'}</span>
+        <span className="text-cyan-400 font-mono">{lang === 'es' ? 'Perturbación ΔP/ΔT' : 'ΔP/ΔT perturbation'}</span>
       </div>
     </div>
   );

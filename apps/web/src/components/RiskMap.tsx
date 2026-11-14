@@ -12,6 +12,11 @@ const cropNames: Record<string, [string, string]> = {
   oats: ['Avena', 'Oats'], vetch: ['Veza', 'Vetch'], chili_pepper: ['Chile', 'Chili pepper'], asparagus: ['Espárrago', 'Asparagus'], soybean: ['Soya', 'Soybean'],
   sunflower: ['Girasol', 'Sunflower'], potato: ['Papa', 'Potato'], canola: ['Canola', 'Canola']
 };
+const placeTypes: Record<string, [string, string]> = {
+  city: ['Ciudad', 'City'], town: ['Pueblo', 'Town'], village: ['Localidad', 'Village'], municipality: ['Municipio', 'Municipality'],
+  county: ['Condado', 'County'], state: ['Estado', 'State'], country: ['País', 'Country'], suburb: ['Colonia', 'Suburb'], farm: ['Granja', 'Farm'], hamlet: ['Poblado', 'Hamlet']
+};
+const placeTypeName = (type: string, lang: Language) => placeTypes[type]?.[lang === 'es' ? 0 : 1] || type;
 
 interface RiskMapProps {
   lat: number;
@@ -155,7 +160,7 @@ export const RiskMap: React.FC<RiskMapProps> = ({
       if (!results.length) setSearchError(t.noResults);
       else setSearchResults(results);
     } catch (error) {
-      setSearchError(error instanceof Error ? error.message : (lang === 'es' ? 'No se pudo buscar el lugar.' : 'Place search failed.'));
+      setSearchError(lang === 'es' ? 'No se pudo buscar el lugar. Revisa tu conexión e inténtalo de nuevo.' : 'Place search failed. Check your connection and try again.');
     } finally {
       setIsSearching(false);
     }
@@ -427,7 +432,7 @@ export const RiskMap: React.FC<RiskMapProps> = ({
           <small>{t.searchHelp}</small>
           {searchResults.length > 0 && <div className="place-search-results" role="listbox" aria-label={t.resultLabel}>
             <strong>{t.resultLabel}</strong>
-            {searchResults.map((place, index) => <button key={`${place.lat}-${place.lon}-${index}`} type="button" role="option" aria-selected="false" onClick={() => selectPlace(place)}><span>{place.name}</span><small>{place.type}</small></button>)}
+            {searchResults.map((place, index) => <button key={`${place.lat}-${place.lon}-${index}`} type="button" role="option" aria-selected="false" onClick={() => selectPlace(place)}><span>{place.name}</span><small>{placeTypeName(place.type, lang)}</small></button>)}
           </div>}
           {searchAttribution && <small className="place-attribution">{searchAttribution}</small>}
           {searchError && <p className="map-search-error" role="alert">{searchError}</p>}

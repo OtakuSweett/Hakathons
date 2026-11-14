@@ -171,7 +171,7 @@ export const PestDetector: React.FC<PestDetectorProps> = ({ data, lang }) => {
         <span className="text-zinc-500">{t.metricsTitle}:</span>
         <div className="flex items-center gap-4 font-mono text-zinc-300">
           <span>T2M: <b className="text-white">{meanTemp.toFixed(1)}°C</b></span>
-          <span>Lluvia: <b className="text-white">{totalRain.toFixed(0)} mm</b></span>
+          <span>{lang === 'es' ? 'Lluvia:' : 'Rain:'} <b className="text-white">{totalRain.toFixed(0)} mm</b></span>
           <span>RH2M: <b className="text-emerald-400">~62%</b></span>
         </div>
       </div>

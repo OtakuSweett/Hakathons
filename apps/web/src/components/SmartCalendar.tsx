@@ -8,11 +8,17 @@ interface SmartCalendarProps {
 
 export const SmartCalendar: React.FC<SmartCalendarProps> = ({ data, lang }) => {
   const [selectedSlotIndex, setSelectedSlotIndex] = useState<number>(0);
+  const cropNames: Record<string, [string, string]> = {
+    maize: ['Maíz', 'Maize'], sorghum: ['Sorgo', 'Sorghum'], wheat: ['Trigo', 'Wheat'], barley: ['Cebada', 'Barley'], beans: ['Frijol', 'Beans'], chickpea: ['Garbanzo', 'Chickpea'],
+    alfalfa: ['Alfalfa', 'Alfalfa'], broccoli: ['Brócoli', 'Broccoli'], tomato: ['Jitomate', 'Tomato'], onion: ['Cebolla', 'Onion'], garlic: ['Ajo', 'Garlic'], strawberry: ['Fresa', 'Strawberry'],
+    oats: ['Avena', 'Oats'], vetch: ['Veza', 'Vetch'], chili_pepper: ['Chile', 'Chili pepper'], asparagus: ['Espárrago', 'Asparagus'], soybean: ['Soya', 'Soybean'],
+    sunflower: ['Girasol', 'Sunflower'], potato: ['Papa', 'Potato'], canola: ['Canola', 'Canola']
+  };
 
   const t = {
     es: {
-      title: 'Calendario Agronómico Inteligente',
-      subtitle: 'Cronograma multianual optimizado (M6), hitos térmicos GDD (M2) y fechas de riego por Newton-Raphson (M4).',
+      title: 'Calendario de cultivos',
+      subtitle: 'Rotación, etapas de crecimiento y riegos sugeridos para tu parcela.',
       cyclePV: 'Primavera - Verano (PV)',
       cycleOI: 'Otoño - Invierno (OI)',
       crop: 'Cultivo Asignado',
@@ -21,7 +27,7 @@ export const SmartCalendar: React.FC<SmartCalendarProps> = ({ data, lang }) => {
       legumeFixation: 'Fijación de Nitrógeno',
       legumeYes: 'Leguminosa (+40-80 kg N/ha al suelo)',
       legumeNo: 'Extractor / No leguminosa',
-      gddMilestones: 'Etapas de crecimiento (GDD)',
+      gddMilestones: 'Etapas de crecimiento',
       germination: 'Emergencia y Germinación',
       vegetative: 'Desarrollo Vegetativo Pleno',
       flowering: 'Floración y Llenado de Grano',
@@ -33,8 +39,8 @@ export const SmartCalendar: React.FC<SmartCalendarProps> = ({ data, lang }) => {
       dayLabel: 'Día proyectado:'
     },
     en: {
-      title: 'Smart Agronomic Calendar',
-      subtitle: 'Multi-year optimized timeline (M6), GDD thermal milestones (M2), and Newton-Raphson irrigation triggers (M4).',
+      title: 'Crop calendar',
+      subtitle: 'Rotation, crop growth stages, and suggested irrigation for your field.',
       cyclePV: 'Spring - Summer (PV)',
       cycleOI: 'Fall - Winter (OI)',
       crop: 'Assigned Crop',
@@ -43,7 +49,7 @@ export const SmartCalendar: React.FC<SmartCalendarProps> = ({ data, lang }) => {
       legumeFixation: 'Nitrogen Fixation',
       legumeYes: 'Legume (+40-80 kg N/ha to soil)',
       legumeNo: 'Depleting / Non-legume',
-      gddMilestones: 'Crop growth stages (GDD)',
+      gddMilestones: 'Crop growth stages',
       germination: 'Emergence & Germination',
       vegetative: 'Peak Vegetative Growth',
       flowering: 'Flowering & Grain Filling',
@@ -59,6 +65,11 @@ export const SmartCalendar: React.FC<SmartCalendarProps> = ({ data, lang }) => {
   const rotation: RotationSlot[] = data.optimization?.selected_rotation || [];
   const activeSlot = rotation[selectedSlotIndex] || rotation[0];
   const trigger = data.physics?.irrigation_trigger;
+  const irrigationReason = trigger?.reason === 'W_never_crosses_Wcrit'
+    ? (lang === 'es' ? 'La reserva de agua no cruza el umbral crítico durante el periodo analizado.' : 'Water storage does not cross the critical threshold during the analysis period.')
+    : trigger?.reason === 'W_already_below_Wcrit'
+      ? (lang === 'es' ? 'La reserva de agua ya está por debajo del umbral crítico.' : 'Water storage is already below the critical threshold.')
+      : trigger?.reason;
   const gddAccum = data.physics?.gdd_result?.gdd_accumulated || [];
   const latestGdd = gddAccum[gddAccum.length - 1] || 1420;
 
@@ -67,12 +78,6 @@ export const SmartCalendar: React.FC<SmartCalendarProps> = ({ data, lang }) => {
       {/* Header */}
       <div className="p-5 border-b border-white/[0.08] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-teal-400"></span>
-            <span className="text-[11px] uppercase tracking-wider text-teal-400 font-semibold">
-              TEMPORADAS · ETAPAS · RIEGO
-            </span>
-          </div>
           <h2 className="text-base sm:text-lg font-bold text-white mt-1">{t.title}</h2>
           <p className="text-xs text-zinc-400 mt-0.5">{t.subtitle}</p>
         </div>
@@ -104,15 +109,15 @@ export const SmartCalendar: React.FC<SmartCalendarProps> = ({ data, lang }) => {
                 }`}
               >
                 <div className="flex items-center justify-between text-[10px] text-zinc-400 mb-1">
-                  <span>Año {yearNum}</span>
+                  <span>{lang === 'es' ? `Año ${yearNum}` : `Year ${yearNum}`}</span>
                   <span className={`px-1.5 py-0.5 rounded font-bold font-mono ${
                     isSelected ? 'bg-emerald-500/20 text-emerald-300' : 'bg-zinc-800 text-zinc-400'
                   }`}>
-                    {slot.cycle_code}
+                    {slot.cycle_code === 'PV' ? (lang === 'es' ? 'PV' : 'SS') : slot.cycle_code === 'OI' ? (lang === 'es' ? 'OI' : 'FW') : slot.cycle_code}
                   </span>
                 </div>
                 <div className="font-bold text-xs sm:text-sm capitalize truncate text-white">
-                  {slot.crop_id.replace('_', ' ')}
+                  {cropNames[slot.crop_id]?.[lang === 'es' ? 0 : 1] || slot.crop_id.replaceAll('_', ' ')}
                 </div>
                 <div className="text-[11px] mt-1 text-zinc-400 font-mono">
                   {slot.water_need_mm.toFixed(0)} mm
@@ -141,7 +146,7 @@ export const SmartCalendar: React.FC<SmartCalendarProps> = ({ data, lang }) => {
                 {t.gddMilestones}
               </h3>
               <span className="text-xs bg-emerald-500/10 text-emerald-400 font-bold font-mono px-2 py-0.5 rounded-full border border-emerald-500/30">
-                {latestGdd.toFixed(0)} GDD Total
+                {latestGdd.toFixed(0)} {lang === 'es' ? 'GDD total' : 'total GDD'}
               </span>
             </div>
 
@@ -152,7 +157,7 @@ export const SmartCalendar: React.FC<SmartCalendarProps> = ({ data, lang }) => {
                 </div>
                 <div className="flex-1">
                   <div className="font-semibold text-zinc-200">{t.germination}</div>
-                  <div className="text-zinc-500 text-[10px]">120 - 180 GDD (aprox. día 7 a 14)</div>
+                  <div className="text-zinc-500 text-[10px]">{lang === 'es' ? '120–180 GDD (aprox. día 7 a 14)' : '120–180 GDD (about days 7 to 14)'}</div>
                 </div>
                 <span className="text-emerald-400 font-bold font-mono">150 GDD</span>
               </div>
@@ -163,7 +168,7 @@ export const SmartCalendar: React.FC<SmartCalendarProps> = ({ data, lang }) => {
                 </div>
                 <div className="flex-1">
                   <div className="font-semibold text-zinc-200">{t.vegetative}</div>
-                  <div className="text-zinc-500 text-[10px]">Máxima demanda de nitrógeno y evaporación</div>
+                  <div className="text-zinc-500 text-[10px]">{lang === 'es' ? 'Máxima demanda de nitrógeno y evaporación' : 'Peak nitrogen demand and evaporation'}</div>
                 </div>
                 <span className="text-teal-400 font-bold font-mono">580 GDD</span>
               </div>
@@ -174,7 +179,7 @@ export const SmartCalendar: React.FC<SmartCalendarProps> = ({ data, lang }) => {
                 </div>
                 <div className="flex-1">
                   <div className="font-semibold text-zinc-200">{t.flowering}</div>
-                  <div className="text-zinc-500 text-[10px]">Sensibilidad crítica a déficit de agua</div>
+                  <div className="text-zinc-500 text-[10px]">{lang === 'es' ? 'Sensibilidad crítica al déficit de agua' : 'Critical sensitivity to water deficit'}</div>
                 </div>
                 <span className="text-amber-400 font-bold font-mono">950 GDD</span>
               </div>
@@ -185,7 +190,7 @@ export const SmartCalendar: React.FC<SmartCalendarProps> = ({ data, lang }) => {
                 </div>
                 <div className="flex-1">
                   <div className="font-semibold text-zinc-200">{t.maturity}</div>
-                  <div className="text-zinc-500 text-[10px]">Maduración fisiológica y cosecha</div>
+                  <div className="text-zinc-500 text-[10px]">{lang === 'es' ? 'Maduración fisiológica y cosecha' : 'Physiological maturity and harvest'}</div>
                 </div>
                 <span className="text-blue-400 font-bold font-mono">{latestGdd.toFixed(0)} GDD</span>
               </div>
@@ -215,7 +220,7 @@ export const SmartCalendar: React.FC<SmartCalendarProps> = ({ data, lang }) => {
                     <div className="bg-zinc-900/80 p-2.5 rounded-lg border border-white/[0.05]">
                       <span className="text-zinc-400 text-[10px] block">{t.dayLabel}</span>
                       <span className="text-base font-bold text-amber-400 font-mono">
-                        Día +{trigger.t_star_days.toFixed(0)}
+                        {lang === 'es' ? 'Día' : 'Day'} +{trigger.t_star_days.toFixed(0)}
                       </span>
                     </div>
                     <div className="bg-zinc-900/80 p-2.5 rounded-lg border border-white/[0.05]">
@@ -233,7 +238,7 @@ export const SmartCalendar: React.FC<SmartCalendarProps> = ({ data, lang }) => {
                     {t.noStressDetected}
                   </div>
                   <p className="text-[11px] text-zinc-400 mt-1">
-                    {trigger?.reason || 'W(t) permanece en reserva de agua fácilmente aprovechable (RAW).'}
+                    {irrigationReason || (lang === 'es' ? 'W(t) permanece en la reserva de agua fácilmente aprovechable (RAW).' : 'W(t) remains within the readily available water (RAW) range.')}
                   </p>
                 </div>
               )}

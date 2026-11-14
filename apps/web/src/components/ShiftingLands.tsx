@@ -137,7 +137,7 @@ export const ShiftingLands: React.FC<ShiftingLandsProps> = ({
           </div>
           <div className="mt-4 pt-3 border-t border-rose-900/40 flex items-center justify-between text-xs text-rose-300">
             <span>{lang === 'es' ? 'Riesgo de estrés hídrico:' : 'Water stress risk:'}</span>
-            <span className="font-bold text-rose-400 text-sm">68% (Crítico)</span>
+            <span className="font-bold text-rose-400 text-sm">{lang === 'es' ? '68% (Crítico)' : '68% (Critical)'}</span>
           </div>
         </div>
 
@@ -152,7 +152,7 @@ export const ShiftingLands: React.FC<ShiftingLandsProps> = ({
           </div>
           <div className="mt-4 pt-3 border-t border-emerald-900/40 flex items-center justify-between text-xs text-emerald-300">
             <span>{lang === 'es' ? 'Riesgo de pérdida de cosecha:' : 'Crop failure risk:'}</span>
-            <span className="font-bold text-emerald-400 text-sm">12% (Bajo)</span>
+            <span className="font-bold text-emerald-400 text-sm">{lang === 'es' ? '12% (Bajo)' : '12% (Low)'}</span>
           </div>
         </div>
       </div>
