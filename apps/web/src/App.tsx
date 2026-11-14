@@ -11,6 +11,7 @@ import { PestDetector } from './components/PestDetector.js';
 import { EconomicEvaluation } from './components/EconomicEvaluation.js';
 import { ShiftingLands } from './components/ShiftingLands.js';
 import { FarmerReportsModal } from './components/FarmerReportsModal.js';
+import { PrivacyPage } from './components/PrivacyPage.js';
 import { apiFetch } from './services/api.js';
 
 type WaterRegime = 'temporal' | 'goteo' | 'gravedad';
@@ -76,6 +77,8 @@ const cropGlyph = (cropId: string) => {
 };
 
 export const App: React.FC = () => {
+  const privacyPath = '/datos-y-privacidad';
+  const [currentPage, setCurrentPage] = useState<'app' | 'privacy'>(() => window.location.pathname === privacyPath ? 'privacy' : 'app');
   const [lang, setLang] = useState<Language>(() => {
     const saved = localStorage.getItem('agro-dss-language');
     if (saved === 'es' || saved === 'en') return saved;
@@ -111,7 +114,16 @@ export const App: React.FC = () => {
   useEffect(() => {
     localStorage.setItem('agro-dss-language', lang);
     document.documentElement.lang = lang;
-  }, [lang]);
+    document.title = currentPage === 'privacy'
+      ? (lang === 'es' ? 'Datos y privacidad · Campo Claro' : 'Data and privacy · Campo Claro')
+      : 'Campo Claro';
+  }, [lang, currentPage]);
+
+  useEffect(() => {
+    const syncPageWithPath = () => setCurrentPage(window.location.pathname === privacyPath ? 'privacy' : 'app');
+    window.addEventListener('popstate', syncPageWithPath);
+    return () => window.removeEventListener('popstate', syncPageWithPath);
+  }, []);
 
   useEffect(() => {
     if (!languageMenuOpen) return;
@@ -394,19 +406,31 @@ export const App: React.FC = () => {
     setIsReportModalOpen(true);
   };
 
+  const openPrivacyPage = () => {
+    if (window.location.pathname !== privacyPath) window.history.pushState({}, '', privacyPath);
+    setCurrentPage('privacy');
+    window.scrollTo({ top: 0 });
+  };
+
+  const returnToApp = () => {
+    if (window.location.pathname === privacyPath) window.history.pushState({}, '', '/');
+    setCurrentPage('app');
+    window.scrollTo({ top: 0 });
+  };
+
   return (
     <div className="app-shell min-h-screen flex flex-col">
       <header className="site-header">
-        <a href="#inicio" className="brand" aria-label="Campo Claro, inicio">
+        <a href="/" className="brand" aria-label={text('Campo Claro, inicio', 'Campo Claro, home')} onClick={(event) => { event.preventDefault(); returnToApp(); }}>
           <span className="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none"><path d="M7 23c7-1 12-6 14-15 5 8 3 17-6 19-3 1-6 0-8-4Z" stroke="currentColor" strokeWidth="2"/><path d="M8 26c3-5 7-8 13-11" stroke="currentColor" strokeWidth="2"/></svg></span>
           <span><strong>Campo Claro</strong><small>{text('Decisiones para cada parcela', 'Decisions for every field')}</small></span>
         </a>
         <div className="header-actions">
-          <div className={`source-control ${isOfflineMode || !browserOnline || serviceAvailable === false ? 'local' : ''}`}>
+          {currentPage === 'app' && <div className={`source-control ${isOfflineMode || !browserOnline || serviceAvailable === false ? 'local' : ''}`}>
             <span className="source-indicator" aria-hidden="true"><i /></span>
             <span className="source-copy"><strong>{sourceLabel}</strong><small>{sourceDescription}</small></span>
             <button className="source-action" type="button" onClick={toggleDataMode}>{isOfflineMode ? text('Probar conexión', 'Try connection') : text('Demo local', 'Local demo')}</button>
-          </div>
+          </div>}
           <div className="language-picker" aria-label={text('Idioma de la interfaz', 'Interface language')} ref={languageMenuRef}>
             <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.6"/><path d="M3.5 12h17M12 3c2.2 2.4 3.2 5.4 3.2 9s-1 6.6-3.2 9c-2.2-2.4-3.2-5.4-3.2-9S9.8 5.4 12 3Z" stroke="currentColor" strokeWidth="1.4"/></svg>
             <button type="button" className="language-current" aria-label={text('Idioma: Español', 'Language: English')} aria-haspopup="menu" aria-expanded={languageMenuOpen} onClick={() => setLanguageMenuOpen((open) => !open)} onKeyDown={(event) => { if (event.key === 'Escape') setLanguageMenuOpen(false); }}>{lang === 'es' ? 'Español' : 'English'}<svg className="language-chevron" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="m4 6 4 4 4-4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
@@ -415,12 +439,12 @@ export const App: React.FC = () => {
               <button type="button" role="menuitemradio" aria-checked={lang === 'en'} onClick={() => { setLang('en'); setLanguageMenuOpen(false); }}>English <span>{lang === 'en' ? '✓' : ''}</span></button>
             </div>}
           </div>
-          <button className="report-button" type="button" onClick={openFieldReport}>{text('Observación de campo', 'Field observation')}</button>
+          {currentPage === 'app' && <button className="report-button" type="button" onClick={openFieldReport}>{text('Observación de campo', 'Field observation')}</button>}
         </div>
       </header>
 
       <main id="inicio" className="page-wrap">
-        {!hasStarted ? <section className="welcome-panel">
+        {currentPage === 'privacy' ? <PrivacyPage lang={lang} onBack={returnToApp} /> : !hasStarted ? <section className="welcome-panel">
           <div className="welcome-copy">
             <span className="step-kicker">{text('CAMPO CLARO · PLANIFICACIÓN AGRÍCOLA', 'CAMPO CLARO · FIELD PLANNING')}</span>
             <h1>{text('Decide con el clima, el suelo y el agua de tu parcela.', 'Plan with your field’s climate, soil, and water.')}</h1>
@@ -537,8 +561,8 @@ export const App: React.FC = () => {
         </>}
       </main>
 
-      {cookieNotice && <aside className="consent-note" aria-label={text('Aviso de privacidad', 'Privacy notice')}><p>{text('Guardamos tu idioma y este aviso. Si buscas por nombre, enviamos la consulta al servicio de geocodificación; tus coordenadas se consultan al solicitar un análisis o reportar una observación. Consulta', 'We store your language and this notice. Place-name searches are sent to the geocoding service; coordinates are queried when you request an analysis or submit an observation. Read our')} <button type="button" className="inline-link" onClick={() => setLocationMessage(text('Condiciones de uso: recomendaciones orientativas; contrasta decisiones con asesoría agronómica local. Privacidad: la búsqueda de lugares se envía al proveedor de geocodificación configurado; las coordenadas se envían al orquestador al solicitar análisis o reportar una observación. Los reportes pendientes se guardan localmente si falla el servicio. No usamos cookies de seguimiento.', 'Terms: recommendations are guidance; verify decisions with local agronomic advice. Privacy: place searches are sent to the configured geocoding provider; coordinates are sent to the orchestrator for requested analyses or reports. Pending reports are stored locally if the service fails. We do not use tracking cookies.'))}>{text('términos y privacidad', 'terms and privacy')}</button>.</p><button type="button" className="consent-accept" onClick={() => { localStorage.setItem('agro-dss-notice', 'accepted'); setCookieNotice(false); }}>{text('Entendido', 'Got it')}</button></aside>}
-      <footer className="site-footer"><span>Campo Claro <span>·</span> {text('Planificación agrícola informada', 'Evidence-led field planning')}</span><span>NASA POWER · SoilGrids · EONET · FAO-56</span><button type="button" onClick={() => setLocationMessage(text('Condiciones de uso: recomendaciones orientativas. Privacidad: la búsqueda de lugares se envía al geocodificador configurado; las coordenadas se envían cuando solicitas análisis o reportes. No usamos cookies de seguimiento.', 'Terms: recommendations are guidance. Privacy: place searches go to the configured geocoder; coordinates are sent when you request analyses or reports. We do not use tracking cookies.'))}>{text('Términos y privacidad', 'Terms and privacy')}</button></footer>
+      {cookieNotice && currentPage === 'app' && <aside className="consent-note" aria-label={text('Aviso de privacidad', 'Privacy notice')}><p>{text('Guardamos tu idioma y que cerraste este aviso. Si buscas un lugar, la consulta se envía al geocodificador; las coordenadas y cultivos se envían cuando solicitas el análisis. Consulta nuestro', 'We store your language and that you dismissed this notice. Place searches go to the geocoder; coordinates and crops are sent when you request an analysis. Read our')} <button type="button" className="inline-link" onClick={openPrivacyPage}>{text('aviso de datos y privacidad', 'data and privacy notice')}</button>.</p><button type="button" className="consent-accept" onClick={() => { localStorage.setItem('agro-dss-notice', 'accepted'); setCookieNotice(false); }}>{text('Entendido', 'Got it')}</button></aside>}
+      <footer className="site-footer"><span>Campo Claro <span>·</span> {text('Planificación agrícola informada', 'Evidence-led field planning')}</span><span>NASA POWER · SoilGrids · EONET · FAO-56</span><button type="button" onClick={openPrivacyPage}>{text('Datos, privacidad y uso', 'Data, privacy & terms')}</button></footer>
       <FarmerReportsModal isOpen={isReportModalOpen} onClose={() => setIsReportModalOpen(false)} lat={selectedCoordinates.lat} lon={selectedCoordinates.lon} parcelId={dataSource === 'live' && sameAsAnalyzed ? data.parcel_id : isOfflineMode ? data.parcel_id : `custom_${selectedCoordinates.lat.toFixed(4)}_${selectedCoordinates.lon.toFixed(4)}`} cropOptions={orderedCropOptions} lang={lang} />
       {locationMessage && ((step === 0 && !hasStarted) || step > 1) && <div className={`toast-message ${mapRequestFailed ? 'toast-error' : ''}`} role={mapRequestFailed ? 'alert' : 'status'}><span>{locationMessage}</span><button type="button" onClick={() => setLocationMessage('')} aria-label={text('Cerrar aviso', 'Dismiss notice')}>×</button></div>}
     </div>
