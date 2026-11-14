@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Language, AnalysisResponse } from './types/index.js';
 import { DEMO_PRESETS_LIST, getMockAnalysis } from './services/mockData.js';
 import { EarlyWarningBanner } from './components/EarlyWarningBanner.js';
@@ -41,12 +41,15 @@ const provenanceMessages = (data: AnalysisResponse, lang: Language) => {
   if (!provenance) return [];
   const messages: string[] = [];
   if (provenance.climate?.retrieval === 'live_fallback') {
-    messages.push(lang === 'es' ? 'Clima: se usó Open-Meteo Archive porque NASA POWER no respondió. Es meteorología histórica de esta ubicación.' : 'Climate: Open-Meteo Archive was used because NASA POWER did not respond. These are historical weather data for this location.');
+    messages.push(lang === 'es' ? 'Clima: se usó Open-Meteo Archive porque NASA POWER no entregó una serie completa. Son datos meteorológicos históricos de esta ubicación.' : 'Climate: Open-Meteo Archive was used because NASA POWER did not provide a complete series. These are historical weather data for this location.');
   }
   const cached = [provenance.soil?.retrieval === 'cache' ? (lang === 'es' ? 'suelo' : 'soil') : '', provenance.climate?.retrieval === 'cache' ? (lang === 'es' ? 'clima' : 'climate') : ''].filter(Boolean);
   if (cached.length) messages.push(lang === 'es' ? `Se reutilizó caché de esta misma ubicación para ${cached.join(' y ')}.` : `Cached data for this exact location were reused for ${cached.join(' and ')}.`);
   if (provenance.soil?.retrieval === 'preset_fallback') {
     messages.push(lang === 'es' ? `Suelo de referencia regional (${provenance.soil.preset_id || 'benchmark'}); no es una medición de esta parcela.` : `Regional reference soil (${provenance.soil.preset_id || 'benchmark'}); this is not a measurement from this field.`);
+  }
+  if (provenance.soil?.retrieval === 'manual') {
+    messages.push(lang === 'es' ? 'Suelo: datos capturados de tu análisis. No son una lectura satelital ni una estimación de SoilGrids.' : 'Soil: values entered from your soil test. They are not satellite readings or a SoilGrids estimate.');
   }
   if (provenance.eonet?.retrieval === 'unavailable') {
     messages.push(lang === 'es' ? 'NASA EONET no respondió; no tener alertas cargadas no significa que no existan eventos.' : 'NASA EONET did not respond; an empty alert list does not mean there are no events.');
@@ -101,11 +104,25 @@ export const App: React.FC = () => {
   const [mapRequestFailed, setMapRequestFailed] = useState(false);
   const [cookieNotice, setCookieNotice] = useState(() => localStorage.getItem('agro-dss-notice') !== 'accepted');
   const [locationMessage, setLocationMessage] = useState('');
+  const [manualSoilOpen, setManualSoilOpen] = useState(false);
+  const [manualSoilActive, setManualSoilActive] = useState(false);
+  const [languageMenuOpen, setLanguageMenuOpen] = useState(false);
+  const languageMenuRef = useRef<HTMLDivElement>(null);
+  const [manualSoilProfile, setManualSoilProfile] = useState({ clay_pct: '', sand_pct: '', soil_ph: '', soc_g_kg: '', nitrogen_g_kg: '' });
 
   useEffect(() => {
     localStorage.setItem('agro-dss-language', lang);
     document.documentElement.lang = lang;
   }, [lang]);
+
+  useEffect(() => {
+    if (!languageMenuOpen) return;
+    const closeOutside = (event: PointerEvent) => {
+      if (!languageMenuRef.current?.contains(event.target as Node)) setLanguageMenuOpen(false);
+    };
+    document.addEventListener('pointerdown', closeOutside);
+    return () => document.removeEventListener('pointerdown', closeOutside);
+  }, [languageMenuOpen]);
 
   useEffect(() => {
     const handleOnline = () => setBrowserOnline(true);
@@ -140,6 +157,7 @@ export const App: React.FC = () => {
 
   const handleMapCoordinateSelect = (lat: number, lon: number) => {
     setSelectedCoordinates({ lat, lon });
+    setManualSoilActive(false);
     if (!isOfflineMode) setSelectedCrops([]);
     setParcelRejected(false);
     setMapRequestFailed(false);
@@ -232,13 +250,23 @@ export const App: React.FC = () => {
           source: hasCustomPoint || data.parcel_id.startsWith('custom_') ? 'live' : 'preset',
           crop_id: selectedCrops[0],
           candidate_crops: selectedCrops,
-          area_ha: areaHa
+          area_ha: areaHa,
+          ...(manualSoilActive ? { soil_profile: {
+            clay_pct: Number(manualSoilProfile.clay_pct), sand_pct: Number(manualSoilProfile.sand_pct), soil_ph: Number(manualSoilProfile.soil_ph), soc_g_kg: Number(manualSoilProfile.soc_g_kg),
+            ...(manualSoilProfile.nitrogen_g_kg === '' ? {} : { nitrogen_g_kg: Number(manualSoilProfile.nitrogen_g_kg) })
+          } } : {})
         })
       });
       if (response.status === 422) {
         const body = await response.json();
-        setParcelRejected(true);
-        setLocationMessage(body?.error?.message || (lang === 'es' ? 'No se pudo validar la parcela.' : 'The field could not be validated.'));
+        const code = body?.error?.code;
+        setParcelRejected(code === 'NON_ARABLE_LAND');
+        if (code === 'NON_ARABLE_LAND') setManualSoilOpen(true);
+        setLocationMessage(code === 'NON_ARABLE_LAND'
+          ? (lang === 'es'
+            ? `SoilGrids no tiene datos de suelo para este punto (${requestCoordinates.lat.toFixed(4)}, ${requestCoordinates.lon.toFixed(4)}). Puede ser una zona urbana o sin cobertura; esto no descarta las parcelas agrícolas cercanas. Mueve el marcador al campo o continúa con un análisis de suelo.`
+            : `SoilGrids has no soil data for this point (${requestCoordinates.lat.toFixed(4)}, ${requestCoordinates.lon.toFixed(4)}). It may be urban or uncovered; nearby fields may still be valid. Move the marker to the field or continue with a soil test.`)
+          : (body?.error?.message || (lang === 'es' ? 'No se pudo validar la parcela.' : 'The field could not be validated.')));
         setStep(1);
         return;
       }
@@ -351,14 +379,14 @@ export const App: React.FC = () => {
             <span className="source-copy"><strong>{sourceLabel}</strong><small>{sourceDescription}</small></span>
             <button className="source-action" type="button" onClick={toggleDataMode}>{isOfflineMode ? text('Probar conexión', 'Try connection') : text('Demo local', 'Local demo')}</button>
           </div>
-          <label className="language-picker" aria-label={text('Idioma de la interfaz', 'Interface language')}>
+          <div className="language-picker" aria-label={text('Idioma de la interfaz', 'Interface language')} ref={languageMenuRef}>
             <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.6"/><path d="M3.5 12h17M12 3c2.2 2.4 3.2 5.4 3.2 9s-1 6.6-3.2 9c-2.2-2.4-3.2-5.4-3.2-9S9.8 5.4 12 3Z" stroke="currentColor" strokeWidth="1.4"/></svg>
-            <select value={lang} onChange={(event) => setLang(event.target.value as Language)}>
-              <option value="es">Español</option>
-              <option value="en">English</option>
-            </select>
-            <svg className="language-chevron" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="m4 6 4 4 4-4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
-          </label>
+            <button type="button" className="language-current" aria-label={text('Idioma: Español', 'Language: English')} aria-haspopup="menu" aria-expanded={languageMenuOpen} onClick={() => setLanguageMenuOpen((open) => !open)} onKeyDown={(event) => { if (event.key === 'Escape') setLanguageMenuOpen(false); }}>{lang === 'es' ? 'Español' : 'English'}<svg className="language-chevron" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="m4 6 4 4 4-4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+            {languageMenuOpen && <div className="language-menu" role="menu" aria-label={text('Seleccionar idioma', 'Choose language')}>
+              <button type="button" role="menuitemradio" aria-checked={lang === 'es'} onClick={() => { setLang('es'); setLanguageMenuOpen(false); }}>Español <span>{lang === 'es' ? '✓' : ''}</span></button>
+              <button type="button" role="menuitemradio" aria-checked={lang === 'en'} onClick={() => { setLang('en'); setLanguageMenuOpen(false); }}>English <span>{lang === 'en' ? '✓' : ''}</span></button>
+            </div>}
+          </div>
           <button className="report-button" type="button" onClick={openFieldReport}>{text('Observación de campo', 'Field observation')}</button>
         </div>
       </header>
@@ -387,7 +415,7 @@ export const App: React.FC = () => {
           <span className="step-progress" aria-hidden="true"><i style={{ width: `${(step / 3) * 100}%` }} /></span>
         </nav>
 
-        {hasStarted && isLoading && <div className="loading-line" role="status"><i />{text('Consultando suelo, clima y alertas de la parcela…', 'Loading field soil, climate, and alerts…')}</div>}
+        {hasStarted && isLoading && <div className="loading-line" role="status" aria-live="polite"><i /><span><b>{text('Consultando datos de tu parcela', 'Checking your field data')}</b><small>{text('Suelo, clima y alertas. Conservamos tu selección mientras termina.', 'Soil, climate, and alerts. Your selection stays saved while this runs.')}</small></span></div>}
 
         {step === 0 && <section className="setup-panel location-panel">
           <div className="setup-heading"><div><span className="step-kicker">{text('PASO 1 · UBICACIÓN', 'STEP 1 · LOCATION')}</span><h2>{text('Encuentra tu parcela', 'Find your field')}</h2><p>{text('Busca tu ciudad o dirección, pega coordenadas o marca el punto en el mapa. El análisis usará la parcela elegida; los ejemplos solo sirven sin conexión.', 'Search for a city or address, enter coordinates, or mark the map. Analysis uses your selected field; saved examples are only for offline use.')}</p></div></div>
@@ -414,12 +442,25 @@ export const App: React.FC = () => {
         </section>}
 
         {step === 1 && <section className="setup-panel map-panel">
-          <div className="setup-heading"><div><span className="step-kicker">{text('PASO 2 · PARCELA', 'STEP 2 · FIELD')}</span><h2>{text('Marca el centro de tu parcela', 'Mark the center of your field')}</h2><p>{text('El recuadro verde delimita el área de selección. Acércate con el zoom y marca el centro exacto.', 'The green frame bounds the selectable area. Zoom in and mark the exact center.')}</p></div><button className="text-action" type="button" onClick={() => setStep(0)}>← {text('Cambiar ubicación', 'Change location')}</button></div>
-          {locationMessage && <div className="inline-message" role="status"><span>{locationMessage}</span>{mapRequestFailed && <button type="button" className="fallback-button" onClick={useRegionalBenchmark}>{text('Abrir ejemplo guardado', 'Open saved example')}</button>}</div>}
+          <div className="setup-heading"><div><span className="step-kicker">{text('PASO 2 · PARCELA', 'STEP 2 · FIELD')}</span><h2>{text('Revisa la ubicación de tu parcela', 'Review your field location')}</h2><p>{text('Este es el punto que marcaste en el mapa. No necesitas seleccionarlo otra vez; vuelve al mapa solo si quieres corregirlo.', 'This is the point you marked on the map. You do not need to select it again; return to the map only to change it.')}</p></div><button className="text-action" type="button" onClick={() => setStep(0)}>← {text('Volver al mapa', 'Back to map')}</button></div>
+          {locationMessage && <div className={`inline-message ${parcelRejected ? 'inline-error' : ''}`} role={parcelRejected || mapRequestFailed ? 'alert' : 'status'}><span>{locationMessage}</span>{mapRequestFailed && <button type="button" className="fallback-button" onClick={useRegionalBenchmark}>{text('Abrir ejemplo guardado', 'Open saved example')}</button>}</div>}
+          {parcelRejected && <section className="manual-soil-panel" aria-labelledby="manual-soil-title">
+            <div><h3 id="manual-soil-title">{text('¿Tienes un análisis de suelo?', 'Do you have a soil test?')}</h3><p>{text('Puedes capturar los resultados de laboratorio. Se usarán solo para esta parcela y quedarán identificados como datos proporcionados por ti.', 'Enter your lab results. They will be used only for this field and labeled as grower-provided data.')}</p></div>
+            {!manualSoilOpen ? <button className="outline-button" type="button" onClick={() => setManualSoilOpen(true)}>{text('Ingresar datos del análisis', 'Enter soil test results')}</button> : <form className="manual-soil-form" onSubmit={(event) => { event.preventDefault(); const values = Object.values(manualSoilProfile).map(Number); if (values.some((value) => !Number.isFinite(value)) || Number(manualSoilProfile.clay_pct) + Number(manualSoilProfile.sand_pct) > 100) return; setManualSoilActive(true); setParcelRejected(false); setLocationMessage(text('Análisis manual listo. Elige tus cultivos y calcula para consultar clima y alertas en esta ubicación.', 'Manual soil data is ready. Choose crops and calculate to fetch climate and alerts for this location.')); setStep(2); }}>
+              <label>{text('Arcilla (%)', 'Clay (%)')}<input required type="number" min="0" max="100" step="0.1" value={manualSoilProfile.clay_pct} onChange={(e) => setManualSoilProfile({ ...manualSoilProfile, clay_pct: e.target.value })}/></label>
+              <label>{text('Arena (%)', 'Sand (%)')}<input required type="number" min="0" max="100" step="0.1" value={manualSoilProfile.sand_pct} onChange={(e) => setManualSoilProfile({ ...manualSoilProfile, sand_pct: e.target.value })}/></label>
+              <label>pH<input required type="number" min="0" max="14" step="0.1" value={manualSoilProfile.soil_ph} onChange={(e) => setManualSoilProfile({ ...manualSoilProfile, soil_ph: e.target.value })}/></label>
+              <label>{text('Carbono orgánico (g/kg)', 'Organic carbon (g/kg)')}<input required type="number" min="0" step="0.1" value={manualSoilProfile.soc_g_kg} onChange={(e) => setManualSoilProfile({ ...manualSoilProfile, soc_g_kg: e.target.value })}/></label>
+              <label>{text('Nitrógeno (g/kg, opcional)', 'Nitrogen (g/kg, optional)')}<input type="number" min="0" step="0.01" value={manualSoilProfile.nitrogen_g_kg} onChange={(e) => setManualSoilProfile({ ...manualSoilProfile, nitrogen_g_kg: e.target.value })}/></label>
+              {Number(manualSoilProfile.clay_pct || 0) + Number(manualSoilProfile.sand_pct || 0) > 100 && <p className="form-error">{text('Arcilla y arena no pueden sumar más de 100%.', 'Clay and sand cannot total over 100%.')}</p>}
+              <p className="manual-soil-note">{text('Referencia preferida: análisis de laboratorio para 0–30 cm. Los campos de suelo dejan de depender de SoilGrids; clima y alertas seguirán consultándose en vivo.', 'Preferred reference: a 0–30 cm lab test. Soil fields will use your values; climate and alerts will still be queried live.')}</p>
+              <button className="primary-button" type="submit">{text('Usar estos datos', 'Use these soil results')}</button>
+            </form>}
+          </section>}
           {(needsLiveAnalysis || needsBenchmarkReset) && !locationMessage && <p className="map-selection-hint" role="status">{needsLiveAnalysis
             ? text('Punto marcado. Continúa para elegir tus cultivos; los datos se consultan al calcular el análisis.', 'Point marked. Continue to choose crops; data is fetched when you calculate the analysis.')
             : text('La demo local solo tiene datos del punto guardado. Vuelve a ese punto para continuar con datos coherentes.', 'The local demo only has data for its saved point. Return there to continue with matching data.')}</p>}
-          <RiskMap lat={selectedCoordinates.lat} lon={selectedCoordinates.lon} regionLat={mapRegionCenter.lat} regionLon={mapRegionCenter.lon} selectionBounds={mapSelectionBounds} parcelName={sameAsAnalyzed ? currentPresetName : text('Punto seleccionado', 'Selected point')} eonetAlerts={data.eonet_hazard_alerts || []} areaHa={areaHa} selectedCropIds={selectedCrops} onAreaChange={setAreaHa} waterRegime={waterRegime} onWaterRegimeChange={setWaterRegime} lang={lang} onMapClick={handleMapCoordinateSelect} onLocationSearch={handleLocationSearch} />
+          <div className="field-location-summary"><span className="field-location-pin" aria-hidden="true">⌖</span><div><b>{sameAsAnalyzed ? currentPresetName : text('Centro seleccionado', 'Selected center')}</b><span>{selectedCoordinates.lat.toFixed(5)}°, {selectedCoordinates.lon.toFixed(5)}°</span></div><button className="text-action" type="button" onClick={() => setStep(0)}>{text('Corregir punto', 'Change point')}</button></div>
           <div className="panel-actions"><span className="coordinate-readout">{text('Centro seleccionado', 'Selected center')} <b>{selectedCoordinates.lat.toFixed(4)}°, {selectedCoordinates.lon.toFixed(4)}°</b></span>{needsLiveAnalysis
             ? <button className="primary-button" type="button" disabled={parcelRejected} onClick={() => setStep(2)}>{text('Elegir cultivos', 'Choose crops')} <span aria-hidden="true">→</span></button>
             : needsBenchmarkReset
