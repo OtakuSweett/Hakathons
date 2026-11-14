@@ -20,61 +20,77 @@ export const CropAdvisor: React.FC<CropAdvisorProps> = ({
   lang
 }) => {
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-xl">
-      <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-        <div className="flex items-center space-x-2">
-          <span className="text-base">🌱</span>
-          <h2 className="text-sm font-bold text-white tracking-wide">
-            {lang === 'es' ? '3. Recomendaciones Agronómicas (Pre-Solver Módulo 5)' : '3. Crop Feasibility & Agronomic Advisor'}
-          </h2>
+    <div className="bento-card p-5 h-full flex flex-col justify-between">
+      <div>
+        <div className="flex items-center justify-between pb-3 border-b border-white/[0.08]">
+          <div className="flex items-center space-x-2.5">
+            <div className="w-2 h-2 rounded-full bg-emerald-400"></div>
+            <h2 className="text-sm font-bold text-white tracking-tight">
+              {lang === 'es' ? 'Viabilidad Agronómica (Pre-Solver M5)' : 'Agronomic Feasibility Advisor (M5)'}
+            </h2>
+          </div>
+          <span className="text-xs bg-zinc-900 text-zinc-300 px-2.5 py-1 rounded-xl border border-white/[0.08] font-mono">
+            pH: <b className="text-emerald-400">{soilPh.toFixed(1)}</b>
+          </span>
         </div>
-        <span className="text-xs bg-slate-800 text-slate-300 px-2.5 py-1 rounded-full border border-slate-700">
-          pH {lang === 'es' ? 'Suelo' : 'Soil'}: <b className="text-emerald-400">{soilPh.toFixed(1)}</b>
-        </span>
+
+        <div className="space-y-4 mt-4">
+          {/* Viable Crops */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-semibold text-emerald-400 flex items-center gap-1.5">
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                </svg>
+                {lang === 'es' ? `Cultivos Viables (${viableCropIds.length})` : `Feasible Species (${viableCropIds.length})`}
+              </span>
+              <span className="text-[10px] text-zinc-400">GDD & pH OK</span>
+            </div>
+            <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto pr-1">
+              {viableCropIds.map((cid) => (
+                <span
+                  key={cid}
+                  className="text-xs px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 font-medium capitalize hover:border-emerald-500/40 transition-colors"
+                >
+                  {cid.replace('_', ' ')}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* Discarded Crops with Diagnostic Reasons */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-semibold text-zinc-400 flex items-center gap-1.5">
+                <svg className="w-3.5 h-3.5 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                {lang === 'es' ? `Cultivos Descartados (${discarded.length})` : `Filtered Out (${discarded.length})`}
+              </span>
+              <span className="text-[10px] text-zinc-500">Motivos Agronómicos</span>
+            </div>
+            <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
+              {discarded.slice(0, 6).map((disc) => (
+                <div
+                  key={disc.crop_id}
+                  className="text-[11px] p-2 rounded-lg bg-zinc-900/60 border border-white/[0.05] text-zinc-300 flex items-start justify-between gap-2"
+                >
+                  <span className="font-semibold text-zinc-200 capitalize shrink-0">
+                    {disc.crop_id.replace('_', ' ')}:
+                  </span>
+                  <span className="text-zinc-400 text-right truncate">
+                    {lang === 'es' ? disc.reason_text_es : disc.reason_text_en}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
-        {/* Viable Crops */}
-        <div>
-          <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-400 mb-2 flex items-center space-x-1.5">
-            <span>✅</span>
-            <span>{lang === 'es' ? `Cultivos Viables (${viableCropIds.length})` : `Feasible Crops (${viableCropIds.length})`}</span>
-          </h4>
-          <div className="flex flex-wrap gap-1.5">
-            {viableCropIds.map((cid) => (
-              <span
-                key={cid}
-                className="text-xs px-2.5 py-1 rounded-lg bg-emerald-950/40 border border-emerald-800/60 text-emerald-300 font-medium capitalize"
-              >
-                {cid.replace('_', ' ')}
-              </span>
-            ))}
-          </div>
-        </div>
-
-        {/* Discarded Crops */}
-        <div>
-          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2 flex items-center space-x-1.5">
-            <span>🚫</span>
-            <span>{lang === 'es' ? `Cultivos No Aptos (${discarded.length})` : `Discarded Crops (${discarded.length})`}</span>
-          </h4>
-          <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
-            {discarded.map((d, idx) => (
-              <div
-                key={idx}
-                className="text-xs p-2 rounded-lg bg-slate-950/70 border border-slate-800/80 flex items-start justify-between gap-2"
-              >
-                <div>
-                  <span className="font-bold text-slate-200 capitalize">{d.crop_id}: </span>
-                  <span className="text-slate-400">{lang === 'es' ? d.reason_text_es : d.reason_text_en}</span>
-                </div>
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-950 text-red-400 border border-red-900 font-mono shrink-0">
-                  {d.reason_code}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
+      <div className="mt-4 pt-3 border-t border-white/[0.05] text-[10px] text-zinc-400 flex items-center justify-between">
+        <span>FAO-56 Eco-Crop Rules</span>
+        <span className="text-emerald-400 font-mono">Status: Evaluado</span>
       </div>
     </div>
   );

@@ -29,14 +29,12 @@ export const EconomicEvaluation: React.FC<EconomicEvaluationProps> = ({ data, la
       balanced: 'Equilibrio Resiliente',
       maxResilience: 'Máxima Conservación',
       shadowPriceTitle: 'Precio Sombra Dual del Agua (y_agua)',
-      shadowPriceDesc: 'Valor marginal de 1 mm adicional de agua en la rotación optimizada (derivada parcial ∂Z*/∂Agua).',
-      shadowAdviceHigh: 'Recomendación: El precio sombra supera el costo de mercado del agua; conviene invertir en tecnificación de riego o compra de agua.',
-      shadowAdviceLow: 'Recomendación: El agua no es el factor limitante principal en esta temporada; priorizar manejo de fertilidad y suelo.',
+      shadowPriceDesc: 'Valor marginal de 1 mm adicional de agua en la rotación (derivada parcial ∂Z*/∂Agua).',
+      shadowAdviceHigh: 'Recomendación: El precio sombra supera el costo de mercado del agua; conviene invertir en tecnificación de riego.',
+      shadowAdviceLow: 'Recomendación: El agua no es la restricción limitante principal en esta temporada.',
       paretoChartTitle: 'Frontera de Pareto de Soluciones No Dominadas',
       waterSaved: 'Agua Ahorrada (mm)',
       profitUsd: 'Ganancia Neta (USD/ha)',
-      nFixed: 'N Fijado (kg/ha)',
-      schedule: 'Rotación recomendada para este λ',
       metricProfit: 'Ganancia Proyectada',
       metricWaterSaved: 'Ahorro Hídrico',
       metricNitrogen: 'Nitrógeno Biológico'
@@ -51,13 +49,11 @@ export const EconomicEvaluation: React.FC<EconomicEvaluationProps> = ({ data, la
       maxResilience: 'Max Conservation',
       shadowPriceTitle: 'Dual Water Shadow Price (y_water)',
       shadowPriceDesc: 'Marginal value of 1 additional mm of water in the rotation (partial derivative ∂Z*/∂Water).',
-      shadowAdviceHigh: 'Recommendation: Shadow price exceeds water market cost; investing in drip tech or extra water rights is economically justified.',
-      shadowAdviceLow: 'Recommendation: Water is not the binding constraint; focus capital on soil organic matter and seeds.',
+      shadowAdviceHigh: 'Recommendation: Shadow price exceeds water market cost; investing in drip tech is economically justified.',
+      shadowAdviceLow: 'Recommendation: Water is not the binding constraint; focus capital on soil organic matter.',
       paretoChartTitle: 'Pareto Efficient Frontier (Non-Dominated Solutions)',
       waterSaved: 'Water Saved (mm)',
       profitUsd: 'Net Profit (USD/ha)',
-      nFixed: 'Biological N Fixed (kg/ha)',
-      schedule: 'Optimal crop sequence for current λ',
       metricProfit: 'Projected Profit',
       metricWaterSaved: 'Water Conservation',
       metricNitrogen: 'Biological Nitrogen'
@@ -72,10 +68,7 @@ export const EconomicEvaluation: React.FC<EconomicEvaluationProps> = ({ data, la
       n_fixed_kg_ha: 85,
       water_shadow_price_mxn_mm: 18.5,
       n_shadow_price_mxn_kg_ha: 12.0,
-      schedule: [
-        { slot_index: 0, cycle_code: 'PV', crop_id: 'bean' },
-        { slot_index: 1, cycle_code: 'OI', crop_id: 'chickpea' }
-      ]
+      schedule: []
     },
     {
       lambda_weight: 0.25,
@@ -84,10 +77,7 @@ export const EconomicEvaluation: React.FC<EconomicEvaluationProps> = ({ data, la
       n_fixed_kg_ha: 60,
       water_shadow_price_mxn_mm: 22.0,
       n_shadow_price_mxn_kg_ha: 9.5,
-      schedule: [
-        { slot_index: 0, cycle_code: 'PV', crop_id: 'sorghum' },
-        { slot_index: 1, cycle_code: 'OI', crop_id: 'bean' }
-      ]
+      schedule: []
     },
     {
       lambda_weight: 0.5,
@@ -96,10 +86,7 @@ export const EconomicEvaluation: React.FC<EconomicEvaluationProps> = ({ data, la
       n_fixed_kg_ha: 45,
       water_shadow_price_mxn_mm: 28.4,
       n_shadow_price_mxn_kg_ha: 8.0,
-      schedule: [
-        { slot_index: 0, cycle_code: 'PV', crop_id: 'maize' },
-        { slot_index: 1, cycle_code: 'OI', crop_id: 'chickpea' }
-      ]
+      schedule: []
     },
     {
       lambda_weight: 0.75,
@@ -108,10 +95,7 @@ export const EconomicEvaluation: React.FC<EconomicEvaluationProps> = ({ data, la
       n_fixed_kg_ha: 25,
       water_shadow_price_mxn_mm: 34.0,
       n_shadow_price_mxn_kg_ha: 5.5,
-      schedule: [
-        { slot_index: 0, cycle_code: 'PV', crop_id: 'maize' },
-        { slot_index: 1, cycle_code: 'OI', crop_id: 'wheat' }
-      ]
+      schedule: []
     },
     {
       lambda_weight: 1.0,
@@ -120,14 +104,10 @@ export const EconomicEvaluation: React.FC<EconomicEvaluationProps> = ({ data, la
       n_fixed_kg_ha: 0,
       water_shadow_price_mxn_mm: 42.0,
       n_shadow_price_mxn_kg_ha: 0.0,
-      schedule: [
-        { slot_index: 0, cycle_code: 'PV', crop_id: 'maize' },
-        { slot_index: 1, cycle_code: 'OI', crop_id: 'barley' }
-      ]
+      schedule: []
     }
   ];
 
-  // Find closest pareto point for current slider value
   const activePoint = paretoPoints.reduce((prev, curr) =>
     Math.abs(curr.lambda_weight - lambdaVal) < Math.abs(prev.lambda_weight - lambdaVal) ? curr : prev
   );
@@ -135,43 +115,45 @@ export const EconomicEvaluation: React.FC<EconomicEvaluationProps> = ({ data, la
   const shadowPrice = activePoint.water_shadow_price_mxn_mm || 28.4;
   const isHighShadow = shadowPrice > 25.0;
 
-  // Chart data formatting
   const chartData = paretoPoints.map((p) => ({
     x: p.water_saved_mm,
     y: p.profit_mxn_ha,
-    lambda: p.lambda_weight,
-    n_fixed: p.n_fixed_kg_ha
+    lambda: p.lambda_weight
   }));
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-emerald-100 overflow-hidden">
+    <div className="bento-card overflow-hidden">
       {/* Header */}
-      <div className="px-6 py-5 bg-gradient-to-r from-emerald-900 to-teal-900 text-white">
-        <div className="flex items-center gap-2">
-          <span className="w-2.5 h-2.5 rounded-full bg-teal-400"></span>
-          <span className="text-xs uppercase tracking-wider text-teal-300 font-semibold">Función 8 / Módulos 6 & 7</span>
+      <div className="p-5 border-b border-white/[0.08] flex items-center justify-between">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-teal-400"></span>
+            <span className="text-[11px] uppercase tracking-wider text-teal-400 font-semibold">
+              Función 8 / Módulos 6 & 7
+            </span>
+          </div>
+          <h2 className="text-base sm:text-lg font-bold text-white mt-1">{t.title}</h2>
+          <p className="text-xs text-zinc-400 mt-0.5">{t.subtitle}</p>
         </div>
-        <h2 className="text-xl font-bold mt-1">{t.title}</h2>
-        <p className="text-xs text-emerald-200 mt-0.5">{t.subtitle}</p>
       </div>
 
-      <div className="p-6 space-y-6">
+      <div className="p-5 space-y-5">
         {/* Interactive Pareto Slider */}
-        <div className="p-5 bg-emerald-50/50 rounded-2xl border border-emerald-100">
+        <div className="p-4 bg-zinc-950/40 rounded-xl border border-white/[0.05]">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
             <div>
-              <h3 className="font-bold text-gray-900 text-sm">{t.sliderTitle}</h3>
-              <p className="text-xs text-gray-500">{t.sliderDesc}</p>
+              <h3 className="font-bold text-white text-xs">{t.sliderTitle}</h3>
+              <p className="text-[11px] text-zinc-400">{t.sliderDesc}</p>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-gray-500">λ =</span>
-              <span className="text-base font-bold text-emerald-900 bg-white px-2.5 py-0.5 rounded-lg border border-emerald-200 shadow-2xs">
+            <div className="flex items-center gap-2 font-mono">
+              <span className="text-xs text-zinc-400">λ =</span>
+              <span className="text-base font-black text-emerald-400 bg-zinc-900 px-2.5 py-0.5 rounded-lg border border-white/[0.08]">
                 {lambdaVal.toFixed(2)}
               </span>
             </div>
           </div>
 
-          <div className="mt-4">
+          <div className="mt-3">
             <input
               type="range"
               min="0"
@@ -179,32 +161,32 @@ export const EconomicEvaluation: React.FC<EconomicEvaluationProps> = ({ data, la
               step="0.05"
               value={lambdaVal}
               onChange={(e) => setLambdaVal(parseFloat(e.target.value))}
-              className="w-full h-2.5 bg-emerald-200 rounded-lg appearance-none cursor-pointer accent-emerald-600"
+              className="w-full h-1.5 bg-zinc-800 rounded-lg appearance-none cursor-pointer"
             />
-            <div className="flex justify-between text-[11px] text-gray-500 mt-1.5 font-medium">
+            <div className="flex justify-between text-[10px] text-zinc-400 mt-1.5 font-medium">
               <span>{t.maxResilience} (0.0)</span>
               <span>{t.balanced} (0.5)</span>
               <span>{t.maxProfit} (1.0)</span>
             </div>
           </div>
 
-          {/* Dynamic KPI readout for current Lambda */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4 pt-4 border-t border-emerald-200/60">
-            <div className="bg-white p-3 rounded-xl border border-emerald-100 shadow-2xs">
-              <span className="text-gray-500 text-[11px] block">{t.metricProfit}</span>
-              <span className="text-lg font-bold text-emerald-900">
+          {/* Dynamic KPI readout */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4 pt-3 border-t border-white/[0.05]">
+            <div className="bg-zinc-900/70 p-3 rounded-xl border border-white/[0.05]">
+              <span className="text-zinc-400 text-[10px] block">{t.metricProfit}</span>
+              <span className="text-base sm:text-lg font-black text-white font-mono">
                 ${activePoint.profit_mxn_ha.toLocaleString()} USD/ha
               </span>
             </div>
-            <div className="bg-white p-3 rounded-xl border border-emerald-100 shadow-2xs">
-              <span className="text-gray-500 text-[11px] block">{t.metricWaterSaved}</span>
-              <span className="text-lg font-bold text-blue-900">
+            <div className="bg-zinc-900/70 p-3 rounded-xl border border-white/[0.05]">
+              <span className="text-zinc-400 text-[10px] block">{t.metricWaterSaved}</span>
+              <span className="text-base sm:text-lg font-black text-blue-400 font-mono">
                 +{activePoint.water_saved_mm} mm
               </span>
             </div>
-            <div className="bg-white p-3 rounded-xl border border-emerald-100 shadow-2xs">
-              <span className="text-gray-500 text-[11px] block">{t.metricNitrogen}</span>
-              <span className="text-lg font-bold text-teal-900">
+            <div className="bg-zinc-900/70 p-3 rounded-xl border border-white/[0.05]">
+              <span className="text-zinc-400 text-[10px] block">{t.metricNitrogen}</span>
+              <span className="text-base sm:text-lg font-black text-emerald-400 font-mono">
                 +{activePoint.n_fixed_kg_ha} kg N/ha
               </span>
             </div>
@@ -212,68 +194,66 @@ export const EconomicEvaluation: React.FC<EconomicEvaluationProps> = ({ data, la
         </div>
 
         {/* Dual Water Shadow Price (y_water) Card */}
-        <div className="p-5 rounded-2xl border border-teal-100 bg-teal-50/40">
+        <div className="p-4 rounded-xl border border-teal-500/20 bg-teal-950/20">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-2">
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-teal-800">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-teal-400">
                   {t.shadowPriceTitle}
                 </span>
-                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-teal-200/70 text-teal-900">
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-teal-500/10 text-teal-300 border border-teal-500/30">
                   ∂Z*/∂b_agua
                 </span>
               </div>
-              <h4 className="text-sm font-bold text-gray-900 mt-1">
+              <h4 className="text-sm font-bold text-white font-mono mt-1">
                 {shadowPrice.toFixed(2)} USD / mm-ha
               </h4>
             </div>
-            <span className={`self-start sm:self-auto text-xs font-bold px-2.5 py-1 rounded-full ${
-              isHighShadow ? 'bg-amber-100 text-amber-900 border border-amber-200' : 'bg-emerald-100 text-emerald-900'
+            <span className={`self-start sm:self-auto text-[10px] font-bold px-2.5 py-1 rounded-full ${
+              isHighShadow ? 'bg-amber-500/10 text-amber-300 border border-amber-500/30' : 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/30'
             }`}>
-              {isHighShadow ? 'Agua en Estado Crítico / Restricción Activa' : 'Disponibilidad Suficiente'}
+              {isHighShadow ? 'Restricción Hídrica Activa' : 'Disponibilidad Hídrica Suficiente'}
             </span>
           </div>
-          <p className="text-xs text-gray-600 mt-1">{t.shadowPriceDesc}</p>
-          <div className="mt-3 p-3 bg-white rounded-xl border border-teal-100 text-xs text-teal-950 font-medium">
+          <p className="text-[11px] text-zinc-300 mt-1">{t.shadowPriceDesc}</p>
+          <div className="mt-2.5 p-2.5 bg-zinc-900/80 rounded-lg border border-white/[0.05] text-[11px] text-zinc-200">
             {isHighShadow ? t.shadowAdviceHigh : t.shadowAdviceLow}
           </div>
         </div>
 
         {/* Pareto Frontier Scatter Chart */}
         <div>
-          <h3 className="font-bold text-gray-900 text-sm mb-1">{t.paretoChartTitle}</h3>
-          <p className="text-xs text-gray-500 mb-4">
-            {lang === 'es'
-              ? 'Cada punto representa una solución óptima no dominada. Ganancia vs. Ahorro de agua.'
-              : 'Each point represents an efficient non-dominated solution. Profit vs. Water saved.'}
-          </p>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-bold text-white text-xs">{t.paretoChartTitle}</h3>
+            <span className="text-[10px] text-zinc-400 font-mono">HiGHS LP Dual Relaxation</span>
+          </div>
 
-          <div className="h-64 w-full">
+          <div className="h-56 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <ScatterChart margin={{ top: 10, right: 20, left: 0, bottom: 10 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0fdf4" />
+              <ScatterChart margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
                 <XAxis
                   type="number"
                   dataKey="x"
                   name={t.waterSaved}
                   unit=" mm"
-                  tick={{ fontSize: 11 }}
-                  label={{ value: t.waterSaved, position: 'insideBottom', offset: -5, fontSize: 11 }}
+                  tick={{ fontSize: 11, fill: '#71717a' }}
+                  stroke="#3f3f46"
                 />
                 <YAxis
                   type="number"
                   dataKey="y"
                   name={t.profitUsd}
                   unit=" $"
-                  tick={{ fontSize: 11 }}
-                  label={{ value: t.profitUsd, angle: -90, position: 'insideLeft', fontSize: 11 }}
+                  tick={{ fontSize: 11, fill: '#71717a' }}
+                  stroke="#3f3f46"
                 />
                 <Tooltip
                   cursor={{ strokeDasharray: '3 3' }}
-                  contentStyle={{ backgroundColor: '#ffffff', borderRadius: '8px', border: '1px solid #d1fae5', fontSize: '12px' }}
+                  contentStyle={{ backgroundColor: '#18181b', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', fontSize: '12px', color: '#f4f4f5' }}
                 />
                 <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
-                <Scatter name="Frontera de Pareto (M7)" data={chartData} fill="#059669" />
+                <Scatter name="Frontera de Pareto (M7)" data={chartData} fill="#10b981" />
               </ScatterChart>
             </ResponsiveContainer>
           </div>

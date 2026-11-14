@@ -11,23 +11,23 @@ export const PestDetector: React.FC<PestDetectorProps> = ({ data, lang }) => {
     es: {
       title: 'Detector Preventivo de Plagas y Enfermedades',
       subtitle: 'Semáforo bio-climático en tiempo real basado en temperatura T2M, humedad relativa RH2M y lluvia de NASA POWER.',
-      fungalRisk: 'Riesgo de Enfermedades Fúngicas',
+      fungalRisk: 'Riesgo de Patógenos Fúngicos',
       fungalDesc: 'Hongos foliares (Roya, Tizón tardío, Mildiu). Favorecidos por humedad relativa > 80% y condensación.',
       insectRisk: 'Riesgo de Plagas de Insectos',
       insectDesc: 'Insectos chupadores y barrenadores (Pulgón, Gusano cogollero). Acelerados por estrés térmico y sequedad.',
       semaphoreLow: 'Bajo Riesgo',
       semaphoreMedium: 'Riesgo Moderado',
       semaphoreHigh: 'Alerta Alta',
-      preventiveActions: 'Acciones Preventivas Recomendadas (Manejo Agroecológico)',
+      preventiveActions: 'Manejo Preventivo Agroecológico',
       fungalActions: [
-        'Evitar riegos vespertinos o nocturnos para minimizar horas con hoja mojada.',
-        'Favorecer la ventilación del dosel mediante espaciamiento adecuado entre hileras.',
-        'Aplicación preventiva de caldos minerales (bórdeles) o biofungicidas a base de Bacillus subtilis.'
+        'Evitar riegos vespertinos para minimizar horas con hoja mojada.',
+        'Favorecer la ventilación del dosel mediante espaciamiento adecuado.',
+        'Aplicación preventiva de caldos minerales o Bacillus subtilis.'
       ],
       insectActions: [
-        'Instalar trampas de feromonas o cromáticas amarillas en los bordes de la parcela.',
-        'Fomentar corredores de biodiversidad para atraer fauna benéfica (crisopas, mariquitas).',
-        'Monitorear el envés de las hojas cada 3 días en busca de posturas de huevos.'
+        'Instalar trampas de feromonas o cromáticas amarillas perimetrales.',
+        'Fomentar corredores florales para atraer fauna benéfica (crisopas).',
+        'Monitorear el envés de hojas cada 3 días en busca de posturas.'
       ],
       metricsTitle: 'Condiciones Meteorológicas Conductoras'
     },
@@ -41,31 +41,28 @@ export const PestDetector: React.FC<PestDetectorProps> = ({ data, lang }) => {
       semaphoreLow: 'Low Risk',
       semaphoreMedium: 'Moderate Risk',
       semaphoreHigh: 'High Risk Alert',
-      preventiveActions: 'Recommended Preventive Actions (Agro-ecological IPM)',
+      preventiveActions: 'Agro-ecological IPM Actions',
       fungalActions: [
-        'Avoid evening or overhead irrigation to minimize continuous leaf wetness duration.',
-        'Improve canopy aeration by maintaining optimal row spacing and weeding.',
-        'Apply preventive organic bio-fungicides (e.g. Bacillus subtilis or mild copper broth).'
+        'Avoid evening irrigation to minimize continuous leaf wetness duration.',
+        'Improve canopy aeration by maintaining optimal row spacing.',
+        'Apply preventive bio-fungicides (Bacillus subtilis or copper broth).'
       ],
       insectActions: [
-        'Deploy yellow sticky or pheromone monitoring traps along field perimeter.',
-        'Maintain floral buffer strips to foster beneficial predators (lacewings, ladybugs).',
-        'Inspect the underside of leaves every 3 days for early egg masses.'
+        'Deploy yellow sticky or pheromone monitoring traps along perimeter.',
+        'Maintain floral buffer strips to foster beneficial predators.',
+        'Inspect the underside of leaves every 3 days for egg masses.'
       ],
       metricsTitle: 'Driving Atmospheric Conditions'
     }
   }[lang];
 
-  // Derive dynamic risk levels from climate summary
   const meanTemp = data.climate_summary?.mean_temperature_c || 21.5;
   const totalRain = data.climate_summary?.total_precip_mm || 65;
 
-  // Fungal conditions: high rain / moderate-warm temp
   const isHighFungal = totalRain > 70 && meanTemp >= 16 && meanTemp <= 26;
   const isMedFungal = totalRain > 35 || (meanTemp >= 18 && meanTemp <= 28);
   const fungalLevel = isHighFungal ? 'high' : (isMedFungal ? 'medium' : 'low');
 
-  // Insect conditions: higher temps
   const isHighInsect = meanTemp > 24 && totalRain < 40;
   const isMedInsect = meanTemp > 20;
   const insectLevel = isHighInsect ? 'high' : (isMedInsect ? 'medium' : 'low');
@@ -74,23 +71,23 @@ export const PestDetector: React.FC<PestDetectorProps> = ({ data, lang }) => {
     switch (level) {
       case 'high':
         return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-800 border border-red-200">
-            <span className="w-2 h-2 rounded-full bg-red-600 animate-pulse"></span>
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-500/10 text-rose-400 border border-rose-500/30">
+            <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span>
             {t.semaphoreHigh}
           </span>
         );
       case 'medium':
         return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">
-            <span className="w-2 h-2 rounded-full bg-amber-500"></span>
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
             {t.semaphoreMedium}
           </span>
         );
       case 'low':
       default:
         return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
-            <span className="w-2 h-2 rounded-full bg-emerald-600"></span>
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
             {t.semaphoreLow}
           </span>
         );
@@ -98,39 +95,40 @@ export const PestDetector: React.FC<PestDetectorProps> = ({ data, lang }) => {
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-emerald-100 overflow-hidden">
-      {/* Header */}
-      <div className="px-6 py-5 bg-gradient-to-r from-emerald-900 to-teal-900 text-white">
-        <div className="flex items-center gap-2">
-          <span className="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
-          <span className="text-xs uppercase tracking-wider text-amber-300 font-semibold">Función 7 / NASA POWER & Microclima</span>
+    <div className="bento-card p-5 h-full flex flex-col justify-between">
+      <div>
+        <div className="flex items-center justify-between pb-3 border-b border-white/[0.08]">
+          <div className="flex items-center space-x-2.5">
+            <div className="w-2 h-2 rounded-full bg-amber-400"></div>
+            <h2 className="text-sm font-bold text-white tracking-tight">{t.title}</h2>
+          </div>
+          <span className="text-[10px] uppercase font-bold text-zinc-400 bg-zinc-900 px-2 py-0.5 rounded-lg border border-white/[0.08]">
+            NASA POWER
+          </span>
         </div>
-        <h2 className="text-xl font-bold mt-1">{t.title}</h2>
-        <p className="text-xs text-emerald-200 mt-0.5">{t.subtitle}</p>
-      </div>
 
-      <div className="p-6 space-y-6">
-        {/* Dual Semaphore Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
           {/* Fungal Card */}
-          <div className="p-5 rounded-2xl border border-gray-100 bg-gray-50/50 flex flex-col justify-between">
+          <div className="p-4 rounded-xl border border-white/[0.06] bg-zinc-900/40 flex flex-col justify-between">
             <div>
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">
                   {lang === 'es' ? 'Patógenos Fúngicos' : 'Fungal Pathogens'}
                 </span>
                 {getSemaphoreBadge(fungalLevel)}
               </div>
-              <h3 className="text-base font-bold text-gray-900 mb-1">{t.fungalRisk}</h3>
-              <p className="text-xs text-gray-600 mb-4">{t.fungalDesc}</p>
+              <h4 className="text-xs font-bold text-white mb-1">{t.fungalRisk}</h4>
+              <p className="text-[11px] text-zinc-400 mb-3">{t.fungalDesc}</p>
             </div>
 
-            <div className="bg-white p-3.5 rounded-xl border border-gray-100 text-xs">
-              <span className="font-semibold text-gray-700 block mb-2">{t.preventiveActions}:</span>
-              <ul className="space-y-1.5 text-gray-600">
-                {t.fungalActions.map((action, i) => (
-                  <li key={i} className="flex items-start gap-2">
-                    <span className="text-emerald-600 font-bold">•</span>
+            <div className="bg-zinc-900/70 p-2.5 rounded-lg border border-white/[0.04] text-[11px]">
+              <span className="font-semibold text-zinc-300 block mb-1 text-[10px] uppercase tracking-wider">
+                {t.preventiveActions}:
+              </span>
+              <ul className="space-y-1 text-zinc-400 text-[10px]">
+                {t.fungalActions.slice(0, 2).map((action, i) => (
+                  <li key={i} className="flex items-start gap-1.5">
+                    <span className="text-emerald-400 font-bold">•</span>
                     <span>{action}</span>
                   </li>
                 ))}
@@ -139,24 +137,26 @@ export const PestDetector: React.FC<PestDetectorProps> = ({ data, lang }) => {
           </div>
 
           {/* Insect Card */}
-          <div className="p-5 rounded-2xl border border-gray-100 bg-gray-50/50 flex flex-col justify-between">
+          <div className="p-4 rounded-xl border border-white/[0.06] bg-zinc-900/40 flex flex-col justify-between">
             <div>
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">
                   {lang === 'es' ? 'Insectos y Vectores' : 'Insects & Vectors'}
                 </span>
                 {getSemaphoreBadge(insectLevel)}
               </div>
-              <h3 className="text-base font-bold text-gray-900 mb-1">{t.insectRisk}</h3>
-              <p className="text-xs text-gray-600 mb-4">{t.insectDesc}</p>
+              <h4 className="text-xs font-bold text-white mb-1">{t.insectRisk}</h4>
+              <p className="text-[11px] text-zinc-400 mb-3">{t.insectDesc}</p>
             </div>
 
-            <div className="bg-white p-3.5 rounded-xl border border-gray-100 text-xs">
-              <span className="font-semibold text-gray-700 block mb-2">{t.preventiveActions}:</span>
-              <ul className="space-y-1.5 text-gray-600">
-                {t.insectActions.map((action, i) => (
-                  <li key={i} className="flex items-start gap-2">
-                    <span className="text-teal-600 font-bold">•</span>
+            <div className="bg-zinc-900/70 p-2.5 rounded-lg border border-white/[0.04] text-[11px]">
+              <span className="font-semibold text-zinc-300 block mb-1 text-[10px] uppercase tracking-wider">
+                {t.preventiveActions}:
+              </span>
+              <ul className="space-y-1 text-zinc-400 text-[10px]">
+                {t.insectActions.slice(0, 2).map((action, i) => (
+                  <li key={i} className="flex items-start gap-1.5">
+                    <span className="text-teal-400 font-bold">•</span>
                     <span>{action}</span>
                   </li>
                 ))}
@@ -164,24 +164,15 @@ export const PestDetector: React.FC<PestDetectorProps> = ({ data, lang }) => {
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Driving Meteorological Snapshot */}
-        <div className="bg-emerald-50/60 p-4 rounded-xl border border-emerald-100 text-xs flex flex-wrap items-center justify-between gap-4">
-          <span className="font-semibold text-emerald-950">{t.metricsTitle}:</span>
-          <div className="flex items-center gap-6 text-gray-700">
-            <div>
-              <span className="text-gray-400 block text-[10px]">T2M Media:</span>
-              <span className="font-bold text-gray-900">{meanTemp.toFixed(1)} °C</span>
-            </div>
-            <div>
-              <span className="text-gray-400 block text-[10px]">Lluvia Período:</span>
-              <span className="font-bold text-gray-900">{totalRain.toFixed(0)} mm</span>
-            </div>
-            <div>
-              <span className="text-gray-400 block text-[10px]">Humedad Relativa:</span>
-              <span className="font-bold text-gray-900">~62% RH2M</span>
-            </div>
-          </div>
+      {/* Snapshot metrics */}
+      <div className="mt-4 pt-3 border-t border-white/[0.05] text-[11px] text-zinc-400 flex flex-wrap items-center justify-between gap-2">
+        <span className="text-zinc-500">{t.metricsTitle}:</span>
+        <div className="flex items-center gap-4 font-mono text-zinc-300">
+          <span>T2M: <b className="text-white">{meanTemp.toFixed(1)}°C</b></span>
+          <span>Lluvia: <b className="text-white">{totalRain.toFixed(0)} mm</b></span>
+          <span>RH2M: <b className="text-emerald-400">~62%</b></span>
         </div>
       </div>
     </div>
