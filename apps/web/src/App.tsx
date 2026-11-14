@@ -240,17 +240,29 @@ export const App: React.FC = () => {
         setStep(1);
         return;
       }
-      if (!response.ok) throw new Error('Analysis unavailable');
+      if (!response.ok) {
+        let detail = '';
+        try {
+          const body = await response.json();
+          detail = body?.error?.message || body?.message || '';
+        } catch { /* The gateway may return an empty or non-JSON error. */ }
+        throw new Error(detail || `HTTP ${response.status}`);
+      }
       const analysis = await response.json() as AnalysisResponse;
       setData(analysis);
       setSelectedCoordinates(analysis.coordinates);
       setServiceAvailable(true);
       setDataSource(hasCustomPoint || data.parcel_id.startsWith('custom_') ? 'live' : 'benchmark');
       setStep(3);
-    } catch {
+    } catch (error) {
       setServiceAvailable(false);
       setMapRequestFailed(true);
-      setLocationMessage(lang === 'es' ? 'No se pudo calcular el análisis con estos cultivos. Intenta otra vez o activa el modo sin conexión para consultar el benchmark.' : 'The analysis could not be calculated for these crops. Try again or switch to offline mode to view the benchmark.');
+      const reason = error instanceof TypeError
+        ? (lang === 'es' ? 'no hay conexión con el servicio de análisis' : 'the analysis service is unreachable')
+        : error instanceof Error ? error.message : '';
+      setLocationMessage(lang === 'es'
+        ? `El servicio de análisis no respondió${reason ? ` (${reason})` : ''}. Conservamos tu ubicación y cultivos; puedes reintentar.`
+        : `The analysis service did not respond${reason ? ` (${reason})` : ''}. Your location and crops are saved; you can retry.`);
     } finally {
       setIsLoading(false);
     }
@@ -382,6 +394,9 @@ export const App: React.FC = () => {
           </form>
           <div className="location-options"><button className="location-option" type="button" onClick={requestLocation}><span className="location-option-icon" aria-hidden="true">◎</span><span><b>{text('Usar mi ubicación actual', 'Use my current location')}</b><small>{text('El navegador pedirá permiso. No se comparte hasta calcular.', 'Your browser will ask permission. It is not shared until you calculate.')}</small></span><span aria-hidden="true">→</span></button></div>
           {locationMessage && <p className="inline-message" role="alert">{locationMessage}</p>}
+          <div className="location-map-heading"><div><b>{text('O marca el punto en el mapa', 'Or mark the point on the map')}</b><small>{text('Acerca el mapa y toca el centro aproximado de tu parcela.', 'Zoom in and tap near the center of your field.')}</small></div><span className="coordinate-readout">{selectedCoordinates.lat.toFixed(4)}°, {selectedCoordinates.lon.toFixed(4)}°</span></div>
+          <RiskMap lat={selectedCoordinates.lat} lon={selectedCoordinates.lon} regionLat={mapRegionCenter.lat} regionLon={mapRegionCenter.lon} parcelName={text('Centro de parcela', 'Field center')} eonetAlerts={[]} areaHa={areaHa} selectedCropIds={selectedCrops} onAreaChange={setAreaHa} waterRegime={waterRegime} onWaterRegimeChange={setWaterRegime} lang={lang} onMapClick={handleMapCoordinateSelect} onLocationSearch={handleLocationSearch} />
+          <div className="panel-actions"><span className="coordinate-readout">{text('Ubicación elegida', 'Selected location')} <b>{selectedCoordinates.lat.toFixed(4)}°, {selectedCoordinates.lon.toFixed(4)}°</b></span><button className="primary-button" type="button" onClick={() => setStep(1)}>{text('Confirmar ubicación', 'Confirm location')} <span aria-hidden="true">→</span></button></div>
           <details className="demo-options"><summary>{text('Abrir ejemplos guardados (sin conexión)', 'Open saved examples (offline)')}</summary><div className="region-options" role="radiogroup" aria-label={text('Ejemplos regionales guardados', 'Saved regional examples')}>
             {DEMO_PRESETS_LIST.map((preset) => <button key={preset.presetId} type="button" role="radio" aria-checked={selectedPresetId === preset.presetId} onClick={() => {
               const benchmark = getMockAnalysis(preset.presetId);
@@ -404,7 +419,7 @@ export const App: React.FC = () => {
           {(needsLiveAnalysis || needsBenchmarkReset) && !locationMessage && <p className="map-selection-hint" role="status">{needsLiveAnalysis
             ? text('Punto marcado. Continúa para elegir tus cultivos; los datos se consultan al calcular el análisis.', 'Point marked. Continue to choose crops; data is fetched when you calculate the analysis.')
             : text('La demo local solo tiene datos del punto guardado. Vuelve a ese punto para continuar con datos coherentes.', 'The local demo only has data for its saved point. Return there to continue with matching data.')}</p>}
-          <RiskMap lat={selectedCoordinates.lat} lon={selectedCoordinates.lon} regionLat={mapRegionCenter.lat} regionLon={mapRegionCenter.lon} parcelName={sameAsAnalyzed ? currentPresetName : text('Punto seleccionado', 'Selected point')} eonetAlerts={data.eonet_hazard_alerts || []} areaHa={areaHa} onAreaChange={setAreaHa} waterRegime={waterRegime} onWaterRegimeChange={setWaterRegime} lang={lang} onMapClick={handleMapCoordinateSelect} onLocationSearch={handleLocationSearch} />
+          <RiskMap lat={selectedCoordinates.lat} lon={selectedCoordinates.lon} regionLat={mapRegionCenter.lat} regionLon={mapRegionCenter.lon} parcelName={sameAsAnalyzed ? currentPresetName : text('Punto seleccionado', 'Selected point')} eonetAlerts={data.eonet_hazard_alerts || []} areaHa={areaHa} selectedCropIds={selectedCrops} onAreaChange={setAreaHa} waterRegime={waterRegime} onWaterRegimeChange={setWaterRegime} lang={lang} onMapClick={handleMapCoordinateSelect} onLocationSearch={handleLocationSearch} />
           <div className="panel-actions"><span className="coordinate-readout">{text('Centro seleccionado', 'Selected center')} <b>{selectedCoordinates.lat.toFixed(4)}°, {selectedCoordinates.lon.toFixed(4)}°</b></span>{needsLiveAnalysis
             ? <button className="primary-button" type="button" disabled={parcelRejected} onClick={() => setStep(2)}>{text('Elegir cultivos', 'Choose crops')} <span aria-hidden="true">→</span></button>
             : needsBenchmarkReset
@@ -432,7 +447,7 @@ export const App: React.FC = () => {
               : text('El análisis se limitará a los cultivos que marcaste.', 'The analysis will be limited to the crops you selected.')}</p>
           {(data.optimization?.presolver_summary?.discarded?.length || 0) > 0 && <details className="discarded-list"><summary>{text('Ver por qué no se recomiendan', 'See why some are not recommended')}</summary><p>{data.optimization.presolver_summary.discarded.map((crop) => `${cropLabel(crop.crop_id, lang)}: ${lang === 'es' ? crop.reason_text_es : crop.reason_text_en}`).join(' · ')}</p></details>}
           {needsLiveAnalysis && <p className="selection-note">{text('Compatibilidad orientativa de la región de referencia. Tu punto se evaluará al calcular el análisis.', 'Suitability is based on the regional reference. Your selected point will be evaluated when analysis runs.')}</p>}
-          {mapRequestFailed && locationMessage && <div className="inline-message" role="status"><span>{locationMessage}</span><button type="button" className="fallback-button" onClick={useRegionalBenchmark}>{text('Continuar con demo regional', 'Continue with regional demo')}</button></div>}
+          {mapRequestFailed && locationMessage && <div className="inline-message" role="status"><span>{locationMessage}</span><button type="button" className="fallback-button" disabled={isLoading} onClick={() => void applyCropSelection()}>{text('Reintentar análisis', 'Retry analysis')}</button></div>}
           <div className="panel-actions"><button className="text-action" type="button" onClick={() => setStep(1)}>← {text('Volver al mapa', 'Back to map')}</button><button className="primary-button" type="button" disabled={!selectedCrops.length || isLoading} onClick={() => void applyCropSelection()}>{isOfflineMode ? text('Ver ejemplo guardado', 'View saved example') : text('Calcular análisis', 'Calculate field analysis')} <span aria-hidden="true">→</span></button></div>
         </section>}
 
@@ -442,7 +457,7 @@ export const App: React.FC = () => {
           <EarlyWarningBanner trigger={data.physics?.irrigation_trigger || { t_star_days: null, delta_i_mm: null, reason: null }} eonetCount={data.eonet_hazard_alerts?.length || 0} meanTempC={data.climate_summary?.mean_temperature_c || 21} lang={lang} />
           <ShiftingLands data={data} areaHa={areaHa} waterRegime={waterRegime} lang={lang} />
           <section className="analysis-grid main-analysis-grid">
-            <div className="span-7"><RiskMap lat={data.coordinates.lat} lon={data.coordinates.lon} regionLat={mapRegionCenter.lat} regionLon={mapRegionCenter.lon} parcelName={currentPresetName} eonetAlerts={data.eonet_hazard_alerts || []} areaHa={areaHa} onAreaChange={setAreaHa} waterRegime={waterRegime} onWaterRegimeChange={setWaterRegime} lang={lang} onMapClick={(lat, lon) => { handleMapCoordinateSelect(lat, lon); setStep(1); }} onLocationSearch={(lat, lon) => { handleLocationSearch(lat, lon); setStep(1); }} /></div>
+            <div className="span-7"><RiskMap lat={data.coordinates.lat} lon={data.coordinates.lon} regionLat={mapRegionCenter.lat} regionLon={mapRegionCenter.lon} parcelName={currentPresetName} eonetAlerts={data.eonet_hazard_alerts || []} areaHa={areaHa} selectedCropIds={selectedCrops} onAreaChange={setAreaHa} waterRegime={waterRegime} onWaterRegimeChange={setWaterRegime} lang={lang} onMapClick={(lat, lon) => { handleMapCoordinateSelect(lat, lon); setStep(1); }} onLocationSearch={(lat, lon) => { handleLocationSearch(lat, lon); setStep(1); }} /></div>
             <div className="span-5"><CropAdvisor viableCropIds={data.optimization?.presolver_summary?.feasible_crop_ids || []} discarded={data.optimization?.presolver_summary?.discarded || []} soilPh={data.soil_hydraulics?.soil_ph || 6.8} lang={lang} /></div>
           </section>
           <section className="analysis-grid"><div className="span-7"><CropMonitor data={data} lang={lang} /></div><div className="span-5"><ClimateSimulator onSimulate={handleSimulate} isLoading={isLoading} lang={lang} /></div></section>

@@ -17,6 +17,7 @@ interface RiskMapProps {
     pulsePrecipitationMm: number;
   }>;
   areaHa: number;
+  selectedCropIds?: string[];
   onAreaChange: (newHa: number) => void;
   waterRegime: 'temporal' | 'goteo' | 'gravedad';
   onWaterRegimeChange: (regime: 'temporal' | 'goteo' | 'gravedad') => void;
@@ -38,6 +39,7 @@ export const RiskMap: React.FC<RiskMapProps> = ({
   parcelName,
   eonetAlerts,
   areaHa,
+  selectedCropIds = [],
   onAreaChange,
   waterRegime,
   onWaterRegimeChange,
@@ -76,7 +78,8 @@ export const RiskMap: React.FC<RiskMapProps> = ({
       coordsLabel: 'Coordenadas:',
       satellite: 'Satelital HD',
       streets: 'Calles / Relieve',
-      clickHint: 'Escribe coordenadas o haz clic para marcar el centro.'
+      clickHint: 'Escribe coordenadas o haz clic para marcar el centro.',
+      alertLegend: 'Círculo rojo: radio de referencia de 60 km alrededor de una alerta EONET activa.'
     },
     en: {
       title: 'Parcel Delimitation & Multi-Hazard Map',
@@ -92,7 +95,8 @@ export const RiskMap: React.FC<RiskMapProps> = ({
       coordsLabel: 'Coordinates:',
       satellite: 'Satellite HD',
       streets: 'Streets / Terrain',
-      clickHint: 'Enter coordinates or click to mark the center.'
+      clickHint: 'Enter coordinates or click to mark the center.',
+      alertLegend: 'Red circle: 60 km reference radius around an active EONET alert.'
     }
   }[lang];
 
@@ -307,13 +311,18 @@ export const RiskMap: React.FC<RiskMapProps> = ({
         radius: 60000
       })
         .addTo(map)
-        .bindPopup(`<b>${lang === 'es' ? 'Alerta EONET' : 'EONET alert'}: ${alert.title}</b><br/>${lang === 'es' ? 'Distancia' : 'Distance'}: ${alert.distanceKm.toFixed(1)} km`);
+        .bindPopup(`<b>${lang === 'es' ? 'Alerta EONET' : 'EONET alert'}: ${alert.title}</b><br/>${lang === 'es' ? 'Distancia a la parcela' : 'Distance to field'}: ${alert.distanceKm.toFixed(1)} km<br/>${lang === 'es' ? 'El círculo muestra un radio visual de referencia de 60 km.' : 'The circle shows a 60 km reference radius.'}`);
 
       alertLayersRef.current.push(stormCircle);
     });
   }, [lat, lon, parcelName, areaHa, eonetAlerts, lang]);
 
-  const estimatedVolM3 = Math.round(450 * areaHa * 10);
+  const cropDemandMm: Record<string, number> = { maize: 550, sorghum: 450, wheat: 450, barley: 400, beans: 350, chickpea: 300, alfalfa: 600, broccoli: 380, tomato: 600, onion: 450, garlic: 400, strawberry: 500, oats: 380, vetch: 260, chili_pepper: 580, asparagus: 480, soybean: 450, sunflower: 400, potato: 500, canola: 380 };
+  const irrigationEfficiency = waterRegime === 'goteo' ? 0.9 : waterRegime === 'gravedad' ? 0.6 : 1;
+  const cropWaterEstimates = selectedCropIds.map((id) => ({ id, m3: Math.round((cropDemandMm[id] || 450) * areaHa * 10 / irrigationEfficiency) }));
+  const estimateRange = cropWaterEstimates.length > 1
+    ? `${Math.min(...cropWaterEstimates.map((item) => item.m3)).toLocaleString()}–${Math.max(...cropWaterEstimates.map((item) => item.m3)).toLocaleString()}`
+    : (cropWaterEstimates[0]?.m3 ?? 0).toLocaleString();
 
   return (
     <div className="map-card overflow-hidden flex flex-col">
@@ -404,8 +413,10 @@ export const RiskMap: React.FC<RiskMapProps> = ({
           <div className="bg-slate-800/50 p-2.5 rounded-xl border border-slate-700/60 flex flex-col justify-between">
             <div className="flex items-center justify-between">
               <span className="text-slate-400">{t.volLabel}</span>
-              <span className="font-bold text-cyan-300">~{estimatedVolM3.toLocaleString()} m³</span>
+              <span className="font-bold text-cyan-300">{cropWaterEstimates.length ? `~${estimateRange}` : '—'} m³</span>
             </div>
+            <small className="water-estimate-note">{lang === 'es' ? 'Por ciclo y cultivo si ocupa toda el área; catálogo, sin descontar lluvia.' : 'Per cycle and crop if it covers the full area; catalog value, rainfall not deducted.'}</small>
+            {cropWaterEstimates.length > 0 && <div className="crop-water-hints">{cropWaterEstimates.map(({ id, m3 }) => <span key={id}>{id.replaceAll('_', ' ')} · {m3.toLocaleString()} m³</span>)}</div>}
             <label className="flex items-center gap-2 cursor-pointer mt-1 text-slate-300 select-none">
               <input
                 type="checkbox"
@@ -439,6 +450,7 @@ export const RiskMap: React.FC<RiskMapProps> = ({
               <span>{eonetAlerts.length} {lang === 'es' ? 'alertas activas de EONET' : 'active EONET alerts'}</span>
             </div>
           )}
+          {eonetAlerts.length > 0 && <small className="alert-radius-legend"><i aria-hidden="true" />{t.alertLegend}</small>}
         </div>
 
         {/* Non-intrusive Hint Bar at top right */}

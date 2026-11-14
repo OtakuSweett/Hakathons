@@ -327,6 +327,15 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
 .welcome-sources span { margin-right: 4px; color: #b8cabb; font-size: 11px; }
 .welcome-sources b { padding: 6px 8px; color: #e6edd9; background: #204633; border: 1px solid #315b41; border-radius: 4px; font-size: 10px; font-weight: 600; }
 .location-panel { display: grid; gap: 20px; }
+.location-map-heading { display: flex; align-items: end; justify-content: space-between; gap: 16px; margin: 4px 0 -12px; }
+.location-map-heading b, .location-map-heading small { display: block; }
+.location-map-heading b { color: #294838; font-size: 14px; }
+.location-map-heading small { margin-top: 4px; color: #64776a; font-size: 12px; }
+.water-estimate-note { color: #64776a; font-size: 10px; line-height: 1.4; }
+.crop-water-hints { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.crop-water-hints span { padding: 3px 5px; color: #315d47; background: #eaf2ec; border-radius: 4px; font-size: 10px; }
+.alert-radius-legend { display: flex; align-items: flex-start; gap: 6px; margin-top: 6px; padding-top: 6px; color: #835055; border-top: 1px solid #e7dadd; font-size: 10px; line-height: 1.4; }
+.alert-radius-legend i { flex: 0 0 9px; width: 9px; height: 9px; margin-top: 2px; border: 2px solid #df5260; border-radius: 50%; }
 .location-panel .setup-heading { margin-bottom: 0; }
 .coordinate-entry { max-width: 740px; }
 .coordinate-entry > label, .map-search > label { display: block; margin-bottom: 8px; color: #294838; font-size: 13px; font-weight: 700; }

@@ -113,3 +113,4 @@
 ### Open Integration TODO
 - [ ] A-17: Add an orchestrator geocoding endpoint for place-name search (with provider, privacy, and attribution configured server-side); Track D must not call external services directly from the browser.
 - [x] D-14: Live-location workflow, search by coordinates, bounded map selection, all 20 crop choices, presentation screen, and field-observation recovery
+- [x] D-15: Put the interactive map on location step; show crop-based per-cycle water estimates, explain EONET alert radius, and surface API failure detail with retry
