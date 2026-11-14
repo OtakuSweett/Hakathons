@@ -65,7 +65,7 @@ export const ShiftingLands: React.FC<ShiftingLandsProps> = ({
   const totalNitrogenKg = Math.round(65 * areaHa);
 
   return (
-    <div className="bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950/80 rounded-2xl shadow-xl border border-emerald-500/30 overflow-hidden text-slate-100 p-6 space-y-6">
+    <div className="shifting-card rounded-xl overflow-hidden p-6 space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-emerald-900/60 pb-5">
         <div>

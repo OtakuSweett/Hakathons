@@ -95,6 +95,7 @@
 - [x] D-10: Función 9 (Reportes de Agricultores) — Georeferenced field observation form with damage category selection and photo submission
 - [x] D-11: Offline Standalone Mode — Full simulation demo execution loading `data/presets/` when network/gateway is disconnected
 - [x] D-12: End-of-Task Protocol — Vitest passes, `docs/AGENT_LOG.md` row appended, `WORKLIST.md` ticked
+- [x] D-13: Guided Field Workflow — Region selection, bounded parcel map, grower crop selection, bilingual privacy and opt-in location, responsive field analysis
 
 ---
 

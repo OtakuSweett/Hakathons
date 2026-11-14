@@ -19,7 +19,7 @@ export const EarlyWarningBanner: React.FC<EarlyWarningProps> = ({
   const isImminent = tStar !== null && tStar <= 15.0;
 
   return (
-    <div className={`rounded-2xl p-4 sm:p-5 border transition-all ${
+    <div className={`early-warning rounded-xl p-4 sm:p-5 border transition-all ${
       isImminent
         ? 'bg-gradient-to-r from-amber-950/40 via-zinc-900/60 to-zinc-900/60 border-amber-500/30 shadow-[0_0_25px_rgba(245,158,11,0.08)]'
         : 'bg-gradient-to-r from-emerald-950/30 via-zinc-900/60 to-zinc-900/60 border-emerald-500/20 shadow-[0_0_25px_rgba(16,185,129,0.05)]'

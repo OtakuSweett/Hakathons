@@ -5,6 +5,8 @@ import { Language } from '../types/index.js';
 interface RiskMapProps {
   lat: number;
   lon: number;
+  regionLat: number;
+  regionLon: number;
   parcelName: string;
   eonetAlerts: Array<{
     eventId: string;
@@ -20,21 +22,13 @@ interface RiskMapProps {
   onWaterRegimeChange: (regime: 'temporal' | 'goteo' | 'gravedad') => void;
   lang: Language;
   onMapClick: (lat: number, lon: number) => void;
-  onSelectRegion: (lat: number, lon: number, name: string) => void;
 }
-
-const REGION_PRESETS = [
-  { name: 'El Marqués, Querétaro (El Bajío MX)', lat: 20.5922, lon: -100.1972 },
-  { name: 'San Juan del Río, Qro (Valle Agrícola MX)', lat: 20.3869, lon: -99.9947 },
-  { name: 'Celaya / Bajío Guanajuatense (MX)', lat: 20.5231, lon: -100.8138 },
-  { name: 'Colón Semidesierto (Agostadero/Secano MX)', lat: 20.725, lon: -100.045 },
-  { name: 'Prairie View, Iowa (US Corn Belt)', lat: 42.0308, lon: -93.6319 },
-  { name: 'Pergamino, Pampa Húmeda (Argentina)', lat: -33.8911, lon: -60.5736 }
-];
 
 export const RiskMap: React.FC<RiskMapProps> = ({
   lat,
   lon,
+  regionLat,
+  regionLon,
   parcelName,
   eonetAlerts,
   areaHa,
@@ -42,8 +36,7 @@ export const RiskMap: React.FC<RiskMapProps> = ({
   waterRegime,
   onWaterRegimeChange,
   lang,
-  onMapClick,
-  onSelectRegion
+  onMapClick
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
@@ -70,9 +63,9 @@ export const RiskMap: React.FC<RiskMapProps> = ({
       gibsToggle: 'Capa NASA GIBS (NDVI)',
       volLabel: 'Demanda de Agua Estimada:',
       coordsLabel: 'Coordenadas:',
-      satellite: '🛰️ Satelital HD',
-      streets: '🗺️ Calles / Relieve',
-      clickHint: '💡 Clic en cualquier punto del mapa para mover la parcela y consultar el análisis satelital.'
+      satellite: 'Satelital HD',
+      streets: 'Calles / Relieve',
+      clickHint: 'Haz clic dentro de la región para consultar este punto.'
     },
     en: {
       title: 'Parcel Delimitation & Multi-Hazard Map',
@@ -86,9 +79,9 @@ export const RiskMap: React.FC<RiskMapProps> = ({
       gibsToggle: 'NASA GIBS Overlay (NDVI)',
       volLabel: 'Estimated Water Demand:',
       coordsLabel: 'Coordinates:',
-      satellite: '🛰️ Satellite HD',
-      streets: '🗺️ Streets / Terrain',
-      clickHint: '💡 Click anywhere on the map to relocate the parcel and fetch satellite analysis.'
+      satellite: 'Satellite HD',
+      streets: 'Streets / Terrain',
+      clickHint: 'Click within this region to analyze a field location.'
     }
   }[lang];
 
@@ -100,7 +93,9 @@ export const RiskMap: React.FC<RiskMapProps> = ({
       const map = L.map(mapContainerRef.current, {
         center: [lat, lon],
         zoom: 13,
-        zoomControl: true
+        zoomControl: true,
+        maxBounds: [[regionLat - 0.55, regionLon - 0.7], [regionLat + 0.55, regionLon + 0.7]],
+        maxBoundsViscosity: 1
       });
 
       // Esri World Imagery (Clean high-resolution satellite imagery, NO watermark)
@@ -126,15 +121,20 @@ export const RiskMap: React.FC<RiskMapProps> = ({
       gibs.addTo(map);
       gibsLayerRef.current = gibs;
 
-      map.on('click', (e: L.LeafletMouseEvent) => {
-        onMapClick(e.latlng.lat, e.latlng.lng);
-      });
-
       mapInstanceRef.current = map;
     } else {
+      mapInstanceRef.current.setMaxBounds([[regionLat - 0.55, regionLon - 0.7], [regionLat + 0.55, regionLon + 0.7]]);
       mapInstanceRef.current.setView([lat, lon], mapInstanceRef.current.getZoom());
     }
-  }, [lat, lon, onMapClick]);
+  }, [lat, lon, regionLat, regionLon]);
+
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map) return;
+    const handleClick = (event: L.LeafletMouseEvent) => onMapClick(event.latlng.lat, event.latlng.lng);
+    map.on('click', handleClick);
+    return () => { map.off('click', handleClick); };
+  }, [onMapClick]);
 
   // Handle Base Map Type Switch (Esri Satellite vs OpenStreetMap)
   useEffect(() => {
@@ -246,7 +246,7 @@ export const RiskMap: React.FC<RiskMapProps> = ({
   const estimatedVolM3 = Math.round(450 * areaHa * 10);
 
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden flex flex-col">
+    <div className="map-card overflow-hidden flex flex-col">
       {/* Top Controls Bar */}
       <div className="p-4 bg-slate-900/90 border-b border-slate-800 space-y-3 text-xs">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -258,7 +258,7 @@ export const RiskMap: React.FC<RiskMapProps> = ({
             <p className="text-slate-400 text-[11px]">{t.subtitle}</p>
           </div>
 
-          {/* Quick Region Preset Selector & Layer Switcher */}
+          {/* Base map layer switcher */}
           <div className="flex flex-wrap items-center gap-2">
             <div className="flex bg-slate-800 p-0.5 rounded-lg border border-slate-700">
               <button
@@ -281,22 +281,6 @@ export const RiskMap: React.FC<RiskMapProps> = ({
               </button>
             </div>
 
-            <select
-              onChange={(e) => {
-                const target = REGION_PRESETS.find((r) => r.name === e.target.value);
-                if (target) {
-                  onSelectRegion(target.lat, target.lon, target.name);
-                }
-              }}
-              className="bg-slate-800 text-slate-200 border border-slate-700 rounded-lg px-2.5 py-1 text-xs focus:ring-1 focus:ring-emerald-500 focus:outline-hidden"
-            >
-              <option value="">{t.searchLabel} {lang === 'es' ? 'Seleccionar...' : 'Select...'}</option>
-              {REGION_PRESETS.map((r) => (
-                <option key={r.name} value={r.name}>
-                  {r.name}
-                </option>
-              ))}
-            </select>
           </div>
         </div>
 
