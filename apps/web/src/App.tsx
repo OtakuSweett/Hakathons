@@ -14,6 +14,7 @@ import { FarmerReportsModal } from './components/FarmerReportsModal.js';
 import { apiFetch } from './services/api.js';
 
 type WaterRegime = 'temporal' | 'goteo' | 'gravedad';
+type GeoBounds = [[number, number], [number, number]];
 const stepLabels = {
   es: ['Ubicación', 'Parcela', 'Cultivos', 'Resultados'],
   en: ['Location', 'Field', 'Crops', 'Results']
@@ -35,6 +36,26 @@ const cropNames: Record<Language, Record<string, string>> = {
 
 const cropLabel = (cropId: string, language: Language) => cropNames[language][cropId] || cropId.replaceAll('_', ' ');
 const cropCatalogIds = Object.keys(cropNames.es);
+const provenanceMessages = (data: AnalysisResponse, lang: Language) => {
+  const provenance = data.data_provenance;
+  if (!provenance) return [];
+  const messages: string[] = [];
+  if (provenance.climate?.retrieval === 'live_fallback') {
+    messages.push(lang === 'es' ? 'Clima: se usó Open-Meteo Archive porque NASA POWER no respondió. Es meteorología histórica de esta ubicación.' : 'Climate: Open-Meteo Archive was used because NASA POWER did not respond. These are historical weather data for this location.');
+  }
+  const cached = [provenance.soil?.retrieval === 'cache' ? (lang === 'es' ? 'suelo' : 'soil') : '', provenance.climate?.retrieval === 'cache' ? (lang === 'es' ? 'clima' : 'climate') : ''].filter(Boolean);
+  if (cached.length) messages.push(lang === 'es' ? `Se reutilizó caché de esta misma ubicación para ${cached.join(' y ')}.` : `Cached data for this exact location were reused for ${cached.join(' and ')}.`);
+  if (provenance.soil?.retrieval === 'preset_fallback') {
+    messages.push(lang === 'es' ? `Suelo de referencia regional (${provenance.soil.preset_id || 'benchmark'}); no es una medición de esta parcela.` : `Regional reference soil (${provenance.soil.preset_id || 'benchmark'}); this is not a measurement from this field.`);
+  }
+  if (provenance.eonet?.retrieval === 'unavailable') {
+    messages.push(lang === 'es' ? 'NASA EONET no respondió; no tener alertas cargadas no significa que no existan eventos.' : 'NASA EONET did not respond; an empty alert list does not mean there are no events.');
+  }
+  if ((provenance.workers?.fallback || []).length) {
+    messages.push(lang === 'es' ? `Cálculo alternativo del servidor: ${(provenance.workers?.fallback || []).join(', ')}.` : `Server calculation fallback: ${(provenance.workers?.fallback || []).join(', ')}.`);
+  }
+  return messages;
+};
 const presetCropSelection = (presetId: string, analysis: AnalysisResponse) => {
   const presetCrop = DEMO_PRESETS_LIST.find((preset) => preset.presetId === presetId)?.cropId;
   if (!presetCrop) return [];
@@ -62,8 +83,8 @@ export const App: React.FC = () => {
   const [step, setStep] = useState(0);
   const [hasStarted, setHasStarted] = useState(false);
   const [selectedPresetId, setSelectedPresetId] = useState('el_marques_qro');
-  const [locationInput, setLocationInput] = useState('');
   const [mapRegionCenter, setMapRegionCenter] = useState({ lat: 20.5922, lon: -100.1972 });
+  const [mapSelectionBounds, setMapSelectionBounds] = useState<GeoBounds | null>(null);
   const [isOfflineMode, setIsOfflineMode] = useState(() => !navigator.onLine);
   const [browserOnline, setBrowserOnline] = useState(() => navigator.onLine);
   const [serviceAvailable, setServiceAvailable] = useState<boolean | null>(null);
@@ -125,31 +146,10 @@ export const App: React.FC = () => {
     setLocationMessage('');
   };
 
-  const handleLocationSearch = (lat: number, lon: number) => {
+  const handleLocationSearch = (lat: number, lon: number, bounds?: GeoBounds | null) => {
     setMapRegionCenter({ lat, lon });
+    setMapSelectionBounds(bounds || null);
     handleMapCoordinateSelect(lat, lon);
-  };
-
-  const goToCoordinateEntry = () => {
-    const match = locationInput.trim().match(/^(-?\d+(?:\.\d+)?)\s*[,; ]\s*(-?\d+(?:\.\d+)?)$/);
-    if (!match) {
-      setLocationMessage(text('Escribe latitud y longitud decimales, por ejemplo 20.5922, -100.1972.', 'Enter decimal latitude and longitude, for example 20.5922, -100.1972.'));
-      return;
-    }
-    const lat = Number(match[1]);
-    const lon = Number(match[2]);
-    if (lat < -90 || lat > 90 || lon < -180 || lon > 180) {
-      setLocationMessage(text('Las coordenadas están fuera del rango válido de la Tierra.', 'Coordinates are outside Earth’s valid range.'));
-      return;
-    }
-    setMapRegionCenter({ lat, lon });
-    handleMapCoordinateSelect(lat, lon);
-    setLocationMessage('');
-    setStep(1);
-    if (reportAfterLocation) {
-      setIsReportModalOpen(true);
-      setReportAfterLocation(false);
-    }
   };
 
   const handleSimulate = async (deltaPrecip: number, deltaTemp: number, eonetPulse: boolean) => {
@@ -182,6 +182,7 @@ export const App: React.FC = () => {
     setData(benchmark);
     setSelectedCoordinates(benchmark.coordinates);
     setDataSource('benchmark');
+    setMapSelectionBounds(null);
     setMapRegionCenter({ lat: preset?.lat ?? benchmark.coordinates.lat, lon: preset?.lon ?? benchmark.coordinates.lon });
     setSelectedCrops(presetCropSelection(selectedPresetId, benchmark));
     setParcelRejected(false);
@@ -202,6 +203,7 @@ export const App: React.FC = () => {
     setData(benchmark);
     setSelectedCoordinates(benchmark.coordinates);
     setDataSource('benchmark');
+    setMapSelectionBounds(null);
     setMapRegionCenter({ lat: preset?.lat ?? benchmark.coordinates.lat, lon: preset?.lon ?? benchmark.coordinates.lon });
     setSelectedCrops(presetCropSelection(selectedPresetId, benchmark));
     setParcelRejected(false);
@@ -312,8 +314,8 @@ export const App: React.FC = () => {
     navigator.geolocation.getCurrentPosition(
       ({ coords }) => {
         setMapRegionCenter({ lat: coords.latitude, lon: coords.longitude });
+        setMapSelectionBounds(null);
         void handleMapCoordinateSelect(coords.latitude, coords.longitude);
-        setLocationInput(`${coords.latitude.toFixed(5)}, ${coords.longitude.toFixed(5)}`);
         setStep(1);
         if (reportAfterLocation) {
           setIsReportModalOpen(true);
@@ -368,7 +370,7 @@ export const App: React.FC = () => {
             <h1>{text('Decide con el clima, el suelo y el agua de tu parcela.', 'Plan with your field’s climate, soil, and water.')}</h1>
             <p>{text('Explora condiciones de tu parcela, compara cultivos y anticipa decisiones de agua con datos de NASA, SoilGrids y observaciones de productores.', 'Explore your field conditions, compare crops, and plan water decisions with NASA, SoilGrids, and farmer observations.')}</p>
             <div className="welcome-actions"><button className="primary-button" type="button" onClick={() => setHasStarted(true)}>{text('Planear mi parcela', 'Plan my field')} <span aria-hidden="true">→</span></button><button className="welcome-secondary" type="button" onClick={openFieldReport}>{text('Registrar observación', 'Report a field observation')}</button></div>
-          <small>{text('Usa tu ubicación o coordenadas para iniciar un análisis real. Los ejemplos guardados solo se usan como alternativa sin conexión.', 'Use your location or coordinates to start a live analysis. Saved examples are only an offline fallback.')}</small>
+          <small>{text('Busca una ciudad, dirección o coordenadas, o marca tu parcela en el mapa. Los ejemplos guardados solo se usan sin conexión.', 'Search for a city, address, or coordinates, or mark your field on the map. Saved examples are only used offline.')}</small>
           </div>
           <div className="welcome-map" aria-label={text('Ilustración topográfica de una parcela', 'Topographic field illustration')}><div className="welcome-map-grid"/><svg viewBox="0 0 480 340" fill="none" aria-hidden="true"><path d="M31 184c35-52 87-70 138-39 40 24 72 13 101-31 38-58 89-64 130-24 29 29 47 31 70 15M22 218c43-60 93-77 147-45 43 25 82 15 112-31 39-58 94-67 140-22 20 19 34 26 53 18M19 252c44-57 100-78 158-44 49 29 91 20 120-27 36-59 96-70 146-25 13 12 23 19 35 18M58 286c46-47 91-56 139-30 50 28 100 20 132-27 35-51 89-59 132-24" stroke="currentColor" strokeWidth="2"/><path d="M247 109c-22 0-40 18-40 40 0 28 40 62 40 62s40-34 40-62c0-22-18-40-40-40Z" fill="#d4ec79" stroke="#1e4936" strokeWidth="4"/><circle cx="247" cy="149" r="11" fill="#1e4936"/><path d="M92 152h58m158 87h78M136 94h48" stroke="#d4ec79" strokeWidth="2" strokeDasharray="5 7"/></svg><span className="welcome-map-label">{text('Tu parcela, en contexto', 'Your field, in context')}</span></div>
           <div className="welcome-steps"><div><span>01</span><b>{text('Ubica', 'Locate')}</b><small>{text('Usa GPS, coordenadas o el mapa.', 'Use GPS, coordinates, or the map.')}</small></div><div><span>02</span><b>{text('Describe', 'Describe')}</b><small>{text('Elige cultivos y manejo actual.', 'Choose crops and current practices.')}</small></div><div><span>03</span><b>{text('Decide', 'Decide')}</b><small>{text('Consulta agua, alertas y rotación.', 'Review water, risks, and rotation.')}</small></div></div>
@@ -388,22 +390,18 @@ export const App: React.FC = () => {
         {hasStarted && isLoading && <div className="loading-line" role="status"><i />{text('Consultando suelo, clima y alertas de la parcela…', 'Loading field soil, climate, and alerts…')}</div>}
 
         {step === 0 && <section className="setup-panel location-panel">
-          <div className="setup-heading"><div><span className="step-kicker">{text('PASO 1 · UBICACIÓN', 'STEP 1 · LOCATION')}</span><h2>{text('Encuentra tu parcela', 'Find your field')}</h2><p>{text('Usa tu ubicación o pega sus coordenadas. El análisis consultará los servicios en esta ubicación; los ejemplos guardados quedan como alternativa sin conexión.', 'Use your location or enter its coordinates. Analysis will query services for this location; saved examples remain an offline fallback.')}</p></div></div>
-          <form className="coordinate-entry" onSubmit={(event) => { event.preventDefault(); goToCoordinateEntry(); }}>
-            <label htmlFor="location-coordinate-entry">{text('Latitud, longitud', 'Latitude, longitude')}</label>
-            <div className="coordinate-entry-control"><input id="location-coordinate-entry" value={locationInput} onChange={(event) => setLocationInput(event.target.value)} placeholder="20.5922, -100.1972" autoComplete="off" inputMode="decimal" /><button type="submit" className="primary-button">{text('Ubicar parcela', 'Locate field')} <span aria-hidden="true">→</span></button></div>
-            <small>{text('Coordenadas decimales · latitud entre −90 y 90 · longitud entre −180 y 180', 'Decimal coordinates · latitude −90 to 90 · longitude −180 to 180')}</small>
-          </form>
-          <div className="location-options"><button className="location-option" type="button" onClick={requestLocation}><span className="location-option-icon" aria-hidden="true">◎</span><span><b>{text('Usar mi ubicación actual', 'Use my current location')}</b><small>{text('El navegador pedirá permiso. No se comparte hasta calcular.', 'Your browser will ask permission. It is not shared until you calculate.')}</small></span><span aria-hidden="true">→</span></button></div>
+          <div className="setup-heading"><div><span className="step-kicker">{text('PASO 1 · UBICACIÓN', 'STEP 1 · LOCATION')}</span><h2>{text('Encuentra tu parcela', 'Find your field')}</h2><p>{text('Busca tu ciudad o dirección, pega coordenadas o marca el punto en el mapa. El análisis usará la parcela elegida; los ejemplos solo sirven sin conexión.', 'Search for a city or address, enter coordinates, or mark the map. Analysis uses your selected field; saved examples are only for offline use.')}</p></div></div>
+          <div className="location-options"><button className="location-option" type="button" onClick={requestLocation}><span className="location-option-icon" aria-hidden="true">◎</span><span><b>{text('Usar mi ubicación actual', 'Use my current location')}</b><small>{text('El navegador pedirá permiso. Solo se comparte cuando solicitas el análisis.', 'Your browser will ask permission. The location is shared only when you request analysis.')}</small></span><span aria-hidden="true">→</span></button></div>
           {locationMessage && <p className="inline-message" role="alert">{locationMessage}</p>}
           <div className="location-map-heading"><div><b>{text('O marca el punto en el mapa', 'Or mark the point on the map')}</b><small>{text('Acerca el mapa y toca el centro aproximado de tu parcela.', 'Zoom in and tap near the center of your field.')}</small></div><span className="coordinate-readout">{selectedCoordinates.lat.toFixed(4)}°, {selectedCoordinates.lon.toFixed(4)}°</span></div>
-          <RiskMap lat={selectedCoordinates.lat} lon={selectedCoordinates.lon} regionLat={mapRegionCenter.lat} regionLon={mapRegionCenter.lon} parcelName={text('Centro de parcela', 'Field center')} eonetAlerts={[]} areaHa={areaHa} selectedCropIds={selectedCrops} onAreaChange={setAreaHa} waterRegime={waterRegime} onWaterRegimeChange={setWaterRegime} lang={lang} onMapClick={handleMapCoordinateSelect} onLocationSearch={handleLocationSearch} />
+          <RiskMap lat={selectedCoordinates.lat} lon={selectedCoordinates.lon} regionLat={mapRegionCenter.lat} regionLon={mapRegionCenter.lon} selectionBounds={mapSelectionBounds} parcelName={text('Centro de parcela', 'Field center')} eonetAlerts={[]} areaHa={areaHa} selectedCropIds={selectedCrops} onAreaChange={setAreaHa} waterRegime={waterRegime} onWaterRegimeChange={setWaterRegime} lang={lang} onMapClick={handleMapCoordinateSelect} onLocationSearch={handleLocationSearch} />
           <div className="panel-actions"><span className="coordinate-readout">{text('Ubicación elegida', 'Selected location')} <b>{selectedCoordinates.lat.toFixed(4)}°, {selectedCoordinates.lon.toFixed(4)}°</b></span><button className="primary-button" type="button" onClick={() => setStep(1)}>{text('Confirmar ubicación', 'Confirm location')} <span aria-hidden="true">→</span></button></div>
           <details className="demo-options"><summary>{text('Abrir ejemplos guardados (sin conexión)', 'Open saved examples (offline)')}</summary><div className="region-options" role="radiogroup" aria-label={text('Ejemplos regionales guardados', 'Saved regional examples')}>
             {DEMO_PRESETS_LIST.map((preset) => <button key={preset.presetId} type="button" role="radio" aria-checked={selectedPresetId === preset.presetId} onClick={() => {
               const benchmark = getMockAnalysis(preset.presetId);
               setSelectedPresetId(preset.presetId);
               setMapRegionCenter({ lat: preset.lat, lon: preset.lon });
+              setMapSelectionBounds(null);
               setData(benchmark);
               setSelectedCoordinates(benchmark.coordinates);
               setSelectedCrops(presetCropSelection(preset.presetId, benchmark));
@@ -421,7 +419,7 @@ export const App: React.FC = () => {
           {(needsLiveAnalysis || needsBenchmarkReset) && !locationMessage && <p className="map-selection-hint" role="status">{needsLiveAnalysis
             ? text('Punto marcado. Continúa para elegir tus cultivos; los datos se consultan al calcular el análisis.', 'Point marked. Continue to choose crops; data is fetched when you calculate the analysis.')
             : text('La demo local solo tiene datos del punto guardado. Vuelve a ese punto para continuar con datos coherentes.', 'The local demo only has data for its saved point. Return there to continue with matching data.')}</p>}
-          <RiskMap lat={selectedCoordinates.lat} lon={selectedCoordinates.lon} regionLat={mapRegionCenter.lat} regionLon={mapRegionCenter.lon} parcelName={sameAsAnalyzed ? currentPresetName : text('Punto seleccionado', 'Selected point')} eonetAlerts={data.eonet_hazard_alerts || []} areaHa={areaHa} selectedCropIds={selectedCrops} onAreaChange={setAreaHa} waterRegime={waterRegime} onWaterRegimeChange={setWaterRegime} lang={lang} onMapClick={handleMapCoordinateSelect} onLocationSearch={handleLocationSearch} />
+          <RiskMap lat={selectedCoordinates.lat} lon={selectedCoordinates.lon} regionLat={mapRegionCenter.lat} regionLon={mapRegionCenter.lon} selectionBounds={mapSelectionBounds} parcelName={sameAsAnalyzed ? currentPresetName : text('Punto seleccionado', 'Selected point')} eonetAlerts={data.eonet_hazard_alerts || []} areaHa={areaHa} selectedCropIds={selectedCrops} onAreaChange={setAreaHa} waterRegime={waterRegime} onWaterRegimeChange={setWaterRegime} lang={lang} onMapClick={handleMapCoordinateSelect} onLocationSearch={handleLocationSearch} />
           <div className="panel-actions"><span className="coordinate-readout">{text('Centro seleccionado', 'Selected center')} <b>{selectedCoordinates.lat.toFixed(4)}°, {selectedCoordinates.lon.toFixed(4)}°</b></span>{needsLiveAnalysis
             ? <button className="primary-button" type="button" disabled={parcelRejected} onClick={() => setStep(2)}>{text('Elegir cultivos', 'Choose crops')} <span aria-hidden="true">→</span></button>
             : needsBenchmarkReset
@@ -456,10 +454,11 @@ export const App: React.FC = () => {
         {step === 3 && <>
           {isOfflineMode && <div className="offline-note" role="status"><strong>{text('Demo local', 'Local demo')}</strong><span>{text('El paquete conserva suelo, clima y rotación regional. El simulador climático calcula escenarios aquí mismo; para analizar coordenadas nuevas o recalcular cultivos, vuelve a conectar.', 'The package includes regional soil, climate, and rotation data. The climate simulator runs scenarios here; reconnect to analyze new coordinates or recalculate crop choices.')}</span></div>}
           <div className="analysis-heading"><div><span className="step-kicker">{text('ANÁLISIS DE PARCELA', 'FIELD ANALYSIS')}</span><h2>{currentPresetName}</h2><p>{data.coordinates.lat.toFixed(4)}°, {data.coordinates.lon.toFixed(4)}° <span>·</span> {areaHa.toFixed(1)} ha <span>·</span> {selectedCrops.map((crop) => crop.replaceAll('_', ' ')).join(', ') || text('sin cultivos seleccionados', 'no crops selected')}</p></div><button className="outline-button" type="button" onClick={() => setStep(1)}>{text('Editar parcela', 'Edit field')}</button></div>
+          {provenanceMessages(data, lang).length > 0 && <aside className="data-quality-notice" role="status"><b>{text('Origen y disponibilidad de los datos', 'Data source and availability')}</b>{provenanceMessages(data, lang).map((message) => <p key={message}>{message}</p>)}</aside>}
           <EarlyWarningBanner trigger={data.physics?.irrigation_trigger || { t_star_days: null, delta_i_mm: null, reason: null }} eonetCount={data.eonet_hazard_alerts?.length || 0} meanTempC={data.climate_summary?.mean_temperature_c || 21} lang={lang} />
           <ShiftingLands data={data} areaHa={areaHa} waterRegime={waterRegime} lang={lang} />
           <section className="analysis-grid main-analysis-grid">
-            <div className="span-7"><RiskMap lat={data.coordinates.lat} lon={data.coordinates.lon} regionLat={mapRegionCenter.lat} regionLon={mapRegionCenter.lon} parcelName={currentPresetName} eonetAlerts={data.eonet_hazard_alerts || []} areaHa={areaHa} selectedCropIds={selectedCrops} onAreaChange={setAreaHa} waterRegime={waterRegime} onWaterRegimeChange={setWaterRegime} lang={lang} onMapClick={(lat, lon) => { handleMapCoordinateSelect(lat, lon); setStep(1); }} onLocationSearch={(lat, lon) => { handleLocationSearch(lat, lon); setStep(1); }} /></div>
+            <div className="span-7"><RiskMap lat={data.coordinates.lat} lon={data.coordinates.lon} regionLat={mapRegionCenter.lat} regionLon={mapRegionCenter.lon} selectionBounds={mapSelectionBounds} parcelName={currentPresetName} eonetAlerts={data.eonet_hazard_alerts || []} areaHa={areaHa} selectedCropIds={selectedCrops} onAreaChange={setAreaHa} waterRegime={waterRegime} onWaterRegimeChange={setWaterRegime} lang={lang} onMapClick={(lat, lon) => { handleMapCoordinateSelect(lat, lon); setStep(1); }} onLocationSearch={(lat, lon, bounds) => { handleLocationSearch(lat, lon, bounds); setStep(1); }} /></div>
             <div className="span-5"><CropAdvisor viableCropIds={data.optimization?.presolver_summary?.feasible_crop_ids || []} discarded={data.optimization?.presolver_summary?.discarded || []} soilPh={data.soil_hydraulics?.soil_ph || 6.8} lang={lang} /></div>
           </section>
           <section className="analysis-grid"><div className="span-7"><CropMonitor data={data} lang={lang} /></div><div className="span-5"><ClimateSimulator onSimulate={handleSimulate} isLoading={isLoading} lang={lang} /></div></section>
@@ -469,8 +468,8 @@ export const App: React.FC = () => {
         </>}
       </main>
 
-      {cookieNotice && <aside className="consent-note" aria-label={text('Aviso de privacidad', 'Privacy notice')}><p>{text('Guardamos tu idioma, este aviso y los reportes pendientes si no hay conexión. Las coordenadas se comparten cuando solicitas un análisis o envías una observación; consulta', 'We store your language, this notice, and pending reports if offline. Coordinates are shared when you request an analysis or submit an observation; read our')} <button type="button" className="inline-link" onClick={() => setLocationMessage(text('Condiciones de uso: recomendaciones orientativas; contrasta decisiones con asesoría agronómica local. Privacidad: las coordenadas se envían al orquestador al solicitar análisis o reportar una observación. Si el servicio falla, el reporte se guarda localmente en este navegador; la fotografía no se guarda en ese modo. No usamos cookies de seguimiento.', 'Terms: recommendations are guidance; verify decisions with local agronomic advice. Privacy: coordinates are sent to the orchestrator when you request an analysis or submit an observation. If the service fails, the report is stored locally in this browser; its photo is not stored offline. We do not use tracking cookies.'))}>{text('términos y privacidad', 'terms and privacy')}</button>.</p><button type="button" className="consent-accept" onClick={() => { localStorage.setItem('agro-dss-notice', 'accepted'); setCookieNotice(false); }}>{text('Entendido', 'Got it')}</button></aside>}
-      <footer className="site-footer"><span>Campo Claro <span>·</span> {text('Planificación agrícola informada', 'Evidence-led field planning')}</span><span>NASA POWER · SoilGrids · EONET · FAO-56</span><button type="button" onClick={() => setLocationMessage(text('Condiciones de uso: recomendaciones orientativas. Privacidad: coordenadas enviadas para los análisis y reportes que solicitas; los reportes pendientes se guardan localmente cuando falla el servicio. No usamos cookies de seguimiento.', 'Terms: recommendations are guidance. Privacy: coordinates are sent for requested analyses and reports; pending reports are stored locally if the service fails. We do not use tracking cookies.'))}>{text('Términos y privacidad', 'Terms and privacy')}</button></footer>
+      {cookieNotice && <aside className="consent-note" aria-label={text('Aviso de privacidad', 'Privacy notice')}><p>{text('Guardamos tu idioma y este aviso. Si buscas por nombre, enviamos la consulta al servicio de geocodificación; tus coordenadas se consultan al solicitar un análisis o reportar una observación. Consulta', 'We store your language and this notice. Place-name searches are sent to the geocoding service; coordinates are queried when you request an analysis or submit an observation. Read our')} <button type="button" className="inline-link" onClick={() => setLocationMessage(text('Condiciones de uso: recomendaciones orientativas; contrasta decisiones con asesoría agronómica local. Privacidad: la búsqueda de lugares se envía al proveedor de geocodificación configurado; las coordenadas se envían al orquestador al solicitar análisis o reportar una observación. Los reportes pendientes se guardan localmente si falla el servicio. No usamos cookies de seguimiento.', 'Terms: recommendations are guidance; verify decisions with local agronomic advice. Privacy: place searches are sent to the configured geocoding provider; coordinates are sent to the orchestrator for requested analyses or reports. Pending reports are stored locally if the service fails. We do not use tracking cookies.'))}>{text('términos y privacidad', 'terms and privacy')}</button>.</p><button type="button" className="consent-accept" onClick={() => { localStorage.setItem('agro-dss-notice', 'accepted'); setCookieNotice(false); }}>{text('Entendido', 'Got it')}</button></aside>}
+      <footer className="site-footer"><span>Campo Claro <span>·</span> {text('Planificación agrícola informada', 'Evidence-led field planning')}</span><span>NASA POWER · SoilGrids · EONET · FAO-56</span><button type="button" onClick={() => setLocationMessage(text('Condiciones de uso: recomendaciones orientativas. Privacidad: la búsqueda de lugares se envía al geocodificador configurado; las coordenadas se envían cuando solicitas análisis o reportes. No usamos cookies de seguimiento.', 'Terms: recommendations are guidance. Privacy: place searches go to the configured geocoder; coordinates are sent when you request analyses or reports. We do not use tracking cookies.'))}>{text('Términos y privacidad', 'Terms and privacy')}</button></footer>
       <FarmerReportsModal isOpen={isReportModalOpen} onClose={() => setIsReportModalOpen(false)} lat={selectedCoordinates.lat} lon={selectedCoordinates.lon} parcelId={dataSource === 'live' && sameAsAnalyzed ? data.parcel_id : isOfflineMode ? data.parcel_id : `custom_${selectedCoordinates.lat.toFixed(4)}_${selectedCoordinates.lon.toFixed(4)}`} cropOptions={orderedCropOptions} lang={lang} />
       {locationMessage && ((step === 0 && !hasStarted) || step > 1) && <div className="toast-message" role="status"><span>{locationMessage}</span><button type="button" onClick={() => setLocationMessage('')} aria-label={text('Cerrar aviso', 'Dismiss notice')}>×</button></div>}
     </div>

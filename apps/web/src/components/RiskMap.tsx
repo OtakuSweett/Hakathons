@@ -1,12 +1,24 @@
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import { Language } from '../types/index.js';
+import { apiFetch } from '../services/api.js';
+
+type GeoBounds = [[number, number], [number, number]];
+interface GeocodePlace { lat: number; lon: number; name: string; type: string; bounds: GeoBounds | null }
+
+const cropNames: Record<string, [string, string]> = {
+  maize: ['Maíz', 'Maize'], sorghum: ['Sorgo', 'Sorghum'], wheat: ['Trigo', 'Wheat'], barley: ['Cebada', 'Barley'], beans: ['Frijol', 'Beans'], chickpea: ['Garbanzo', 'Chickpea'],
+  alfalfa: ['Alfalfa', 'Alfalfa'], broccoli: ['Brócoli', 'Broccoli'], tomato: ['Jitomate', 'Tomato'], onion: ['Cebolla', 'Onion'], garlic: ['Ajo', 'Garlic'], strawberry: ['Fresa', 'Strawberry'],
+  oats: ['Avena', 'Oats'], vetch: ['Veza', 'Vetch'], chili_pepper: ['Chile', 'Chili pepper'], asparagus: ['Espárrago', 'Asparagus'], soybean: ['Soya', 'Soybean'],
+  sunflower: ['Girasol', 'Sunflower'], potato: ['Papa', 'Potato'], canola: ['Canola', 'Canola']
+};
 
 interface RiskMapProps {
   lat: number;
   lon: number;
   regionLat: number;
   regionLon: number;
+  selectionBounds?: GeoBounds | null;
   parcelName: string;
   eonetAlerts: Array<{
     eventId: string;
@@ -23,7 +35,7 @@ interface RiskMapProps {
   onWaterRegimeChange: (regime: 'temporal' | 'goteo' | 'gravedad') => void;
   lang: Language;
   onMapClick: (lat: number, lon: number) => void;
-  onLocationSearch: (lat: number, lon: number) => void;
+  onLocationSearch: (lat: number, lon: number, bounds?: GeoBounds | null) => void;
 }
 
 const fieldBounds = (lat: number, lon: number): [[number, number], [number, number]] => [
@@ -36,6 +48,7 @@ export const RiskMap: React.FC<RiskMapProps> = ({
   lon,
   regionLat,
   regionLon,
+  selectionBounds,
   parcelName,
   eonetAlerts,
   areaHa,
@@ -59,6 +72,9 @@ export const RiskMap: React.FC<RiskMapProps> = ({
   const [showGibs, setShowGibs] = useState<boolean>(false);
   const [locationQuery, setLocationQuery] = useState('');
   const [searchError, setSearchError] = useState('');
+  const [searchResults, setSearchResults] = useState<GeocodePlace[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchAttribution, setSearchAttribution] = useState('');
 
   const baseLayerRef = useRef<L.TileLayer | null>(null);
   const gibsLayerRef = useRef<L.TileLayer | null>(null);
@@ -67,7 +83,7 @@ export const RiskMap: React.FC<RiskMapProps> = ({
     es: {
       title: 'Delimitación de Parcela y Mapa de Riesgos',
       subtitle: 'Exploración geográfica con imágenes satelitales Esri/NASA, alertas EONET v3 y dimensionamiento en hectáreas.',
-      searchLabel: 'Ir a coordenadas',
+      searchLabel: 'Busca ciudad, dirección o coordenadas',
       areaLabel: 'Tamaño de Parcela:',
       regimeLabel: 'Régimen Hídrico:',
       temporal: 'Temporal / Secano',
@@ -78,13 +94,18 @@ export const RiskMap: React.FC<RiskMapProps> = ({
       coordsLabel: 'Coordenadas:',
       satellite: 'Satelital HD',
       streets: 'Calles / Relieve',
-      clickHint: 'Escribe coordenadas o haz clic para marcar el centro.',
+      clickHint: 'Busca un lugar, pega coordenadas o marca el punto en el mapa.',
+      searchPlaceholder: 'Ej. El Marqués, Querétaro',
+      searchButton: 'Buscar',
+      resultLabel: 'Elige el lugar correcto',
+      noResults: 'No encontramos ese lugar. Prueba con ciudad y país o marca el mapa.',
+      searchHelp: 'La búsqueda se envía solo al pulsar Buscar. También acepta latitud, longitud.',
       alertLegend: 'Círculo rojo: radio de referencia de 60 km alrededor de una alerta EONET activa.'
     },
     en: {
       title: 'Parcel Delimitation & Multi-Hazard Map',
       subtitle: 'Geographic exploration with Esri/NASA satellite imagery, EONET v3 hazards, and dynamic hectare sizing.',
-      searchLabel: 'Go to coordinates',
+      searchLabel: 'Search a city, address, or coordinates',
       areaLabel: 'Parcel Area:',
       regimeLabel: 'Water Regime:',
       temporal: 'Rainfed (Temporal)',
@@ -95,16 +116,22 @@ export const RiskMap: React.FC<RiskMapProps> = ({
       coordsLabel: 'Coordinates:',
       satellite: 'Satellite HD',
       streets: 'Streets / Terrain',
-      clickHint: 'Enter coordinates or click to mark the center.',
+      clickHint: 'Search for a place, enter coordinates, or click the map.',
+      searchPlaceholder: 'e.g. Ames, Iowa',
+      searchButton: 'Search',
+      resultLabel: 'Choose the right place',
+      noResults: 'We could not find that place. Try city and country or select the map.',
+      searchHelp: 'Your search is sent only when you press Search. Coordinates are accepted too.',
       alertLegend: 'Red circle: 60 km reference radius around an active EONET alert.'
     }
   }[lang];
 
-  const searchLocation = (event: React.FormEvent<HTMLFormElement>) => {
+  const searchLocation = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const query = locationQuery.trim();
     if (!query) return;
     setSearchError('');
+    setSearchResults([]);
     const coordinateMatch = query.match(/^\s*(-?\d+(?:\.\d+)?)\s*[,; ]\s*(-?\d+(?:\.\d+)?)\s*$/);
     if (coordinateMatch) {
       const searchedLat = Number(coordinateMatch[1]);
@@ -118,7 +145,33 @@ export const RiskMap: React.FC<RiskMapProps> = ({
       onLocationSearch(searchedLat, searchedLon);
       return;
     }
-    setSearchError(lang === 'es' ? 'Escribe latitud y longitud decimales, por ejemplo 20.5922, -100.1972.' : 'Enter decimal latitude and longitude, for example 20.5922, -100.1972.');
+    setIsSearching(true);
+    try {
+      const response = await apiFetch(`/api/geocode?q=${encodeURIComponent(query)}&lang=${lang}`);
+      const body = await response.json();
+      if (!response.ok) throw new Error(body?.error?.message || body?.error?.code || `HTTP ${response.status}`);
+      setSearchAttribution(body.attribution || '');
+      const results = Array.isArray(body.results) ? body.results as GeocodePlace[] : [];
+      if (!results.length) setSearchError(t.noResults);
+      else setSearchResults(results);
+    } catch (error) {
+      setSearchError(error instanceof Error ? error.message : (lang === 'es' ? 'No se pudo buscar el lugar.' : 'Place search failed.'));
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const selectPlace = (place: GeocodePlace) => {
+    setLocationQuery(place.name);
+    setSearchResults([]);
+    setSearchError('');
+    const map = mapInstanceRef.current;
+    if (place.bounds) {
+      map?.fitBounds(place.bounds, { padding: [28, 28], maxZoom: 13 });
+    } else {
+      map?.setView([place.lat, place.lon], 13);
+    }
+    onLocationSearch(place.lat, place.lon, place.bounds);
   };
 
   // Initialize Leaflet map
@@ -130,11 +183,11 @@ export const RiskMap: React.FC<RiskMapProps> = ({
         center: [lat, lon],
         zoom: 13,
         zoomControl: true,
-        maxBounds: fieldBounds(regionLat, regionLon),
+        maxBounds: selectionBounds || fieldBounds(regionLat, regionLon),
         maxBoundsViscosity: 1
       });
       selectionBoundsRef.current = L.rectangle(
-        fieldBounds(regionLat, regionLon),
+        selectionBounds || fieldBounds(regionLat, regionLon),
         { color: '#d4ec79', weight: 2, opacity: 0.95, fillColor: '#d4ec79', fillOpacity: 0.035, dashArray: '6 6', interactive: false }
       ).addTo(map);
 
@@ -163,11 +216,12 @@ export const RiskMap: React.FC<RiskMapProps> = ({
 
       mapInstanceRef.current = map;
     } else {
-      mapInstanceRef.current.setMaxBounds(fieldBounds(regionLat, regionLon));
-        mapInstanceRef.current.setView([lat, lon], mapInstanceRef.current.getZoom());
-      selectionBoundsRef.current?.setBounds(fieldBounds(regionLat, regionLon));
+      const activeBounds = selectionBounds || fieldBounds(regionLat, regionLon);
+      mapInstanceRef.current.setMaxBounds(activeBounds);
+      mapInstanceRef.current.setView([lat, lon], mapInstanceRef.current.getZoom());
+      selectionBoundsRef.current?.setBounds(activeBounds);
     }
-  }, [lat, lon, regionLat, regionLon]);
+  }, [lat, lon, regionLat, regionLon, selectionBounds]);
 
   useEffect(() => () => {
     const map = mapInstanceRef.current;
@@ -367,10 +421,15 @@ export const RiskMap: React.FC<RiskMapProps> = ({
           <label htmlFor="field-location-search">{t.searchLabel}</label>
           <div className="map-search-control">
             <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8" stroke="currentColor" strokeWidth="1.8"/><path d="m16 16 4.5 4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>
-            <input id="field-location-search" type="search" value={locationQuery} onChange={(event) => { setLocationQuery(event.target.value); setSearchError(''); }} placeholder="20.5922, -100.1972" minLength={2} />
-            <button type="submit" disabled={locationQuery.trim().length < 2}>{lang === 'es' ? 'Ir al punto' : 'Go to point'}</button>
+            <input id="field-location-search" type="search" value={locationQuery} onChange={(event) => { setLocationQuery(event.target.value); setSearchError(''); setSearchResults([]); }} placeholder={t.searchPlaceholder} autoComplete="off" minLength={2} maxLength={120} />
+            <button type="submit" disabled={isSearching || locationQuery.trim().length < 2}>{isSearching ? (lang === 'es' ? 'Buscando…' : 'Searching…') : t.searchButton}</button>
           </div>
-          <small>{lang === 'es' ? 'Búsqueda por coordenadas · puedes marcar cualquier punto terrestre.' : 'Coordinate search · you can mark any location on land.'}</small>
+          <small>{t.searchHelp}</small>
+          {searchResults.length > 0 && <div className="place-search-results" role="listbox" aria-label={t.resultLabel}>
+            <strong>{t.resultLabel}</strong>
+            {searchResults.map((place, index) => <button key={`${place.lat}-${place.lon}-${index}`} type="button" role="option" aria-selected="false" onClick={() => selectPlace(place)}><span>{place.name}</span><small>{place.type}</small></button>)}
+          </div>}
+          {searchAttribution && <small className="place-attribution">{searchAttribution}</small>}
           {searchError && <p className="map-search-error" role="alert">{searchError}</p>}
         </form>
 
@@ -416,7 +475,7 @@ export const RiskMap: React.FC<RiskMapProps> = ({
               <span className="font-bold text-cyan-300">{cropWaterEstimates.length ? `~${estimateRange}` : '—'} m³</span>
             </div>
             <small className="water-estimate-note">{lang === 'es' ? 'Por ciclo y cultivo si ocupa toda el área; catálogo, sin descontar lluvia.' : 'Per cycle and crop if it covers the full area; catalog value, rainfall not deducted.'}</small>
-            {cropWaterEstimates.length > 0 && <div className="crop-water-hints">{cropWaterEstimates.map(({ id, m3 }) => <span key={id}>{id.replaceAll('_', ' ')} · {m3.toLocaleString()} m³</span>)}</div>}
+            {cropWaterEstimates.length > 0 && <div className="crop-water-hints">{cropWaterEstimates.map(({ id, m3 }) => <span key={id}>{cropNames[id]?.[lang === 'es' ? 0 : 1] || id.replaceAll('_', ' ')} · {m3.toLocaleString()} m³</span>)}</div>}
             <label className="flex items-center gap-2 cursor-pointer mt-1 text-slate-300 select-none">
               <input
                 type="checkbox"

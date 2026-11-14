@@ -115,3 +115,4 @@
 - [x] D-14: Live-location workflow, search by coordinates, bounded map selection, all 20 crop choices, presentation screen, and field-observation recovery
 - [x] D-15: Put the interactive map on location step; show crop-based per-cycle water estimates, explain EONET alert radius, and surface API failure detail with retry
 - [x] A-18: Add NASA POWER → Open-Meteo Archive climate fallback, exact-source provenance, explicit SoilGrids failure without synthetic soil substitution, EONET outage status, and parallel provider ingestion
+- [x] D-16: Connect place-name geocoding to the location map with explicit submit, multiple results, region bounds, provider attribution, privacy notice, and analysis provenance warnings

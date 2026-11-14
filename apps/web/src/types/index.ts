@@ -127,6 +127,12 @@ export interface AnalysisResponse {
     magnitudeKts?: number;
     pulsePrecipitationMm: number;
   }>;
+  data_provenance?: {
+    soil?: { provider?: string; retrieval?: string; fetched_at?: string; fallback_reason?: string; preset_id?: string };
+    climate?: { provider?: string; retrieval?: string; fetched_at?: string; fallback_reason?: string };
+    eonet?: { provider?: string; retrieval?: string; fallback_reason?: string };
+    workers?: { fallback?: string[] };
+  };
   physics: PhysicsPayload;
   optimization: OptimizationPayload;
 }
