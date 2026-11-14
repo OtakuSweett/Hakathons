@@ -41,6 +41,7 @@ export const RiskMap: React.FC<RiskMapProps> = ({
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markerRef = useRef<L.Marker | null>(null);
+  const haloRef = useRef<L.CircleMarker | null>(null);
   const polygonRef = useRef<L.Polygon | null>(null);
   const alertLayersRef = useRef<L.Circle[]>([]);
 
@@ -128,6 +129,21 @@ export const RiskMap: React.FC<RiskMapProps> = ({
     }
   }, [lat, lon, regionLat, regionLon]);
 
+  useEffect(() => () => {
+    const map = mapInstanceRef.current;
+    if (map) {
+      map.off();
+      map.remove();
+    }
+    mapInstanceRef.current = null;
+    markerRef.current = null;
+    haloRef.current = null;
+    polygonRef.current = null;
+    baseLayerRef.current = null;
+    gibsLayerRef.current = null;
+    alertLayersRef.current = [];
+  }, []);
+
   useEffect(() => {
     const map = mapInstanceRef.current;
     if (!map) return;
@@ -189,19 +205,33 @@ export const RiskMap: React.FC<RiskMapProps> = ({
     if (markerRef.current) {
       markerRef.current.remove();
     }
+    if (haloRef.current) {
+      haloRef.current.remove();
+    }
     if (polygonRef.current) {
       polygonRef.current.remove();
     }
 
+    const selectionHalo = L.circleMarker([lat, lon], {
+      radius: 19,
+      color: '#ffffff',
+      weight: 3,
+      fillColor: '#42c789',
+      fillOpacity: 0.18,
+      interactive: false
+    }).addTo(map);
+    haloRef.current = selectionHalo;
     const parcelIcon = L.divIcon({
-      className: 'custom-parcel-marker',
-      html: `<div style="background-color: #10b981; width: 20px; height: 20px; border-radius: 50%; border: 3px solid #ffffff; box-shadow: 0 0 10px #10b981;"></div>`,
-      iconSize: [20, 20],
-      iconAnchor: [10, 10]
+      className: 'field-marker-icon',
+      html: '<svg class="field-marker-svg" viewBox="0 0 40 48" aria-hidden="true"><path d="M20 2.5C10.6 2.5 3 10 3 19.2c0 12.1 17 26.3 17 26.3s17-14.2 17-26.3C37 10 29.4 2.5 20 2.5Z" fill="#23774f" stroke="#ffffff" stroke-width="3"/><circle cx="20" cy="19" r="5.5" fill="#ffffff"/></svg>',
+      iconSize: [44, 52],
+      iconAnchor: [22, 47]
     });
 
     const marker = L.marker([lat, lon], { icon: parcelIcon }).addTo(map);
-    marker.bindPopup(`<b>${parcelName}</b><br/>${areaHa} ha<br/>Lat: ${lat.toFixed(4)}, Lon: ${lon.toFixed(4)}`);
+    marker.bindPopup(`<b>${parcelName}</b><br/>${lang === 'es' ? 'Superficie' : 'Area'}: ${areaHa} ha<br/>Lat: ${lat.toFixed(4)}, Lon: ${lon.toFixed(4)}`);
+    marker.bindTooltip(parcelName, { permanent: true, direction: 'right', offset: [10, -20], className: 'field-tooltip' });
+    marker.getElement()?.setAttribute('aria-label', `${lang === 'es' ? 'Centro de parcela' : 'Field center'}: ${lat.toFixed(4)}, ${lon.toFixed(4)}`);
     markerRef.current = marker;
 
     // Draw scaled parcel polygon around the center point (approx 1 ha = 100x100m)
@@ -217,12 +247,15 @@ export const RiskMap: React.FC<RiskMapProps> = ({
     ];
 
     const poly = L.polygon(polygonCoords, {
-      color: '#10b981',
-      fillColor: '#34d399',
-      fillOpacity: 0.25,
-      weight: 2
+      color: '#f6d85c',
+      fillColor: '#ffe77c',
+      fillOpacity: 0.13,
+      weight: 3,
+      dashArray: '7 5'
     }).addTo(map);
     polygonRef.current = poly;
+    poly.bringToFront();
+    marker.setZIndexOffset(1000);
 
     // Clear old EONET alerts and redraw
     alertLayersRef.current.forEach((l) => l.remove());
@@ -237,11 +270,11 @@ export const RiskMap: React.FC<RiskMapProps> = ({
         radius: 60000
       })
         .addTo(map)
-        .bindPopup(`<b>Alerta EONET: ${alert.title}</b><br/>Distancia: ${alert.distanceKm.toFixed(1)} km`);
+        .bindPopup(`<b>${lang === 'es' ? 'Alerta EONET' : 'EONET alert'}: ${alert.title}</b><br/>${lang === 'es' ? 'Distancia' : 'Distance'}: ${alert.distanceKm.toFixed(1)} km`);
 
       alertLayersRef.current.push(stormCircle);
     });
-  }, [lat, lon, parcelName, areaHa, eonetAlerts]);
+  }, [lat, lon, parcelName, areaHa, eonetAlerts, lang]);
 
   const estimatedVolM3 = Math.round(450 * areaHa * 10);
 
@@ -260,7 +293,7 @@ export const RiskMap: React.FC<RiskMapProps> = ({
 
           {/* Base map layer switcher */}
           <div className="flex flex-wrap items-center gap-2">
-            <div className="flex bg-slate-800 p-0.5 rounded-lg border border-slate-700">
+            <div className="map-toggle-group flex bg-slate-800 p-0.5 rounded-lg border border-slate-700">
               <button
                 type="button"
                 onClick={() => setBaseMapType('satellite')}
@@ -343,7 +376,7 @@ export const RiskMap: React.FC<RiskMapProps> = ({
         <div ref={mapContainerRef} className="h-full w-full z-10" />
 
         {/* Clean HUD Status Overlay in bottom-left */}
-        <div className="absolute bottom-3 left-3 z-20 bg-slate-900/90 backdrop-blur-md p-3 rounded-xl border border-slate-800 text-[11px] text-slate-300 shadow-xl space-y-1 max-w-xs">
+        <div className="map-selection-readout absolute bottom-3 left-3 z-20 bg-slate-900/90 backdrop-blur-md p-3 rounded-xl border border-slate-800 text-[11px] text-slate-300 shadow-xl space-y-1 max-w-xs">
           <div className="flex items-center gap-2 font-bold text-white">
             <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
             <span className="truncate">{parcelName}</span>
@@ -355,7 +388,7 @@ export const RiskMap: React.FC<RiskMapProps> = ({
           {eonetAlerts.length > 0 && (
             <div className="flex items-center gap-1.5 text-rose-400 font-semibold text-[10px] pt-1 border-t border-slate-800">
               <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span>
-              <span>{eonetAlerts.length} alerta(s) de ciclón/tormenta EONET activa(s)</span>
+              <span>{eonetAlerts.length} {lang === 'es' ? 'alertas activas de EONET' : 'active EONET alerts'}</span>
             </div>
           )}
         </div>

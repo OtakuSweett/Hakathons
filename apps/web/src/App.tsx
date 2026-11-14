@@ -36,6 +36,7 @@ export const App: React.FC = () => {
   const [waterRegime, setWaterRegime] = useState<WaterRegime>('goteo');
   const [selectedCrops, setSelectedCrops] = useState<string[]>(['wheat']);
   const [parcelRejected, setParcelRejected] = useState(false);
+  const [mapRequestFailed, setMapRequestFailed] = useState(false);
   const [cookieNotice, setCookieNotice] = useState(() => localStorage.getItem('agro-dss-notice') !== 'accepted');
   const [locationMessage, setLocationMessage] = useState('');
 
@@ -76,6 +77,7 @@ export const App: React.FC = () => {
   const handleMapCoordinateSelect = async (lat: number, lon: number) => {
     if (isOfflineMode) {
       setParcelRejected(true);
+      setMapRequestFailed(false);
       setDataSource('benchmark');
       setData((prev) => ({ ...prev, coordinates: { lat, lon }, parcel_id: `custom_${lat.toFixed(4)}_${lon.toFixed(4)}` }));
       setLocationMessage(lang === 'es' ? 'Modo sin conexión: se muestra el benchmark regional, no un análisis calculado para estas coordenadas.' : 'Offline mode: the regional benchmark is shown, not an analysis calculated for these coordinates.');
@@ -84,6 +86,7 @@ export const App: React.FC = () => {
     setIsLoading(true);
     setLocationMessage('');
     setParcelRejected(false);
+    setMapRequestFailed(false);
     try {
       const res = await fetch('http://localhost:3000/api/analyze', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -104,8 +107,9 @@ export const App: React.FC = () => {
     } catch {
       setData((prev) => ({ ...prev, coordinates: { lat, lon }, parcel_id: `custom_${lat.toFixed(4)}_${lon.toFixed(4)}` }));
       setParcelRejected(true);
+      setMapRequestFailed(true);
       setDataSource('benchmark');
-      setLocationMessage(lang === 'es' ? 'Análisis en vivo no disponible. Se conserva la ubicación; los indicadores siguen usando el benchmark seleccionado.' : 'Live analysis unavailable. Location is saved; indicators still use the selected benchmark.');
+      setLocationMessage(lang === 'es' ? 'No se pudo conectar con el servicio de análisis. La ubicación está marcada, pero sus datos aún no se calcularon.' : 'Could not connect to the analysis service. The location is marked, but its data has not been calculated.');
     } finally { setIsLoading(false); }
   };
 
@@ -132,6 +136,20 @@ export const App: React.FC = () => {
   };
 
   const toggleCrop = (cropId: string) => setSelectedCrops((current) => current.includes(cropId) ? current.filter((id) => id !== cropId) : [...current, cropId]);
+
+  const useRegionalBenchmark = () => {
+    const preset = DEMO_PRESETS_LIST.find((item) => item.presetId === selectedPresetId);
+    const benchmark = getMockAnalysis(selectedPresetId);
+    setData(benchmark);
+    setDataSource('benchmark');
+    setMapRegionCenter({ lat: preset?.lat ?? benchmark.coordinates.lat, lon: preset?.lon ?? benchmark.coordinates.lon });
+    setSelectedCrops(benchmark.optimization?.presolver_summary?.feasible_crop_ids?.slice(0, 2) || []);
+    setParcelRejected(false);
+    setMapRequestFailed(false);
+    setIsOfflineMode(true);
+    setLocationMessage(text('Continuamos con el benchmark regional. El punto del mapa volvió al centro de esa parcela de demostración.', 'Using the regional benchmark. The map returned to the center of that demonstration field.'));
+    setStep(2);
+  };
 
   const applyCropSelection = async () => {
     if (!selectedCrops.length) return;
@@ -204,7 +222,14 @@ export const App: React.FC = () => {
         <div className="header-actions">
           <span className={`source-status ${dataSource !== 'live' ? 'offline' : ''}`}><i />{dataSource === 'live' ? text('Análisis en vivo', 'Live analysis') : text(isOfflineMode ? 'Benchmark sin conexión' : 'Benchmark regional', isOfflineMode ? 'Offline benchmark' : 'Regional benchmark')}</span>
           <button className="plain-button" type="button" onClick={() => setIsOfflineMode((v) => !v)}>{isOfflineMode ? text('Usar datos en vivo', 'Use live data') : text('Modo sin conexión', 'Offline mode')}</button>
-          <button className="language-button" type="button" onClick={() => setLang((v) => v === 'es' ? 'en' : 'es')} aria-label={text('Cambiar idioma a inglés', 'Change language to Spanish')}>{lang === 'es' ? 'ES / EN' : 'EN / ES'}</button>
+          <label className="language-picker" aria-label={text('Idioma de la interfaz', 'Interface language')}>
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.6"/><path d="M3.5 12h17M12 3c2.2 2.4 3.2 5.4 3.2 9s-1 6.6-3.2 9c-2.2-2.4-3.2-5.4-3.2-9S9.8 5.4 12 3Z" stroke="currentColor" strokeWidth="1.4"/></svg>
+            <select value={lang} onChange={(event) => setLang(event.target.value as Language)}>
+              <option value="es">Español</option>
+              <option value="en">English</option>
+            </select>
+            <svg className="language-chevron" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="m4 6 4 4 4-4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          </label>
           <button className="report-button" type="button" onClick={() => setIsReportModalOpen(true)}>{text('Reporte de campo', 'Field report')}</button>
         </div>
       </header>
@@ -231,7 +256,7 @@ export const App: React.FC = () => {
             </button>)}
           </div>
           <div className="panel-foot"><p>{text('También puedes usar tu ubicación actual; el navegador pedirá permiso antes de compartirla.', 'You can also use your current location; your browser will ask before sharing it.')}</p><button className="text-action" type="button" onClick={requestLocation}>{text('Usar mi ubicación', 'Use my location')} <span aria-hidden="true">↗</span></button></div>
-          {locationMessage && <p className="inline-message" role="status">{locationMessage}</p>}
+          {locationMessage && <div className="inline-message" role="status"><span>{locationMessage}</span>{mapRequestFailed && <button type="button" className="fallback-button" onClick={useRegionalBenchmark}>{text('Continuar con el benchmark regional', 'Continue with regional benchmark')}</button>}</div>}
           <div className="panel-actions"><span>{text('Benchmark sin conexión disponible para 4 regiones', 'Offline benchmark available for 4 regions')}</span><button className="primary-button" type="button" onClick={() => setStep(1)}>{text('Continuar a la parcela', 'Continue to field')} <span aria-hidden="true">→</span></button></div>
         </section>}
 
