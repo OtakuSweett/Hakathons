@@ -29,6 +29,7 @@ export const App: React.FC = () => {
   const [mapRegionCenter, setMapRegionCenter] = useState({ lat: 20.5922, lon: -100.1972 });
   const [isOfflineMode, setIsOfflineMode] = useState(false);
   const [data, setData] = useState<AnalysisResponse>(() => getMockAnalysis('el_marques_qro'));
+  const [dataSource, setDataSource] = useState<'live' | 'benchmark'>('benchmark');
   const [isLoading, setIsLoading] = useState(false);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [areaHa, setAreaHa] = useState(15);
@@ -48,6 +49,7 @@ export const App: React.FC = () => {
     if (forceOffline) {
       const mock = getMockAnalysis(presetId);
       setData(mock);
+      setDataSource('benchmark');
       setSelectedCrops(mock.optimization?.presolver_summary?.feasible_crop_ids?.slice(0, 2) || []);
       setIsLoading(false);
       return;
@@ -57,10 +59,12 @@ export const App: React.FC = () => {
       if (!res.ok) throw new Error('Analysis unavailable');
       const json = await res.json() as AnalysisResponse;
       setData(json);
+      setDataSource('benchmark');
       setSelectedCrops(json.optimization?.presolver_summary?.feasible_crop_ids?.slice(0, 2) || []);
     } catch {
       const mock = getMockAnalysis(presetId);
       setData(mock);
+      setDataSource('benchmark');
       setSelectedCrops(mock.optimization?.presolver_summary?.feasible_crop_ids?.slice(0, 2) || []);
     } finally {
       setIsLoading(false);
@@ -71,7 +75,8 @@ export const App: React.FC = () => {
 
   const handleMapCoordinateSelect = async (lat: number, lon: number) => {
     if (isOfflineMode) {
-      setParcelRejected(false);
+      setParcelRejected(true);
+      setDataSource('benchmark');
       setData((prev) => ({ ...prev, coordinates: { lat, lon }, parcel_id: `custom_${lat.toFixed(4)}_${lon.toFixed(4)}` }));
       setLocationMessage(lang === 'es' ? 'Modo sin conexión: se muestra el benchmark regional, no un análisis calculado para estas coordenadas.' : 'Offline mode: the regional benchmark is shown, not an analysis calculated for these coordinates.');
       return;
@@ -82,7 +87,7 @@ export const App: React.FC = () => {
     try {
       const res = await fetch('http://localhost:3000/api/analyze', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ parcel_id: `custom_${lat.toFixed(4)}_${lon.toFixed(4)}`, coordinates: { lat, lon } })
+        body: JSON.stringify({ parcel_id: `custom_${lat.toFixed(4)}_${lon.toFixed(4)}`, lat, lon, crop_id: selectedCrops[0] || 'maize', area_ha: areaHa, source: 'live' })
       });
       if (res.status === 422) {
         const body = await res.json();
@@ -91,11 +96,15 @@ export const App: React.FC = () => {
         return;
       }
       if (!res.ok) throw new Error('Live analysis unavailable');
-      setData(await res.json() as AnalysisResponse);
+      const analysis = await res.json() as AnalysisResponse;
+      setData(analysis);
+      setDataSource('live');
+      setSelectedCrops(analysis.optimization?.presolver_summary?.feasible_crop_ids?.slice(0, 2) || []);
       setParcelRejected(false);
     } catch {
       setData((prev) => ({ ...prev, coordinates: { lat, lon }, parcel_id: `custom_${lat.toFixed(4)}_${lon.toFixed(4)}` }));
-      setParcelRejected(false);
+      setParcelRejected(true);
+      setDataSource('benchmark');
       setLocationMessage(lang === 'es' ? 'Análisis en vivo no disponible. Se conserva la ubicación; los indicadores siguen usando el benchmark seleccionado.' : 'Live analysis unavailable. Location is saved; indicators still use the selected benchmark.');
     } finally { setIsLoading(false); }
   };
@@ -123,6 +132,46 @@ export const App: React.FC = () => {
   };
 
   const toggleCrop = (cropId: string) => setSelectedCrops((current) => current.includes(cropId) ? current.filter((id) => id !== cropId) : [...current, cropId]);
+
+  const applyCropSelection = async () => {
+    if (!selectedCrops.length) return;
+    if (isOfflineMode) {
+      setStep(3);
+      return;
+    }
+    setIsLoading(true);
+    setLocationMessage('');
+    try {
+      const response = await fetch('http://localhost:3000/api/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          parcel_id: data.parcel_id,
+          lat: data.coordinates.lat,
+          lon: data.coordinates.lon,
+          source: data.parcel_id.startsWith('custom_') ? 'live' : 'preset',
+          crop_id: selectedCrops[0],
+          candidate_crops: selectedCrops,
+          area_ha: areaHa
+        })
+      });
+      if (response.status === 422) {
+        const body = await response.json();
+        setParcelRejected(true);
+        setLocationMessage(body?.error?.message || (lang === 'es' ? 'No se pudo validar la parcela.' : 'The field could not be validated.'));
+        setStep(1);
+        return;
+      }
+      if (!response.ok) throw new Error('Analysis unavailable');
+      setData(await response.json() as AnalysisResponse);
+      setDataSource(data.parcel_id.startsWith('custom_') ? 'live' : 'benchmark');
+      setStep(3);
+    } catch {
+      setLocationMessage(lang === 'es' ? 'No se pudo calcular el análisis con estos cultivos. Intenta otra vez o activa el modo sin conexión para consultar el benchmark.' : 'The analysis could not be calculated for these crops. Try again or switch to offline mode to view the benchmark.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
   const currentPreset = DEMO_PRESETS_LIST.find((p) => p.presetId === selectedPresetId);
   const currentPresetName = data.parcel_id.startsWith('custom_')
     ? (lang === 'es' ? 'Parcela seleccionada' : 'Selected field')
@@ -153,7 +202,7 @@ export const App: React.FC = () => {
           <span><strong>Campo Claro</strong><small>{text('Decisiones para cada parcela', 'Decisions for every field')}</small></span>
         </a>
         <div className="header-actions">
-          <span className={`source-status ${isOfflineMode ? 'offline' : ''}`}><i />{isOfflineMode ? text('Benchmark sin conexión', 'Offline benchmark') : text('Datos en vivo', 'Live data')}</span>
+          <span className={`source-status ${dataSource !== 'live' ? 'offline' : ''}`}><i />{dataSource === 'live' ? text('Análisis en vivo', 'Live analysis') : text(isOfflineMode ? 'Benchmark sin conexión' : 'Benchmark regional', isOfflineMode ? 'Offline benchmark' : 'Regional benchmark')}</span>
           <button className="plain-button" type="button" onClick={() => setIsOfflineMode((v) => !v)}>{isOfflineMode ? text('Usar datos en vivo', 'Use live data') : text('Modo sin conexión', 'Offline mode')}</button>
           <button className="language-button" type="button" onClick={() => setLang((v) => v === 'es' ? 'en' : 'es')} aria-label={text('Cambiar idioma a inglés', 'Change language to Spanish')}>{lang === 'es' ? 'ES / EN' : 'EN / ES'}</button>
           <button className="report-button" type="button" onClick={() => setIsReportModalOpen(true)}>{text('Reporte de campo', 'Field report')}</button>
@@ -199,10 +248,11 @@ export const App: React.FC = () => {
           <div className="crop-choices">{(data.optimization?.presolver_summary?.feasible_crop_ids || []).map((cropId) => <button key={cropId} type="button" aria-pressed={selectedCrops.includes(cropId)} onClick={() => toggleCrop(cropId)} className={`crop-choice ${selectedCrops.includes(cropId) ? 'chosen' : ''}`}><span className="crop-check">{selectedCrops.includes(cropId) ? '✓' : '+'}</span><span>{cropId.replaceAll('_', ' ')}</span></button>)}</div>
           <p className="selection-note">{selectedCrops.length ? text(`${selectedCrops.length} cultivos seleccionados para el contexto de planificación.`, `${selectedCrops.length} crops selected for planning context.`) : text('Selecciona uno o más cultivos para continuar.', 'Select one or more crops to continue.')}</p>
           {(data.optimization?.presolver_summary?.discarded?.length || 0) > 0 && <details className="discarded-list"><summary>{text('Ver opciones no recomendadas', 'See crops not recommended')}</summary><p>{data.optimization.presolver_summary.discarded.map((crop) => `${crop.crop_id}: ${lang === 'es' ? crop.reason_text_es : crop.reason_text_en}`).join(' · ')}</p></details>}
-          <div className="panel-actions"><button className="text-action" type="button" onClick={() => setStep(1)}>← {text('Volver al mapa', 'Back to map')}</button><button className="primary-button" type="button" disabled={!selectedCrops.length} onClick={() => setStep(3)}>{text('Ver análisis de parcela', 'View field analysis')} <span aria-hidden="true">→</span></button></div>
+          <div className="panel-actions"><button className="text-action" type="button" onClick={() => setStep(1)}>← {text('Volver al mapa', 'Back to map')}</button><button className="primary-button" type="button" disabled={!selectedCrops.length || isLoading} onClick={() => void applyCropSelection()}>{text('Ver análisis de parcela', 'View field analysis')} <span aria-hidden="true">→</span></button></div>
         </section>}
 
         {step === 3 && <>
+          {isOfflineMode && <div className="offline-note" role="status">{text('Vista de benchmark: la selección de cultivos se conserva como contexto, pero el plan no se recalcula sin conexión.', 'Benchmark view: your crop selection is kept as context, but the plan is not recalculated offline.')}</div>}
           <div className="analysis-heading"><div><span className="step-kicker">{text('ANÁLISIS DE PARCELA', 'FIELD ANALYSIS')}</span><h2>{currentPresetName}</h2><p>{data.coordinates.lat.toFixed(4)}°, {data.coordinates.lon.toFixed(4)}° <span>·</span> {areaHa.toFixed(1)} ha <span>·</span> {selectedCrops.map((crop) => crop.replaceAll('_', ' ')).join(', ') || text('sin cultivos seleccionados', 'no crops selected')}</p></div><button className="outline-button" type="button" onClick={() => setStep(1)}>{text('Editar parcela', 'Edit field')}</button></div>
           <EarlyWarningBanner trigger={data.physics?.irrigation_trigger || { t_star_days: null, delta_i_mm: null, reason: null }} eonetCount={data.eonet_hazard_alerts?.length || 0} meanTempC={data.climate_summary?.mean_temperature_c || 21} lang={lang} />
           <ShiftingLands data={data} areaHa={areaHa} waterRegime={waterRegime} lang={lang} />
