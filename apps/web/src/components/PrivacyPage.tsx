@@ -8,10 +8,10 @@ interface PrivacyPageProps {
 
 const copy = {
   es: {
-    eyebrow: 'CAMPO CLARO · TRANSPARENCIA',
+    eyebrow: 'NASA AGRO-DSS · TRANSPARENCIA',
     title: 'Datos y privacidad',
-    intro: 'Aquí explicamos qué información usa Campo Claro, cuándo sale de tu dispositivo y qué límites tiene este prototipo.',
-    back: 'Volver a Campo Claro',
+    intro: 'Aquí explicamos qué información usa NASA Agro-DSS, cuándo sale de tu dispositivo y qué límites tiene este prototipo.',
+    back: 'Volver a NASA Agro-DSS',
     dataTitle: 'Qué datos se usan',
     dataBody: 'Para un análisis en vivo, se envían al servidor las coordenadas, los cultivos elegidos, el tamaño del terreno y, si capturas un análisis manual, esos datos de suelo. El régimen de agua elegido se usa en la estimación que ves en pantalla. Si compartes una observación, también recibimos cultivo, etapa, condición del suelo, notas y, si la adjuntas, una fotografía. El nombre es opcional.',
     locationTitle: 'Ubicación y búsqueda',
@@ -23,14 +23,14 @@ const copy = {
     choicesTitle: 'Tus opciones',
     choicesBody: 'Puedes usar coordenadas escritas en lugar del GPS, no enviar reportes, omitir tu nombre y borrar preferencias o reportes pendientes desde el almacenamiento del navegador. Desactivar la capa del mapa evita nuevas solicitudes a ese proveedor de teselas.',
     termsTitle: 'Condiciones de uso',
-    termsBody: 'Campo Claro es una herramienta de apoyo y demostración. Los resultados dependen de datos disponibles y pueden ser incompletos o estimados; no garantizan rendimiento, disponibilidad de agua ni ausencia de riesgos. Contrasta las decisiones agronómicas con mediciones de tu parcela y asesoría local. No uses esta herramienta como servicio de emergencia.',
+    termsBody: 'NASA Agro-DSS es una herramienta de apoyo y demostración. Los resultados dependen de datos disponibles y pueden ser incompletos o estimados; no garantizan rendimiento, disponibilidad de agua ni ausencia de riesgos. Contrasta las decisiones agronómicas con mediciones de tu parcela y asesoría local. No uses esta herramienta como servicio de emergencia.',
     updated: 'Información correspondiente a la versión actual del prototipo.'
   },
   en: {
-    eyebrow: 'CAMPO CLARO · TRANSPARENCY',
+    eyebrow: 'NASA AGRO-DSS · TRANSPARENCY',
     title: 'Data and privacy',
-    intro: 'This page explains what information Campo Claro uses, when it leaves your device, and the limits of this prototype.',
-    back: 'Back to Campo Claro',
+    intro: 'This page explains what information NASA Agro-DSS uses, when it leaves your device, and the limits of this prototype.',
+    back: 'Back to NASA Agro-DSS',
     dataTitle: 'Data used',
     dataBody: 'For a live analysis, the server receives your coordinates, selected crops, field size, and any soil values you enter manually. The selected water regime is used for the estimate displayed in the page. If you submit an observation, we also receive its form data: crop, growth stage, soil condition, notes, and an attached photo if you choose one. Your name is optional.',
     locationTitle: 'Location and search',
@@ -42,7 +42,7 @@ const copy = {
     choicesTitle: 'Your choices',
     choicesBody: 'You can enter coordinates instead of using GPS, choose not to submit reports, omit your name, and clear preferences or pending reports from browser storage. Turning off a map layer prevents new tile requests to that provider.',
     termsTitle: 'Terms of use',
-    termsBody: 'Campo Claro is a decision-support and demonstration tool. Results depend on available data and may be incomplete or estimated; they do not guarantee yield, water availability, or absence of hazards. Check agronomic decisions against field measurements and local advice. Do not use this tool as an emergency service.',
+    termsBody: 'NASA Agro-DSS is a decision-support and demonstration tool. Results depend on available data and may be incomplete or estimated; they do not guarantee yield, water availability, or absence of hazards. Check agronomic decisions against field measurements and local advice. Do not use this tool as an emergency service.',
     updated: 'Information for the current prototype version.'
   }
 } satisfies Record<Language, Record<string, string>>;

@@ -115,8 +115,8 @@ export const App: React.FC = () => {
     localStorage.setItem('agro-dss-language', lang);
     document.documentElement.lang = lang;
     document.title = currentPage === 'privacy'
-      ? (lang === 'es' ? 'Datos y privacidad · Campo Claro' : 'Data and privacy · Campo Claro')
-      : 'Campo Claro';
+      ? (lang === 'es' ? 'Datos y privacidad · NASA Agro-DSS' : 'Data and privacy · NASA Agro-DSS')
+      : 'NASA Agro-DSS';
   }, [lang, currentPage]);
 
   useEffect(() => {
@@ -421,9 +421,9 @@ export const App: React.FC = () => {
   return (
     <div className="app-shell min-h-screen flex flex-col">
       <header className="site-header">
-        <a href="/" className="brand" aria-label={text('Campo Claro, inicio', 'Campo Claro, home')} onClick={(event) => { event.preventDefault(); returnToApp(); }}>
+        <a href="/" className="brand" aria-label={text('NASA Agro-DSS, inicio', 'NASA Agro-DSS, home')} onClick={(event) => { event.preventDefault(); returnToApp(); }}>
           <span className="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none"><path d="M7 23c7-1 12-6 14-15 5 8 3 17-6 19-3 1-6 0-8-4Z" stroke="currentColor" strokeWidth="2"/><path d="M8 26c3-5 7-8 13-11" stroke="currentColor" strokeWidth="2"/></svg></span>
-          <span><strong>Campo Claro</strong><small>{text('Decisiones para cada parcela', 'Decisions for every field')}</small></span>
+          <span><strong>NASA Agro-DSS</strong><small>{text('Decisiones para cada parcela', 'Decisions for every field')}</small></span>
         </a>
         <div className="header-actions">
           {currentPage === 'app' && <div className={`source-control ${isOfflineMode || !browserOnline || serviceAvailable === false ? 'local' : ''}`}>
@@ -562,7 +562,7 @@ export const App: React.FC = () => {
       </main>
 
       {cookieNotice && currentPage === 'app' && <aside className="consent-note" aria-label={text('Aviso de privacidad', 'Privacy notice')}><p>{text('Guardamos tu idioma y que cerraste este aviso. Si buscas un lugar, la consulta se envía al geocodificador; las coordenadas y cultivos se envían cuando solicitas el análisis. Consulta nuestro', 'We store your language and that you dismissed this notice. Place searches go to the geocoder; coordinates and crops are sent when you request an analysis. Read our')} <button type="button" className="inline-link" onClick={openPrivacyPage}>{text('aviso de datos y privacidad', 'data and privacy notice')}</button>.</p><button type="button" className="consent-accept" onClick={() => { localStorage.setItem('agro-dss-notice', 'accepted'); setCookieNotice(false); }}>{text('Entendido', 'Got it')}</button></aside>}
-      <footer className="site-footer"><span>Campo Claro <span>·</span> {text('Planificación agrícola informada', 'Evidence-led field planning')}</span><span>NASA POWER · SoilGrids · EONET · FAO-56</span><button type="button" onClick={openPrivacyPage}>{text('Datos, privacidad y uso', 'Data, privacy & terms')}</button></footer>
+      <footer className="site-footer"><span>NASA Agro-DSS <span>·</span> {text('Planificación agrícola informada', 'Evidence-led field planning')}</span><span>NASA POWER · SoilGrids · EONET · FAO-56</span><button type="button" onClick={openPrivacyPage}>{text('Datos, privacidad y uso', 'Data, privacy & terms')}</button></footer>
       <FarmerReportsModal isOpen={isReportModalOpen} onClose={() => setIsReportModalOpen(false)} lat={selectedCoordinates.lat} lon={selectedCoordinates.lon} parcelId={dataSource === 'live' && sameAsAnalyzed ? data.parcel_id : isOfflineMode ? data.parcel_id : `custom_${selectedCoordinates.lat.toFixed(4)}_${selectedCoordinates.lon.toFixed(4)}`} cropOptions={orderedCropOptions} lang={lang} />
       {locationMessage && ((step === 0 && !hasStarted) || step > 1) && <div className={`toast-message ${mapRequestFailed ? 'toast-error' : ''}`} role={mapRequestFailed ? 'alert' : 'status'}><span>{locationMessage}</span><button type="button" onClick={() => setLocationMessage('')} aria-label={text('Cerrar aviso', 'Dismiss notice')}>×</button></div>}
     </div>
