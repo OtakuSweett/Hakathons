@@ -33,10 +33,12 @@ export const SmartCalendar: React.FC<SmartCalendarProps> = ({ data, lang }) => {
       flowering: 'Floración y Llenado de Grano',
       maturity: 'Madurez Fisiológica y Cosecha',
       irrigationSchedule: 'Fechas de riego sugeridas',
-      recommendedIrrigation: 'Riego Preventivo Recomendado',
+      recommendedIrrigation: 'Riego sugerido',
+      irrigationDetail: 'Para evitar que el cultivo llegue al nivel crítico de humedad:',
+      legumeTag: 'Leguminosa · +N',
       noStressDetected: 'No se requiere riego de emergencia; la reserva hídrica permanece sobre el umbral crítico.',
-      depthMm: 'Lámina a aplicar:',
-      dayLabel: 'Día proyectado:'
+      depthMm: 'Agua por aplicar',
+      dayLabel: 'Regar en'
     },
     en: {
       title: 'Crop calendar',
@@ -55,10 +57,12 @@ export const SmartCalendar: React.FC<SmartCalendarProps> = ({ data, lang }) => {
       flowering: 'Flowering & Grain Filling',
       maturity: 'Physiological Maturity & Harvest',
       irrigationSchedule: 'Suggested irrigation dates',
-      recommendedIrrigation: 'Recommended Irrigation',
+      recommendedIrrigation: 'Suggested irrigation',
+      irrigationDetail: 'To keep the crop above its critical soil moisture level:',
+      legumeTag: 'Legume · +N',
       noStressDetected: 'No emergency irrigation needed; soil water stays safely above critical threshold.',
-      depthMm: 'Target depth to apply:',
-      dayLabel: 'Projected day:'
+      depthMm: 'Water to apply',
+      dayLabel: 'Irrigate in'
     }
   }[lang];
 
@@ -102,7 +106,8 @@ export const SmartCalendar: React.FC<SmartCalendarProps> = ({ data, lang }) => {
               <button
                 key={slot.slot_index}
                 onClick={() => setSelectedSlotIndex(index)}
-                className={`p-3 rounded-xl text-left border transition-all cursor-pointer ${
+                aria-pressed={isSelected}
+                className={`rotation-slot p-3 rounded-xl text-left border transition-all cursor-pointer ${
                   isSelected
                     ? 'bg-emerald-500/15 text-white border-emerald-500/50 shadow-[0_0_15px_rgba(16,185,129,0.15)] ring-1 ring-emerald-500/30'
                     : 'bg-zinc-900/50 text-zinc-300 border-white/[0.06] hover:border-emerald-500/30 hover:bg-zinc-900/80'
@@ -126,7 +131,7 @@ export const SmartCalendar: React.FC<SmartCalendarProps> = ({ data, lang }) => {
                   <span className={`inline-block mt-1 text-[9px] px-1.5 py-0.2 rounded font-medium ${
                     isSelected ? 'bg-emerald-400 text-zinc-950 font-bold' : 'bg-teal-500/10 text-teal-300 border border-teal-500/30'
                   }`}>
-                    +N Leguminosa
+                    {t.legumeTag}
                   </span>
                 )}
               </button>
@@ -206,21 +211,19 @@ export const SmartCalendar: React.FC<SmartCalendarProps> = ({ data, lang }) => {
               </h3>
 
               {trigger?.t_star_days ? (
-                <div className="bg-amber-950/20 p-4 rounded-xl border border-amber-500/30 mb-3">
+                <div className="irrigation-recommendation p-4 rounded-xl border mb-3">
                   <div className="flex items-center gap-2 text-amber-400 font-bold text-xs mb-1">
                     <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
                     {t.recommendedIrrigation}
                   </div>
                   <p className="text-[11px] text-zinc-300 mb-3">
-                    {lang === 'es'
-                      ? 'La raíz del agotamiento W(t) = W_crítico fue hallada por Newton-Raphson.'
-                      : 'The root crossing W(t) = W_crit was solved via Newton-Raphson.'}
+                    {t.irrigationDetail}
                   </p>
                   <div className="grid grid-cols-2 gap-2.5 text-xs">
                     <div className="bg-zinc-900/80 p-2.5 rounded-lg border border-white/[0.05]">
                       <span className="text-zinc-400 text-[10px] block">{t.dayLabel}</span>
                       <span className="text-base font-bold text-amber-400 font-mono">
-                        {lang === 'es' ? 'Día' : 'Day'} +{trigger.t_star_days.toFixed(0)}
+                        {trigger.t_star_days.toFixed(0)} {lang === 'es' ? 'días' : 'days'}
                       </span>
                     </div>
                     <div className="bg-zinc-900/80 p-2.5 rounded-lg border border-white/[0.05]">
@@ -255,7 +258,7 @@ export const SmartCalendar: React.FC<SmartCalendarProps> = ({ data, lang }) => {
               <div className="flex items-center justify-between border-t border-white/[0.05] pt-1.5">
                 <span className="text-zinc-400">{t.profit}:</span>
                 <span className="font-bold text-white font-mono text-sm">
-                  ${activeSlot.profit_mxn_ha.toLocaleString()} USD/ha
+                  ${activeSlot.profit_mxn_ha.toLocaleString()} MXN/ha
                 </span>
               </div>
             </div>

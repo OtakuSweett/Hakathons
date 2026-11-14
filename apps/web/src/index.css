@@ -193,6 +193,21 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
 .app-shell .bento-card [class*="bg-zinc-800"], .app-shell .bento-card [class*="bg-slate-800"] { background-color: #eff4f0 !important; }
 .app-shell .bento-card [class*="border-white"], .app-shell .bento-card [class*="border-zinc-800"], .app-shell .bento-card [class*="border-slate-800"] { border-color: #e2eae5 !important; }
 .app-shell .bento-card [class*="shadow-"] { box-shadow: none !important; }
+.app-shell .bento-card [class*="bg-zinc-950"] { background-color: #f2f6f3 !important; }
+.app-shell .bento-card [class*="bg-amber-950"] { background-color: #fff5df !important; }
+.app-shell .bento-card [class*="bg-teal-950"] { background-color: #eaf5f1 !important; }
+.app-shell .bento-card [class*="bg-emerald-950"] { background-color: #eaf5ed !important; }
+.app-shell .bento-card [class*="text-emerald-300"], .app-shell .bento-card [class*="text-emerald-400"] { color: #176b4c !important; }
+.app-shell .bento-card [class*="text-teal-300"], .app-shell .bento-card [class*="text-teal-400"] { color: #12675e !important; }
+.app-shell .bento-card [class*="text-cyan-300"], .app-shell .bento-card [class*="text-cyan-400"] { color: #087777 !important; }
+.app-shell .bento-card [class*="text-amber-300"], .app-shell .bento-card [class*="text-amber-400"] { color: #805600 !important; }
+.app-shell .bento-card [class*="text-blue-300"], .app-shell .bento-card [class*="text-blue-400"] { color: #245d91 !important; }
+.rotation-slot[aria-pressed="true"] { color: #204c38 !important; background: #e8f3eb !important; border-color: #4b8866 !important; box-shadow: inset 0 0 0 1px #4b8866 !important; }
+.rotation-slot[aria-pressed="false"] { color: #294739 !important; background: #f6f9f7 !important; border-color: #cbd8ce !important; }
+.irrigation-recommendation { color: #4b3914; background: #fff5df; border-color: #c79b3b; }
+.irrigation-recommendation p { color: #594d35 !important; }
+.economics-chart-note { margin: -5px 0 10px; color: #52675d; font-size: 11px; line-height: 1.5; }
+.economics-chart-note + .h-56 { padding: 4px; background: #fbfdfb; border: 1px solid #dbe5e0; border-radius: 8px; }
 .site-footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 17px clamp(18px, 4vw, 58px); color: #66776e; background: #fff; border-top: 1px solid #dbe5e0; font-size: 11px; }
 .site-footer > span:first-child { color: #486557; font-weight: 600; }
 .site-footer > span:first-child span { padding: 0 5px; color: #9aa9a0; }

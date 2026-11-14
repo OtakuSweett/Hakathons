@@ -5,6 +5,7 @@ import {
   Scatter,
   XAxis,
   YAxis,
+  Label,
   Tooltip,
   CartesianGrid,
   Legend
@@ -38,6 +39,7 @@ export const EconomicEvaluation: React.FC<EconomicEvaluationProps> = ({ data, la
       shadowAdviceHigh: 'Recomendación: El precio sombra supera el costo de mercado del agua; conviene invertir en tecnificación de riego.',
       shadowAdviceLow: 'Recomendación: El agua no es la restricción limitante principal en esta temporada.',
       paretoChartTitle: 'Frontera de Pareto de Soluciones No Dominadas',
+      chartNote: 'Cada punto es una combinación evaluada. La línea muestra cómo cambia la ganancia al ahorrar más o menos agua.',
       waterSaved: 'Agua Ahorrada (mm)',
       profitUsd: 'Ganancia Neta (MXN/ha)',
       metricProfit: 'Ganancia Proyectada',
@@ -63,6 +65,7 @@ export const EconomicEvaluation: React.FC<EconomicEvaluationProps> = ({ data, la
       shadowAdviceHigh: 'Recommendation: Shadow price exceeds water market cost; investing in drip tech is economically justified.',
       shadowAdviceLow: 'Recommendation: Water is not the binding constraint; focus capital on soil organic matter.',
       paretoChartTitle: 'Pareto Efficient Frontier (Non-Dominated Solutions)',
+      chartNote: 'Each point is an evaluated option. The line shows how profit changes as water savings increase or decrease.',
       waterSaved: 'Water Saved (mm)',
       profitUsd: 'Net Profit (MXN/ha)',
       metricProfit: 'Projected Profit',
@@ -86,7 +89,11 @@ export const EconomicEvaluation: React.FC<EconomicEvaluationProps> = ({ data, la
     x: p.water_saved_mm,
     y: p.profit_mxn_ha,
     lambda: p.lambda_weight
-  }));
+  })).sort((a, b) => a.x - b.x);
+  const xValues = chartData.map((point) => point.x);
+  const yValues = chartData.map((point) => point.y);
+  const xPadding = xValues.length ? Math.max((Math.max(...xValues) - Math.min(...xValues)) * 0.08, 1) : 1;
+  const yPadding = yValues.length ? Math.max((Math.max(...yValues) - Math.min(...yValues)) * 0.08, Math.max(Math.abs(Math.max(...yValues)) * 0.02, 1)) : 1;
 
   return (
     <div className="bento-card overflow-hidden">
@@ -195,35 +202,39 @@ export const EconomicEvaluation: React.FC<EconomicEvaluationProps> = ({ data, la
         <div>
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-bold text-white text-xs">{t.paretoChartTitle}</h3>
-            <span className="text-[10px] text-zinc-400 font-mono">HiGHS LP Dual Relaxation</span>
+            <span className="text-[10px] text-zinc-400 font-mono">{lang === 'es' ? 'Opciones evaluadas · M7' : 'Evaluated options · M7'}</span>
           </div>
+          {paretoPoints.length > 0 && <p className="economics-chart-note">{t.chartNote}</p>}
 
           {paretoPoints.length ? <div className="h-56 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <ScatterChart margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+              <ScatterChart margin={{ top: 10, right: 18, left: 8, bottom: 12 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
                 <XAxis
                   type="number"
                   dataKey="x"
                   name={t.waterSaved}
                   unit=" mm"
+                  domain={[Math.min(...xValues) - xPadding, Math.max(...xValues) + xPadding]}
                   tick={{ fontSize: 11, fill: '#71717a' }}
                   stroke="#3f3f46"
-                />
+                ><Label value={t.waterSaved} position="insideBottom" offset={-8} fill="#52675d" fontSize={11} /></XAxis>
                 <YAxis
                   type="number"
                   dataKey="y"
                   name={t.profitUsd}
                   unit=" MXN"
+                  domain={[Math.min(...yValues) - yPadding, Math.max(...yValues) + yPadding]}
                   tick={{ fontSize: 11, fill: '#71717a' }}
                   stroke="#3f3f46"
-                />
+                ><Label value={t.profitUsd} angle={-90} position="insideLeft" offset={0} fill="#52675d" fontSize={11} /></YAxis>
                 <Tooltip
                   cursor={{ strokeDasharray: '3 3' }}
                   contentStyle={{ backgroundColor: '#18181b', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', fontSize: '12px', color: '#f4f4f5' }}
                 />
                 <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
-                <Scatter name={lang === 'es' ? 'Frontera de Pareto (M7)' : 'Pareto Frontier (M7)'} data={chartData} fill="#10b981" />
+                <Scatter name={lang === 'es' ? 'Soluciones evaluadas' : 'Evaluated options'} data={chartData} fill="#087f5b" line={{ stroke: '#087f5b', strokeWidth: 2 }} lineType="joint" />
+                {activePoint && <Scatter name={lang === 'es' ? 'Prioridad seleccionada' : 'Selected priority'} data={[{ x: activePoint.water_saved_mm, y: activePoint.profit_mxn_ha }]} fill="#d97706" shape="star" />}
               </ScatterChart>
             </ResponsiveContainer>
           </div> : null}
