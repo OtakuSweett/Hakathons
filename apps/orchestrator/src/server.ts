@@ -13,7 +13,7 @@ import { fetchEonetStormAlerts } from './ingestion/eonet.js';
 import { evaluatePestRisk } from './services/pestRisk.js';
 import { callPhysicsWorker, callOptimizerWorker } from './services/dispatcher.js';
 import { geocoderAttribution, geocoderProvider, searchPlaces } from './services/geocoder.js';
-import { SoilHydraulicsOutput } from './services/pedotransfer.js';
+import { computeSoilHydraulics, SoilHydraulicsOutput } from './services/pedotransfer.js';
 
 export const serializeSoilHydraulics = (soil: SoilHydraulicsOutput) => ({
   clay_pct: soil.clayPct,
@@ -177,10 +177,27 @@ export function buildServer(): FastifyInstance {
     const cropId = body.crop_id || 'maize';
     const areaHa = body.area_ha || 15.0;
 
+    let manualSoil: SoilHydraulicsOutput | undefined;
+    if (body.soil_profile !== undefined) {
+      const profile = body.soil_profile;
+      const requiredFields = ['clay_pct', 'sand_pct', 'soil_ph', 'soc_g_kg'] as const;
+      if (!profile || typeof profile !== 'object' || requiredFields.some((key) => typeof profile[key] !== 'number' || !Number.isFinite(profile[key])) || (profile.nitrogen_g_kg !== undefined && (typeof profile.nitrogen_g_kg !== 'number' || !Number.isFinite(profile.nitrogen_g_kg)))) {
+        throw new AppError('INVALID_SOIL_PROFILE', 'El análisis manual requiere arcilla, arena, pH y carbono orgánico. El nitrógeno es opcional.', 422, { required_fields: requiredFields });
+      }
+      const { clay_pct, sand_pct, soil_ph, soc_g_kg, nitrogen_g_kg } = profile;
+      if (clay_pct < 0 || clay_pct > 100 || sand_pct < 0 || sand_pct > 100 || clay_pct + sand_pct > 100 || soil_ph < 0 || soil_ph > 14 || soc_g_kg < 0 || (nitrogen_g_kg !== undefined && nitrogen_g_kg < 0)) {
+        throw new AppError('INVALID_SOIL_PROFILE', 'Revisa los valores: arcilla y arena deben sumar como máximo 100%, el pH debe estar entre 0 y 14 y carbono/nitrógeno no pueden ser negativos.', 422, { profile });
+      }
+      manualSoil = {
+        ...computeSoilHydraulics({ clayPct: clay_pct, sandPct: sand_pct, soilPh: soil_ph, socGKg: soc_g_kg, nitrogenGKg: nitrogen_g_kg }),
+        provider: 'farmer_input', retrieval: 'manual', fetched_at: new Date().toISOString()
+      };
+    }
+
     // A. Ingest soil (triggers 422 NON_ARABLE_LAND if ocean/urban)
     // Independent providers run concurrently to avoid serially stacking their timeouts.
     const [soil, climate, eonet] = await Promise.all([
-      fetchSoilGrids(lat, lon, requestedSource === 'preset'),
+      manualSoil || fetchSoilGrids(lat, lon, requestedSource === 'preset'),
       fetchNasaPowerDaily(lat, lon, 90, requestedSource === 'preset'),
       fetchEonetStormAlerts(lat, lon)
     ]);

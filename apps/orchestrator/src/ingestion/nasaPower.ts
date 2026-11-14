@@ -72,6 +72,15 @@ export async function fetchNasaPowerDaily(
       throw new Error('Empty parameters object in NASA POWER response');
     }
 
+    const requiredParameters = ['T2M', 'T2M_MAX', 'T2M_MIN', 'RH2M', 'WS2M', 'ALLSKY_SFC_SW_DWN', 'PS', 'PRECTOTCORR'];
+    const fillCount = requiredParameters.reduce((count, parameter) => count + rawDates.filter((date) => {
+      const value = p[parameter]?.[date];
+      return value === undefined || value === null || value === -999 || !Number.isFinite(value);
+    }).length, 0);
+    if (fillCount > 0) {
+      throw new Error(`NASA POWER returned ${fillCount} missing or -999 daily values; requesting a complete historical fallback series.`);
+    }
+
     const dates: string[] = [];
     const t2m_c: number[] = [];
     const t2m_max_c: number[] = [];
@@ -164,8 +173,9 @@ export async function fetchNasaPowerDaily(
     } else {
       try {
         const archive = await fetchOpenMeteoArchive(lat, lon, startDate, endDate);
-        writeCache(cacheKey, archive as unknown as Record<string, unknown>);
-        return archive;
+        const fallback = { ...archive, fallback_reason: cause };
+        writeCache(cacheKey, fallback as unknown as Record<string, unknown>);
+        return fallback;
       } catch (fallbackError) {
         throw new AppError('CLIMATE_SOURCES_UNAVAILABLE', 'NASA POWER and the historical weather fallback are unavailable for this location.', 503, {
           nasa_power: cause,

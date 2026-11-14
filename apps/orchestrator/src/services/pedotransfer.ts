@@ -25,8 +25,8 @@ export interface SoilHydraulicsOutput {
   fieldCapacityMm: number;
   wiltingPointMm: number;
   criticalWaterMm: number;
-  provider?: 'soilgrids' | 'regional_benchmark';
-  retrieval?: 'live' | 'cache' | 'preset_fallback';
+  provider?: 'soilgrids' | 'regional_benchmark' | 'farmer_input';
+  retrieval?: 'live' | 'cache' | 'preset_fallback' | 'manual';
   fetched_at?: string;
   fallback_reason?: string;
   fallback_preset_id?: string;
@@ -114,7 +114,7 @@ export function computeSoilHydraulics(input: SoilPropertiesInput): SoilHydraulic
     omPct,
     soilPh: Math.round(input.soilPh * 10.0) / 10.0,
     socGKg: Math.round(socGKg * 10.0) / 10.0,
-    nitrogenGKg: input.nitrogenGKg ? Math.round(input.nitrogenGKg * 100.0) / 100.0 : 1.5,
+    nitrogenGKg: input.nitrogenGKg !== undefined ? Math.round(input.nitrogenGKg * 100.0) / 100.0 : 1.5,
     usdaTextureClass: usdaClass,
     fieldCapacityMm: safeFc,
     wiltingPointMm: safeWp,

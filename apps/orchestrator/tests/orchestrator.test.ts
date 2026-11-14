@@ -75,6 +75,11 @@ describe('Track A: Soil Hydraulics & Pedotransfer', () => {
     expect(classifyUSDATexture(10.0, 10.0, 80.0)).toBe('Silt');
   });
 
+  it('preserves an explicitly measured zero nitrogen value', () => {
+    const result = computeSoilHydraulics({ clayPct: 25, sandPct: 35, soilPh: 6.5, socGKg: 10, nitrogenGKg: 0 });
+    expect(result.nitrogenGKg).toBe(0);
+  });
+
   it('serializes soil response fields in the canonical snake_case contract', () => {
     const soil = computeSoilHydraulics({ clayPct: 28, sandPct: 32, soilPh: 6.8, socGKg: 14.2 });
     const response = serializeSoilHydraulics(soil);
@@ -128,6 +133,14 @@ describe('Track A: Fastify Server & API Endpoints', () => {
     const body = JSON.parse(res.body);
     expect(body.error).toBeDefined();
     expect(body.error.code).toBe('PRESET_NOT_FOUND');
+  });
+
+  it('returns a clear canonical error for an invalid manual soil profile', async () => {
+    const res = await app.inject({ method: 'POST', url: '/api/analyze', payload: {
+      parcel_id: 'manual_test', lat: 21.1, lon: -101.6, source: 'live', crop_id: 'maize', soil_profile: { clay_pct: 20 }
+    } });
+    expect(res.statusCode).toBe(422);
+    expect(JSON.parse(res.body).error).toMatchObject({ code: 'INVALID_SOIL_PROFILE' });
   });
 
   it('geocodes place names through the server and returns map bounds plus attribution', async () => {
@@ -214,5 +227,40 @@ describe('Track A: Open-Meteo Archive climate fallback', () => {
     expect(result.provider).toBe('open_meteo_archive');
     expect(result.retrieval).toBe('live_fallback');
     expect(result.dates).toHaveLength(2);
+  });
+
+  it('uses Open-Meteo Archive when NASA POWER responds successfully with -999 fill values', async () => {
+    const end = new Date();
+    end.setDate(end.getDate() - 2);
+    const start = new Date(end);
+    start.setDate(start.getDate() - 1);
+    const nasaKeys = [start, end].map((date) => date.toISOString().slice(0, 10).replaceAll('-', ''));
+    const params: Record<string, Record<string, number>> = {};
+    for (const parameter of ['T2M', 'T2M_MAX', 'T2M_MIN', 'RH2M', 'WS2M', 'ALLSKY_SFC_SW_DWN', 'PS', 'PRECTOTCORR']) {
+      params[parameter] = Object.fromEntries(nasaKeys.map((key) => [key, parameter === 'RH2M' && key === nasaKeys[1] ? -999 : 20]));
+    }
+    const first = new Date(start);
+    first.setDate(first.getDate() - 1);
+    const last = new Date(end);
+    last.setDate(last.getDate() + 1);
+    const times: string[] = [];
+    for (let hour = first.getTime(); hour <= last.getTime() + 23 * 3_600_000; hour += 3_600_000) {
+      times.push(new Date(hour).toISOString().slice(0, 16));
+    }
+    const mockedFetch = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ properties: { parameter: params } }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ hourly: {
+        time: times,
+        temperature_2m: Array(times.length).fill(20), relative_humidity_2m: Array(times.length).fill(60),
+        wind_speed_10m: Array(times.length).fill(10), shortwave_radiation: Array(times.length).fill(200),
+        surface_pressure: Array(times.length).fill(850), precipitation: Array(times.length).fill(0)
+      } }), { status: 200 }));
+    vi.stubGlobal('fetch', mockedFetch);
+    const result = await fetchNasaPowerDaily(0.4321, 0.8765, 1, false);
+    vi.unstubAllGlobals();
+    expect(mockedFetch).toHaveBeenCalledTimes(2);
+    expect(result.provider).toBe('open_meteo_archive');
+    expect(result.retrieval).toBe('live_fallback');
+    expect(result.fallback_reason).toContain('-999');
   });
 });
