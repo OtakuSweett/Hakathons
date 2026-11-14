@@ -1084,5 +1084,9 @@
     "risk_aversion": "baja",
     "min_acceptable_profit_usd_ha": 1400.0,
     "organic_transition": false
-  }
+  },
+  "country": "Mexico",
+  "currency": "USD",
+  "hemisphere": "north",
+  "climate_zone": "Cwb"
 }

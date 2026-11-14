@@ -208,6 +208,28 @@
       "type": "string",
       "description": "Human-readable name given by farmer (e.g. 'Rancho San Isidro - Parcela 4')."
     },
+    "country": {
+      "type": "string",
+      "description": "ISO country or country name for global reporting (e.g. 'Mexico', 'United States', 'Argentina')."
+    },
+    "region": {
+      "type": "string",
+      "description": "Administrative region, state or province."
+    },
+    "currency": {
+      "type": "string",
+      "default": "USD",
+      "description": "ISO 4217 currency code for economic figures ('USD', 'EUR', 'MXN')."
+    },
+    "hemisphere": {
+      "type": "string",
+      "enum": ["north", "south"],
+      "description": "Hemisphere deduced from latitude sign (lat >= 0 -> 'north', lat < 0 -> 'south')."
+    },
+    "climate_zone": {
+      "type": "string",
+      "description": "Köppen-Geiger or agroecological climate zone code (e.g. 'Cwb', 'BSh', 'Cfa', 'Csa')."
+    },
     "area_ha": {
       "type": "number",
       "minimum": 0.1,

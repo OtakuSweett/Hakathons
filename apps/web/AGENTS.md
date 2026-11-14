@@ -29,7 +29,7 @@ See [docs/ARCHITECTURE.md](file:///home/Sweett/hakathon/docs/ARCHITECTURE.md) fo
 2. **Uso Exclusivo de NASA GIBS:** Las capas WMTS de GIBS (ej. `MODIS_Terra_NDVI_8Day`) son puramente visuales sobre Leaflet. Nunca se deben muestrear para cálculos agronómicos.
 3. **Tailwind CSS v4:** Configuración pura en CSS mediante `@import "tailwindcss";` y bloque `@theme {}`. Prohibido crear `tailwind.config.js` o archivos de configuración de PostCSS.
 4. **Bilingüismo Completo (EN/ES):** Todos los componentes y etiquetas deben soportar cambio de idioma dinámico mediante un interruptor visible.
-5. **Modo Autónomo Offline:** Si el orquestador o la red están desconectados, la UI debe cargar los paquetes de demostración desde `data/presets/` sin fallar.
+5. **Modo Autónomo Offline:** Si el orquestador o la red están desconectados, la UI debe permitir seleccionar y cargar paquetes de demostración globales desde `data/presets/` (México, EE.UU., Argentina) sin fallar.
 
 ---
 
@@ -37,7 +37,7 @@ See [docs/ARCHITECTURE.md](file:///home/Sweett/hakathon/docs/ARCHITECTURE.md) fo
 > ES: Especificación de las 9 funciones de la suite DSS en el frontend.
 
 ### 1. Mapa de Riesgos (`components/RiskMap.tsx`)
-- Mapa interactivo con **Leaflet** centrado en la parcela (`lon: -100.3899, lat: 20.5888`).
+- Mapa interactivo global con **Leaflet** que permite al productor hacer clic en cualquier coordenada arable del planeta o seleccionar presets globales demostrativos.
 - Capa base vectorial + capa raster WMTS de NASA GIBS.
 - Marcadores interactivos para eventos activos de **NASA EONET v3** (`severeStorms`, `drought`, `floods`, `wildfires`) con círculos de radio de afectación y distancia a la parcela.
 

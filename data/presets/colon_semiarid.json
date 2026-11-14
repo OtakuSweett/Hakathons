@@ -1084,5 +1084,9 @@
     "risk_aversion": "alta",
     "min_acceptable_profit_usd_ha": 400.0,
     "organic_transition": true
-  }
+  },
+  "country": "Mexico",
+  "currency": "USD",
+  "hemisphere": "north",
+  "climate_zone": "BSk"
 }

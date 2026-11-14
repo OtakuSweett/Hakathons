@@ -56,13 +56,17 @@ See [docs/ARCHITECTURE.md](file:///home/Sweett/hakathon/docs/ARCHITECTURE.md) fo
    - Limo: $\text{silt\_pct} = \max(0, 100 - \text{clay\_pct} - \text{sand\_pct})$.
    - Clasificación según el triángulo textural USDA (ej. $37.8\%$ arcilla, $38.7\%$ arena, $23.5\%$ limo $\rightarrow$ *Clay Loam*).
    - Factor de Van Bemmelen: $\text{om\_pct} = (\text{soc\_g\_kg} / 10) \times 1.724$.
-4. **Cálculo Micrometeorológico de $ET_0$ (FAO-56 Penman-Monteith):**
+4. **Cálculo Micrometeorológico de $ET_0$ (FAO-56 Penman-Monteith Dinámico):**
    $$ET_0 = \frac{0.408 \Delta (R_n - G) + \gamma \left(\frac{900}{T+273}\right) u_2 (e_s - e_a)}{\Delta + \gamma (1 + 0.34 u_2)}$$
    - Viento a 2m: $u_2 = \text{WS2M}$ (o $u_{10} \times 0.748$ si solo se dispone de WS10M).
+   - Geometría solar dinámica: Calcular declinación $\delta$, ángulo horario $\omega_s$ y radiación extraterrestre $R_a$ a partir de la latitud $\phi$ de la parcela y el día del año $J$.
    - Radiación solar (VERIFICADA EN VIVO):
      - Si se consulta NASA POWER con `community=AG`, el campo `ALLSKY_SFC_SW_DWN` **YA VIENE en `MJ/m^2/day`**. ¡NO MULTIPLICAR POR 3.6!
      - Solo si se consulta con `community=RE` viene en `kW-hr/m^2/day` y debe multiplicarse por $3.6$ antes de aplicar el factor $0.408$.
-5. **Inyección de Pulsos Extremos EONET:**
+5. **Validación de Tierra Arable y Adaptación Hemisférica:**
+   - Si SoilGrids retorna `mean: null` (ej. clic en el océano, roca viva o mancha urbana densa), responder `HTTP 422 NON_ARABLE_LAND`.
+   - Si la latitud es negativa ($\text{lat} < 0$), marcar el bundle con `hemisphere: "south"` y rotar ventanas térmicas y de siembra en 182 días para el hemisferio austral.
+6. **Inyección de Pulsos Extremos EONET:**
    - Consultar eventos activos en NASA EONET v3 (`severeStorms`).
    - Si la trayectoria o polígono intersecta la parcela ($R \le 150\text{ km}$), agregar un pulso de lluvia extraordinaria en el vector de precipitación $P(t)$ enviado a `physics_worker` para simular riesgo de anegamiento.
 6. **Detector de Plagas y Enfermedades:**

@@ -10,11 +10,12 @@
 - [x] Monorepo directory scaffold created (pnpm + uv)
 - [x] Root manifests written with pinned versions (`package.json`, `pnpm-workspace.yaml`, `pyproject.toml`)
 - [x] Root `AGENTS.md` (SSOT) updated with M1–M7 and 9 product functions
+- [x] Planetary Global Scope established (arbitrary lat/lon, dynamic solar geometry, hemisphere adaptation, NON_ARABLE_LAND check)
 - [x] Child `AGENTS.md` updated for all tracks and packages
-- [x] `docs/ARCHITECTURE.md` and `docs/API_REFERENCE.md` synchronized with technical specs
+- [x] `docs/ARCHITECTURE.md` and `docs/API_REFERENCE.md` synchronized with technical specs and global planetary engine
 - [x] `packages/contracts/crops_catalog.schema.json` and `schemas.json` created
-- [x] `packages/contracts/crops_catalog.json` enriched with 12 Bajío crops (33 fields each)
-- [x] 4 synthetic presets verified in `data/presets/`
+- [x] `packages/contracts/crops_catalog.json` enriched to 20 crops (staple global crops: soybean, sunflower, potato, canola + 16 regional crops)
+- [x] 6 realistic presets verified in `data/presets/` (Mexico, USA Corn Belt, Argentina Pampa)
 - [x] Zero application code rule verified across entire repository
 - [x] Git initial commit `chore: bootstrap scaffold` on `main`
 

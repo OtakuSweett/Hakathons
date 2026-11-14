@@ -45,7 +45,8 @@ See [docs/ARCHITECTURE.md](file:///home/Sweett/hakathon/docs/ARCHITECTURE.md) fo
 
 ### Module 6: Optimizador MILP de Rotación Multianual (`mod6_milp.py`)
 - **Fuentes:** Cultivos viables (Módulo 5), SoilGrids (`nitrogen`, `soc`), balance hídrico $W(t)$ de NASA POWER + Módulo 3, y tabla económica (`crops_catalog.json`).
-- **Horizonte de Planificación:** $T = 2 \times \text{horizon\_years}$ (3 a 4 años, 6 a 8 ciclos agrícolas alternando Primavera-Verano `PV` y Otoño-Invierno `OI`).
+- **Horizonte de Planificación:** $T = 2 \times \text{horizon\_years}$ (3 a 4 años, 6 a 8 ciclos agrícolas alternando Primavera-Verano `PV` y Otoño-Invierno `OI`). Si `hemisphere == 'south'` (o $\text{lat} < 0$), los ciclos estacionales se desfasan 182 días para sincronizarse con las estaciones australes (verano de diciembre a febrero, invierno de junio a agosto).
+- **Neutralidad de Moneda:** La función objetivo opera en la moneda ingresada o USD normalizado, garantizando la resolución del MILP en cualquier latitud.
 - **Cálculo Económico del Coeficiente $\text{Ganancia}_{i,t}$:**
   $$\text{Ganancia}_{i,t} = (\text{PrecioVenta}_i \times \text{Rendimiento}_i) - (\text{CostoSemilla}_i + \text{CostoRiego}_i + \text{CostoFertilizante}_i)$$
 - **Calibración Nutricional (SoilGrids N y SOC):**

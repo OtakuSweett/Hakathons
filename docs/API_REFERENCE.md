@@ -15,10 +15,13 @@
 >    - En `community=RE`, sí viene en `kW-hr/m^2/day` (ej. `5.18 kW-hr/m^2/day`). Allí sí aplica $5.18 \times 3.6 = 18.65\text{ MJ/m}^2/\text{día}$.
 > 2. **Limitación de Fechas Futuras en NASA POWER:**
 >    - NASA POWER es una base de datos observacional basada en reanálisis satelital (MERRA-2 / GEOS-IT), con retraso de 2 a 3 días. **No provee pronósticos futuros**. Si se solicita una fecha futura (ej. 2026 en adelante), devuelve centinelas `-999` o error. Para pronósticos a 16 días, **Open-Meteo es la única fuente viable y funcional**.
-> 3. **SoilGrids v2.0 y Coordenadas Urbanas:**
->    - Consultar el centro urbano de Querétaro (`-100.3899, 20.5888`) devuelve `mean: null` para todas las propiedades edáficas, ya que el modelo global enmascara áreas urbanas pavimentadas y cuerpos de agua.
->    - En parcelas agrícolas reales del Bajío (ej. El Marqués `-100.197, 20.592`), devuelve valores exactos y consistentes: Arcilla $33.3\%$, Arena $43.1\%$, pH $7.3$, SOC $12.7\text{ g/kg}$, Nitrógeno $1.62\text{ g/kg}$.
-> 4. **Latencia y Cuello de Botella de SoilGrids:**
+> 3. **SoilGrids v2.0, Coordenadas Globales y Detección de Suelo No Arable:**
+>    - Consultar el centro urbano de Querétaro (`-100.3899, 20.5888`) o cualquier punto en el océano o roca sólida devuelve `mean: null` para todas las propiedades edáficas, ya que el modelo global enmascara áreas urbanas pavimentadas y cuerpos de agua.
+>    - En parcelas agrícolas de cualquier parte del mundo (ej. El Marqués `-100.197, 20.592`, Iowa `-93.63, 42.03`, o Pergamino `-60.57, -33.89`), devuelve valores exactos y consistentes.
+>    - **Regla Mandatoria:** Si SoilGrids retorna `null`, el gateway orquestador responde inmediatamente con `HTTP 422 NON_ARABLE_LAND` con un mensaje agronómico claro en lugar de propagar un fallo de puntero nulo.
+> 4. **Geometría Solar Dinámica en Penman-Monteith (FAO-56):**
+>    - Para operar en cualquier latitud $\phi \in [-90^\circ, 90^\circ]$, la radiación extraterrestre $R_a$, la declinación solar $\delta$ y el ángulo solar $\omega_s$ se calculan dinámicamente según FAO-56. No se permite asumir latitudes fijas de Querétaro ni constantes solares locales.
+> 5. **Latencia y Cuello de Botella de SoilGrids:**
 >    - Cada consulta a SoilGrids toma entre **$3.4\text{ s}$ y $6.6\text{ s}$**. La tasa límite es de $\approx 5\text{ req/min}$. La persistencia en `data/cache/soil_*.json` y el fallback a presets locales son **estrictamente obligatorios** para evitar congelar la interfaz de usuario.
 > 5. **Autenticación en NASA AppEEARS:**
 >    - El endpoint de catálogo de productos (`/api/product/MOD13A2.061`) es público (`HTTP 200`), pero la descarga de píxeles georreferenciados exige un token OAuth de Earthdata Login (`EARTHDATA_TOKEN`). En ausencia de credenciales, el sistema debe operar con series sintéticas locales (`data/presets/`).

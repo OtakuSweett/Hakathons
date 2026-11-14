@@ -19,12 +19,14 @@
 │                                                                        │
 │  - Ingestión externa: NASA POWER (horaria/diaria LST),                 │
 │    ISRIC SoilGrids v2.0, NASA EONET v3, Open-Meteo.                    │
+│  - Landmask check: rechazo HTTP 422 NON_ARABLE_LAND en agua/urbano     │
 │  - Limpieza y filtrado: Centinelas -999 -> null                        │
 │  - Preprocesamiento pedológico: Triángulo USDA + Van Bemmelen (%MO)   │
-│  - Cálculo micrometeorológico: ET0 (FAO-56 Penman-Monteith)           │
+│  - Cálculo micrometeorológico: ET0 dinámico con latitud (FAO-56)       │
+│  - Adaptación de hemisferio (desfase 182d para lat < 0)               │
 │  - Inyección de pulsos extremos EONET en balance hídrico               │
 │  - Caché persistente: data/cache/ (soil_*, climate_*)                  │
-│  - Fallback offline: data/presets/*.json                              │
+│  - Fallback offline: data/presets/*.json (benchmarks globales)         │
 │  - Módulos auxiliares: Detector de Plagas + Reportes de Agricultores   │
 └───────────────────┬────────────────────────────────┬───────────────────┘
                     │                                │
@@ -77,9 +79,9 @@
 ```
 
 1. **Mapa de Riesgos (Geospatial Hazard Map):**
-   - Mapa interactivo Leaflet centrado en la parcela (Querétaro / El Bajío: `-100.3899, 20.5888`).
-   - Capa base vectorial + superposición WMTS de NASA GIBS (`MODIS_Terra_NDVI_8Day`).
-   - Marcadores GeoJSON de eventos activos NASA EONET v3 (`severeStorms`, `drought`, `floods`, `wildfires`) con radio de impacto y distancia geodésica a la parcela.
+   - Mapa interactivo Leaflet mundial con selección libre de cualquier coordenada arable del planeta o presets globales de demostración (El Bajío MX, Iowa Corn Belt US, Pampa Argentina AR).
+   - Capa base vectorial + superposición WMTS de NASA GIBS (`MODIS_Terra_NDVI_8Day`, `SMAP_L4_Analyzed_Root_Zone_Soil_Moisture`).
+   - Marcadores GeoJSON de eventos activos NASA EONET v3 (`severeStorms`, `drought`, `floods`, `wildfires`) con filtrado Haversine al radio de la parcela ($R \le 150\text{ km}$).
 2. **Alertas Anticipadas (Early Warning Banner):**
    - Notificación de día crítico exacto $t^*$ de estrés hídrico generado por el Módulo 4 (Newton-Raphson).
    - Semáforo de advertencia meteorológica (heladas si $T_{\min} \le 0^\circ\text{C}$, olas de calor si $T_{\max} \ge 35^\circ\text{C}$, ciclones activos por EONET).
@@ -119,3 +121,19 @@
 | `POST` | `/physics` | `physics_worker` (:8001) | `parcel.schema.json` | `physics.schema.json` | Módulos 1–4 de física y balance hídrico |
 | `POST` | `/optimize` | `optimizer_worker` (:8002) | `optimizer.schema.json` | `optimizer.schema.json` | Módulos 5–7 de optimización y Pareto |
 | `GET` | `/health` | Todos los servicios | Ninguno | `{"status": "ok"}` | Health-check de infraestructura |
+
+---
+
+## 5. Planetary Architecture & Global Validation (SSOT)
+> ES: Principios de generalización global y validación estricta en cualquier coordenada terrestre.
+
+1. **Selección Territorial Libre:** El frontend permite seleccionar cualquier punto $(lat, lon)$ en el mapa mundial de Leaflet, enviándolo al orquestador.
+2. **Validación de Suelo Arable (`NON_ARABLE_LAND`):** Si la consulta a ISRIC SoilGrids retorna `null` o la coordenada cae en cuerpos de agua, áreas metropolitanas densas o roca estéril, el gateway responde inmediatamente con `HTTP 422 NON_ARABLE_LAND`.
+3. **Geometría Solar Dinámica en FAO-56:**
+   $$\delta = 0.409 \sin\left(\frac{2\pi}{365} J - 1.39\right)$$
+   $$\omega_s = \arccos(-\tan(\phi) \cdot \tan(\delta))$$
+   $$d_r = 1 + 0.033 \cos\left(\frac{2\pi}{365} J\right)$$
+   $$R_a = \frac{24(60)}{\pi} G_{sc} d_r \left[ \omega_s \sin(\phi) \sin(\delta) + \cos(\phi) \cos(\delta) \sin(\omega_s) \right]$$
+   Donde $\phi = \text{radians}(lat)$ y $J$ es el día del año. Ningún parámetro solar debe ser asumido constante.
+4. **Desfase Hemisférico Austral:** Cuando $\text{lat} < 0$, las fechas de cálculo para el ciclo de siembra y el acumulador térmico de grados día (GDD) se ajustan en 182 días para sincronizarse con las estaciones del Hemisferio Sur.
+5. **Neutralidad de Moneda:** Los modelos numéricos MILP operan en USD normalizado o en la unidad monetaria ingresada por el productor, garantizando su aplicabilidad global.

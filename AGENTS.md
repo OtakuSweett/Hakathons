@@ -1,13 +1,21 @@
 # AGENTS.md — Root SSOT
 > ES: Archivo raíz de agentes. Fuente única de verdad para unidades, reglas JSON, ecuaciones, flujo de datos y protocolo de agentes.
 
-**Project:** NASA Space Apps 2026 — Crop Rotation & Water Resilience DSS (El Bajío / Querétaro, MX)  
+**Project:** NASA Space Apps 2026 — Global Crop Rotation & Water Resilience DSS (Global Planetary Engine with Regional Demonstration Benchmarks)  
 **Rule:** If anything here conflicts with a child AGENTS.md, THIS FILE WINS.
 
 ---
 
 ## §1 Scope & Architecture
-> ES: Alcance y arquitectura del sistema.
+> ES: Alcance global y arquitectura del sistema.
+
+### Planetary vs Regional Scope Principle
+- **Global Engine by Design:** The system accepts ANY terrestrial coordinate `(lat, lon)` on Earth (from $-90^\circ$ to $+90^\circ$, $-180^\circ$ to $+180^\circ$). All external ingestion (NASA POWER, ISRIC SoilGrids v2.0, Open-Meteo, NASA EONET v3, NASA GIBS) is queried live using the parcel's coordinates.
+- **Role of Presets:** Files in `data/presets/` are strictly **Offline Demonstration Benchmarks and Calibration Ground-Truth Sets** (covering Mexico, USA Corn Belt, Argentina Pampa, etc.) used when APIs are unreachable or offline demo mode is forced. Default runtime mode is `source: "live"`.
+- **Non-Arable Land Protection:** When SoilGrids returns `null` or the chosen coordinate falls in water, urban concrete, rocky peaks, or polar ice, the orchestrator MUST return HTTP 422 with code `"NON_ARABLE_LAND"` and an agronomic explanation.
+- **Dynamic Solar Geometry in Penman-Monteith ET0:** Solar declination $\delta(J)$, sunset hour angle $\omega_s(\phi, \delta)$, relative Earth-Sun distance $d_r(J)$, and extraterrestrial radiation $R_a(\phi, \delta, \omega_s, d_r)$ MUST be calculated dynamically from the parcel's latitude $\phi$ and Day of Year $J$ according to FAO-56. Never hardcode local latitude constants.
+- **Hemisphere Awareness:** For parcels with $\text{lat} < 0$ (Southern Hemisphere), thermal GDD integrals and planting calendar windows shift by 6 months (182 days) to match austral seasons.
+- **Currency Neutrality:** Economic evaluations operate in USD or normalized units, allowing user-selected local currency symbols.
 
 ### Request Flow
 web(:5173) → orchestrator(:3000) → physics_worker(:8001) + optimizer_worker(:8002)
