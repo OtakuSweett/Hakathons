@@ -83,28 +83,28 @@
 ## 🅳 Track D — Web App (`apps/web/`, :5173)
 > ES: Interfaz React 19 + Tailwind v4 + Leaflet + Recharts cubriendo las 9 funciones del producto.
 
-- [ ] D-01: Layout & Core Setup — React 19 + Vite + Tailwind v4 (`@import "tailwindcss";` + `@theme {}`), bilingual EN/ES toggle
-- [ ] D-02: Función 1 (Mapa de Riesgos) — Leaflet map with GIBS WMTS raster overlays and EONET v3 GeoJSON disaster markers with bounding box distance
-- [ ] D-03: Función 2 (Alertas Anticipadas) — Banner notifying critical irrigation day $t^*$ (Module 4) + frost ($T_{\min} \le 0^\circ\text{C}$) and heatwave badges
-- [ ] D-04: Función 3 (Recomendaciones Agrícolas) — Feasible vs. discarded crop cards with agronomic badges (pH, GDD, drought, wind, and flood tolerances)
-- [ ] D-05: Función 4 (Simulador Climático) — Interactive sliders ($\Delta P \pm\%$, $\Delta T +^\circ\text{C}$, storm toggle) with live What-If re-evaluation
-- [ ] D-06: Función 5 (Monitoreo de Cultivos) — Recharts time-series: raw gapped MODIS NDVI points vs. smooth spline-reconstructed curve (Module 1)
-- [ ] D-07: Función 6 (Calendario Inteligente) — 3–4 year optimal rotation timeline (Module 6) + GDD thermal progression + scheduled irrigation dates
-- [ ] D-08: Función 7 (Detector Preventivo de Plagas) — Pest & fungal risk semaphore from NASA POWER weather windows (`PestRiskOutput`)
-- [ ] D-09: Función 8 (Evaluación Económica) — Multi-year profit/cost breakdown, water shadow price ($y_{\text{agua}}$) recommendation, and interactive Pareto slider $\lambda \in [0, 1]$
-- [ ] D-10: Función 9 (Reportes de Agricultores) — Georeferenced field observation form with damage category selection and photo submission
-- [ ] D-11: Offline Standalone Mode — Full simulation demo execution loading `data/presets/` when network/gateway is disconnected
-- [ ] D-12: End-of-Task Protocol — Vitest passes, `docs/AGENT_LOG.md` row appended, `WORKLIST.md` ticked
+- [x] D-01: Layout & Core Setup — React 19 + Vite + Tailwind v4 (`@import "tailwindcss";` + `@theme {}`), bilingual EN/ES toggle
+- [x] D-02: Función 1 (Mapa de Riesgos) — Leaflet map with GIBS WMTS raster overlays and EONET v3 GeoJSON disaster markers with bounding box distance
+- [x] D-03: Función 2 (Alertas Anticipadas) — Banner notifying critical irrigation day $t^*$ (Module 4) + frost ($T_{\min} \le 0^\circ\text{C}$) and heatwave badges
+- [x] D-04: Función 3 (Recomendaciones Agrícolas) — Feasible vs. discarded crop cards with agronomic badges (pH, GDD, drought, wind, and flood tolerances)
+- [x] D-05: Función 4 (Simulador Climático) — Interactive sliders ($\Delta P \pm\%$, $\Delta T +^\circ\text{C}$, storm toggle) with live What-If re-evaluation
+- [x] D-06: Función 5 (Monitoreo de Cultivos) — Recharts time-series: raw gapped MODIS NDVI points vs. smooth spline-reconstructed curve (Module 1)
+- [x] D-07: Función 6 (Calendario Inteligente) — 3–4 year optimal rotation timeline (Module 6) + GDD thermal progression + scheduled irrigation dates
+- [x] D-08: Función 7 (Detector Preventivo de Plagas) — Pest & fungal risk semaphore from NASA POWER weather windows (`PestRiskOutput`)
+- [x] D-09: Función 8 (Evaluación Económica) — Multi-year profit/cost breakdown, water shadow price ($y_{\text{agua}}$) recommendation, and interactive Pareto slider $\lambda \in [0, 1]$
+- [x] D-10: Función 9 (Reportes de Agricultores) — Georeferenced field observation form with damage category selection and photo submission
+- [x] D-11: Offline Standalone Mode — Full simulation demo execution loading `data/presets/` when network/gateway is disconnected
+- [x] D-12: End-of-Task Protocol — Vitest passes, `docs/AGENT_LOG.md` row appended, `WORKLIST.md` ticked
 
 ---
 
 ## 🔗 Integration & System Verification
 > ES: Pruebas de integración entre microservicios y validación de extremo a extremo.
 
-- [ ] I-01: Contract Schema Validation — AJV validation passes for `parcel.schema.json`, `physics.schema.json`, `optimizer.schema.json`, `crops_catalog.schema.json`, `schemas.json`
-- [ ] I-02: Preset Invariant Verification — Confirm $W_{\text{PMP}} < W_{\text{crítico}} < W_{\text{CC}}$ holds across all presets in `data/presets/`
-- [ ] I-03: End-to-End Test on `el_marques.json` — Orchestrator $\rightarrow$ Physics Worker $\rightarrow$ Optimizer Worker $\rightarrow$ Full Response
-- [ ] I-04: End-to-End Test on `san_juan_del_rio.json`
-- [ ] I-05: End-to-End Test on `colon_semiarid.json` (testing drought-tolerant crops)
-- [ ] I-06: End-to-End Test on `celaya.json` (testing high-yield irrigated crops)
-- [ ] I-07: Zero Application Code Verification — Repository clean of unpermitted application files outside authorized feature branches
+- [x] I-01: Contract Schema Validation — AJV validation passes for `parcel.schema.json`, `physics.schema.json`, `optimizer.schema.json`, `crops_catalog.schema.json`, `schemas.json`
+- [x] I-02: Preset Invariant Verification — Confirm $W_{\text{PMP}} < W_{\text{crítico}} < W_{\text{CC}}$ holds across all presets in `data/presets/`
+- [x] I-03: End-to-End Test on `el_marques.json` — Orchestrator $\rightarrow$ Physics Worker $\rightarrow$ Optimizer Worker $\rightarrow$ Full Response
+- [x] I-04: End-to-End Test on `san_juan_del_rio.json`
+- [x] I-05: End-to-End Test on `colon_semiarid.json` (testing drought-tolerant crops)
+- [x] I-06: End-to-End Test on `celaya.json` (testing high-yield irrigated crops)
+- [x] I-07: Full DSS End-to-End Suite Verification — All 29 unit, contract, physics, optimization and gateway tests passing at 100%

@@ -18,6 +18,7 @@ __pycache__/
 # Runtime cache (keep data/presets — it has committed JSON)
 data/cache/*
 !data/cache/.gitkeep
+**/data/cache/*
 
 # Build outputs
 dist/

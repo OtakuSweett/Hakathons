@@ -107,6 +107,40 @@ export function buildServer(): FastifyInstance {
   });
 
   // 6. Master Parcel Analysis: Ingestion -> Preprocessing -> Physics -> Optimization
+  server.get<{ Querystring: { presetId?: string; lat?: string; lon?: string; crop_id?: string } }>(
+    '/api/analyze',
+    async (request) => {
+      let lat = request.query.lat ? parseFloat(request.query.lat) : 20.5922;
+      let lon = request.query.lon ? parseFloat(request.query.lon) : -100.1972;
+      let parcelId = request.query.presetId || 'parcel_live';
+      let source = 'live';
+
+      if (request.query.presetId) {
+        source = 'preset';
+        const preset = loadPresetById(request.query.presetId);
+        if (preset) {
+          lat = preset.lat;
+          lon = preset.lon;
+          parcelId = preset.parcel_id;
+        }
+      }
+
+      const postRes = await server.inject({
+        method: 'POST',
+        url: '/api/analyze',
+        payload: {
+          parcel_id: parcelId,
+          lat,
+          lon,
+          source,
+          crop_id: request.query.crop_id || 'maize'
+        }
+      });
+
+      return JSON.parse(postRes.body);
+    }
+  );
+
   server.post<{ Body: Record<string, any> }>('/api/analyze', async (request) => {
     const body = request.body || {};
     const lat = typeof body.lat === 'number' ? body.lat : 20.5922;
@@ -206,7 +240,7 @@ export function buildServer(): FastifyInstance {
           wilting_point_mm: soil.wiltingPointMm
         },
         candidate_crops: body.candidate_crops || [],
-        water_available_mm: [250.0] * (horizonYears * 2),
+        water_available_mm: new Array(horizonYears * 2).fill(250.0),
         alpha_water_cost_mxn_mm: 0.5,
         beta_deficit_penalty_mxn_mm: 5.0,
         gdd_available: 1600.0,

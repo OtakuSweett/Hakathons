@@ -91,7 +91,12 @@ export function loadPresetById(presetId: string): Record<string, unknown> | null
     try {
       const content = fs.readFileSync(path.join(PRESETS_DIR, file), 'utf-8');
       const data = JSON.parse(content);
-      if (data.parcel_id === presetId) {
+      if (
+        data.parcel_id === presetId ||
+        file.replace('.json', '') === presetId ||
+        presetId.includes(file.replace('.json', '')) ||
+        file.includes(presetId.replace('_us', '').replace('_ar', '').replace('_qro', ''))
+      ) {
         return data;
       }
     } catch {
