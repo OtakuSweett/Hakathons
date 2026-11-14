@@ -40,7 +40,10 @@ export const CropMonitor: React.FC<CropMonitorProps> = ({ data, lang }) => {
       summaryMoisture: 'Humedad Actual',
       summaryEt0: 'ET0 Acumulada',
       summaryPrecip: 'Lluvia Acumulada',
-      summaryNdvi: 'NDVI Máximo'
+      summaryNdvi: 'NDVI Máximo',
+      sectionLabel: 'SEGUIMIENTO · CULTIVO',
+      powerSource: 'Datos diarios de NASA POWER',
+      ndviSource: 'Spline TDMA de MODIS'
     },
     en: {
       title: 'Dynamic Crop & Soil Moisture Monitoring',
@@ -62,7 +65,10 @@ export const CropMonitor: React.FC<CropMonitorProps> = ({ data, lang }) => {
       summaryMoisture: 'Current Moisture',
       summaryEt0: 'Cumulative ET0',
       summaryPrecip: 'Cumulative Rain',
-      summaryNdvi: 'Peak NDVI'
+      summaryNdvi: 'Peak NDVI',
+      sectionLabel: 'CROP MONITORING · FIELD',
+      powerSource: 'NASA POWER daily data',
+      ndviSource: 'MODIS TDMA spline'
     }
   }[lang];
 
@@ -103,7 +109,7 @@ export const CropMonitor: React.FC<CropMonitorProps> = ({ data, lang }) => {
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
             <span className="text-[11px] uppercase tracking-wider text-emerald-400 font-semibold">
-              SEGUIMIENTO · CULTIVO
+              {t.sectionLabel}
             </span>
           </div>
           <h2 className="text-base sm:text-lg font-bold text-white mt-1">{t.title}</h2>
@@ -169,7 +175,7 @@ export const CropMonitor: React.FC<CropMonitorProps> = ({ data, lang }) => {
             </span>
             <span className="text-zinc-500 text-[11px]">mm</span>
           </div>
-          <span className="text-[10px] text-zinc-400">NASA POWER Daily</span>
+          <span className="text-[10px] text-zinc-400">{t.powerSource}</span>
         </div>
 
         <div className="bg-zinc-900/60 p-3 rounded-xl border border-white/[0.05]">
@@ -178,7 +184,7 @@ export const CropMonitor: React.FC<CropMonitorProps> = ({ data, lang }) => {
             <span className="text-lg font-black text-emerald-400 font-mono">{maxNdvi.toFixed(2)}</span>
             <span className="text-zinc-500 text-[11px]">NDVI</span>
           </div>
-          <span className="text-[10px] text-zinc-400">MODIS Spline TDMA</span>
+          <span className="text-[10px] text-zinc-400">{t.ndviSource}</span>
         </div>
       </div>
 

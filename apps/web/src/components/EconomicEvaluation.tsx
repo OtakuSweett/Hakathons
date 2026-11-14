@@ -39,11 +39,16 @@ export const EconomicEvaluation: React.FC<EconomicEvaluationProps> = ({ data, la
       shadowAdviceLow: 'Recomendación: El agua no es la restricción limitante principal en esta temporada.',
       paretoChartTitle: 'Frontera de Pareto de Soluciones No Dominadas',
       waterSaved: 'Agua Ahorrada (mm)',
-      profitUsd: 'Ganancia Neta (USD/ha)',
+      profitUsd: 'Ganancia Neta (MXN/ha)',
       metricProfit: 'Ganancia Proyectada',
       metricWaterSaved: 'Ahorro Hídrico',
       metricNitrogen: 'Nitrógeno Biológico',
-      noPareto: 'El optimizador no generó resultados económicos para esta parcela. Revisa los cultivos y vuelve a calcular.'
+      noPareto: 'El optimizador no generó resultados económicos para esta parcela. Revisa los cultivos y vuelve a calcular.',
+      sectionLabel: 'AGUA · COSTOS · RENTABILIDAD',
+      waterConstraint: 'Restricción hídrica activa',
+      waterSufficient: 'Disponibilidad hídrica suficiente',
+      currencyPerHa: 'MXN/ha',
+      currencyPerWater: 'MXN / mm-ha'
     },
     en: {
       title: 'Economic Evaluation, Dual Shadow Prices & Pareto Frontier',
@@ -59,11 +64,16 @@ export const EconomicEvaluation: React.FC<EconomicEvaluationProps> = ({ data, la
       shadowAdviceLow: 'Recommendation: Water is not the binding constraint; focus capital on soil organic matter.',
       paretoChartTitle: 'Pareto Efficient Frontier (Non-Dominated Solutions)',
       waterSaved: 'Water Saved (mm)',
-      profitUsd: 'Net Profit (USD/ha)',
+      profitUsd: 'Net Profit (MXN/ha)',
       metricProfit: 'Projected Profit',
       metricWaterSaved: 'Water Conservation',
       metricNitrogen: 'Biological Nitrogen',
-      noPareto: 'The optimizer did not produce economic results for this field. Review the selected crops and calculate again.'
+      noPareto: 'The optimizer did not produce economic results for this field. Review the selected crops and calculate again.',
+      sectionLabel: 'WATER · COSTS · RETURNS',
+      waterConstraint: 'Active water constraint',
+      waterSufficient: 'Sufficient water availability',
+      currencyPerHa: 'MXN/ha',
+      currencyPerWater: 'MXN / mm-ha'
     }
   }[lang];
 
@@ -86,7 +96,7 @@ export const EconomicEvaluation: React.FC<EconomicEvaluationProps> = ({ data, la
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-teal-400"></span>
             <span className="text-[11px] uppercase tracking-wider text-teal-400 font-semibold">
-              AGUA · COSTOS · RENTABILIDAD
+              {t.sectionLabel}
             </span>
           </div>
           <h2 className="text-base sm:text-lg font-bold text-white mt-1">{t.title}</h2>
@@ -133,7 +143,7 @@ export const EconomicEvaluation: React.FC<EconomicEvaluationProps> = ({ data, la
             <div className="bg-zinc-900/70 p-3 rounded-xl border border-white/[0.05]">
               <span className="text-zinc-400 text-[10px] block">{t.metricProfit}</span>
               <span className="text-base sm:text-lg font-black text-white font-mono">
-                ${activePoint.profit_mxn_ha.toLocaleString()} USD/ha
+                ${activePoint.profit_mxn_ha.toLocaleString()} {t.currencyPerHa}
               </span>
             </div>
             <div className="bg-zinc-900/70 p-3 rounded-xl border border-white/[0.05]">
@@ -164,15 +174,15 @@ export const EconomicEvaluation: React.FC<EconomicEvaluationProps> = ({ data, la
                 </span>
               </div>
               <h4 className="text-sm font-bold text-white font-mono mt-1">
-                {shadowPrice.toFixed(2)} USD / mm-ha
+                {shadowPrice.toFixed(2)} {t.currencyPerWater}
               </h4>
             </div>
             <span className={`self-start sm:self-auto text-[10px] font-bold px-2.5 py-1 rounded-full ${
               isHighShadow ? 'bg-amber-500/10 text-amber-300 border border-amber-500/30' : 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/30'
             }`}>
               {lang === 'es'
-                ? (isHighShadow ? 'Restricción hídrica activa' : 'Disponibilidad hídrica suficiente')
-                : (isHighShadow ? 'Active water constraint' : 'Sufficient water availability')}
+                ? (isHighShadow ? t.waterConstraint : t.waterSufficient)
+                : (isHighShadow ? t.waterConstraint : t.waterSufficient)}
             </span>
           </div>
           <p className="text-[11px] text-zinc-300 mt-1">{t.shadowPriceDesc}</p>
@@ -204,7 +214,7 @@ export const EconomicEvaluation: React.FC<EconomicEvaluationProps> = ({ data, la
                   type="number"
                   dataKey="y"
                   name={t.profitUsd}
-                  unit=" $"
+                  unit=" MXN"
                   tick={{ fontSize: 11, fill: '#71717a' }}
                   stroke="#3f3f46"
                 />
@@ -216,7 +226,7 @@ export const EconomicEvaluation: React.FC<EconomicEvaluationProps> = ({ data, la
                 <Scatter name={lang === 'es' ? 'Frontera de Pareto (M7)' : 'Pareto Frontier (M7)'} data={chartData} fill="#10b981" />
               </ScatterChart>
             </ResponsiveContainer>
-          </div> : <p className="text-sm text-zinc-400" role="status">{t.noPareto}</p>}
+          </div> : null}
         </div>
       </div>
     </div>

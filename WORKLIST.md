@@ -97,6 +97,7 @@
 - [x] D-12: End-of-Task Protocol — Vitest passes, `docs/AGENT_LOG.md` row appended, `WORKLIST.md` ticked
 - [x] D-13: Guided Field Workflow — Region selection, bounded parcel map, grower crop selection, bilingual privacy and opt-in location, responsive field analysis
 - [x] D-14: Economic empty-state recovery and map tile error handling — Pareto results tolerate empty optimizer output; external tile failures surface a bilingual map notice
+- [x] D-15: Consistent monitoring and economic language — section labels, data-source captions, optimizer status, and MXN units follow the active locale
 
 ---
 
