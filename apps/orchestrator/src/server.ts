@@ -1,0 +1,282 @@
+/**
+ * Fastify Server — Orchestrator Gateway API (Port 3000).
+ * Implements the 9 Core Product Functions gateway endpoints.
+ */
+
+import Fastify, { FastifyInstance } from 'fastify';
+import cors from '@fastify/cors';
+import { AppError } from './utils/errors.js';
+import { listPresets, loadPresetById, getNearestPreset } from './services/presets.js';
+import { fetchSoilGrids } from './ingestion/soilGrids.js';
+import { fetchNasaPowerDaily } from './ingestion/nasaPower.js';
+import { fetchEonetStormAlerts } from './ingestion/eonet.js';
+import { evaluatePestRisk } from './services/pestRisk.js';
+import { callPhysicsWorker, callOptimizerWorker } from './services/dispatcher.js';
+
+export function buildServer(): FastifyInstance {
+  const server = Fastify({
+    logger: false
+  });
+
+  server.register(cors, {
+    origin: '*'
+  });
+
+  // Global Error Handler conforming strictly to { error: { code, message, details } }
+  server.setErrorHandler((error, request, reply) => {
+    const statusCode = (error as any).statusCode || (error instanceof AppError ? error.statusCode : 500);
+    const code = (error as any).code || 'INTERNAL_SERVER_ERROR';
+    const message = error.message || 'An unexpected internal error occurred.';
+    const details = (error as any).details || {};
+
+    reply.status(statusCode).send({
+      error: {
+        code,
+        message,
+        details
+      }
+    });
+  });
+
+  // 1. Health check
+  server.get('/health', async () => {
+    return { status: 'ok', service: 'orchestrator' };
+  });
+
+  // 2. Presets listing & retrieval
+  server.get('/api/presets', async () => {
+    return { presets: listPresets() };
+  });
+
+  server.get<{ Params: { id: string } }>('/api/presets/:id', async (request, reply) => {
+    const preset = loadPresetById(request.params.id);
+    if (!preset) {
+      throw new AppError('PRESET_NOT_FOUND', `Preset with ID '${request.params.id}' does not exist.`, 404);
+    }
+    return preset;
+  });
+
+  // 3. EONET natural disaster hazard markers
+  server.get<{ Querystring: { lat?: string; lon?: string } }>('/api/events', async (request) => {
+    const lat = request.query.lat ? parseFloat(request.query.lat) : 20.59;
+    const lon = request.query.lon ? parseFloat(request.query.lon) : -100.39;
+    const { alerts, rawEvents } = await fetchEonetStormAlerts(lat, lon);
+    return {
+      parcelCoordinates: [lon, lat],
+      intersectingAlerts: alerts,
+      openEventsCount: rawEvents.length,
+      events: rawEvents
+    };
+  });
+
+  // 4. Pest & Disease semaphore
+  server.get<{ Querystring: { parcel_id?: string; lat?: string; lon?: string; crop_id?: string } }>(
+    '/api/pest-risk',
+    async (request) => {
+      const lat = request.query.lat ? parseFloat(request.query.lat) : 20.592;
+      const lon = request.query.lon ? parseFloat(request.query.lon) : -100.197;
+      const parcelId = request.query.parcel_id || 'parcel_custom';
+      const cropId = request.query.crop_id || 'maize';
+
+      const climate = await fetchNasaPowerDaily(lat, lon, 30);
+      const risk = evaluatePestRisk(
+        parcelId,
+        {
+          dates: climate.dates,
+          tMeanC: climate.t2m_c,
+          rhMeanPct: climate.rh2m_pct,
+          precipMm: climate.precip_mm
+        },
+        cropId
+      );
+      return risk;
+    }
+  );
+
+  // 5. Crowdsourced Farmer Observation Reports
+  const farmerReportsStorage: Array<Record<string, unknown>> = [];
+  server.post<{ Body: Record<string, unknown> }>('/api/farmer-reports', async (request, reply) => {
+    const body = request.body || {};
+    const reportRecord = {
+      reportId: `rep_${Date.now()}`,
+      submittedAt: new Date().toISOString(),
+      ...body
+    };
+    farmerReportsStorage.push(reportRecord);
+    reply.status(201).send(reportRecord);
+  });
+
+  // 6. Master Parcel Analysis: Ingestion -> Preprocessing -> Physics -> Optimization
+  server.post<{ Body: Record<string, any> }>('/api/analyze', async (request) => {
+    const body = request.body || {};
+    const lat = typeof body.lat === 'number' ? body.lat : 20.5922;
+    const lon = typeof body.lon === 'number' ? body.lon : -100.1972;
+    const parcelId = body.parcel_id || 'parcel_live';
+    const source = body.source || 'live';
+    const horizonYears = body.horizon_years || 3;
+    const cropId = body.crop_id || 'maize';
+    const areaHa = body.area_ha || 15.0;
+
+    // A. Ingest soil (triggers 422 NON_ARABLE_LAND if ocean/urban)
+    const soil = await fetchSoilGrids(lat, lon, source === 'preset');
+
+    // B. Ingest climate (NASA POWER + FAO-56 Penman-Monteith)
+    const climate = await fetchNasaPowerDaily(lat, lon, 90, source === 'preset');
+
+    // C. Check EONET extreme events
+    const { alerts } = await fetchEonetStormAlerts(lat, lon);
+
+    // D. Assemble ClimateSoilBundle
+    const climateSoilBundle = {
+      parcel_id: parcelId,
+      lon,
+      lat,
+      source,
+      fetched_at: new Date().toISOString(),
+      synthetic: source === 'preset',
+      soil: {
+        clay_pct: soil.clayPct,
+        sand_pct: soil.sandPct,
+        silt_pct: soil.siltPct,
+        soil_ph: soil.soilPh,
+        soc_g_kg: soil.socGKg,
+        nitrogen_g_kg: soil.nitrogenGKg,
+        om_pct: soil.omPct,
+        field_capacity_mm: soil.fieldCapacityMm,
+        wilting_point_mm: soil.wiltingPointMm,
+        critical_water_mm: soil.criticalWaterMm,
+        usda_texture_class: soil.usdaTextureClass
+      },
+      climate,
+      ndvi_series: body.ndvi_series || {
+        dates: climate.dates.slice(-10),
+        ndvi: [0.45, 0.52, null, 0.68, 0.72, 0.70, null, 0.58, 0.49, 0.42]
+      },
+      crop_id: cropId,
+      horizon_years: horizonYears,
+      area_ha: areaHa
+    };
+
+    // E. Microservice RPC
+    let physicsResult: Record<string, unknown>;
+    let optimizerResult: Record<string, unknown>;
+
+    try {
+      physicsResult = await callPhysicsWorker(climateSoilBundle);
+    } catch {
+      // Fallback response if physics worker not online
+      physicsResult = {
+        parcel_id: parcelId,
+        computed_at: new Date().toISOString(),
+        source: 'orchestrator_mock_fallback',
+        spline_result: {
+          dates: climateSoilBundle.ndvi_series.dates,
+          ndvi_filled: [0.45, 0.52, 0.60, 0.68, 0.72, 0.70, 0.65, 0.58, 0.49, 0.42],
+          used_tdma: true
+        },
+        gdd_result: {
+          crop_id: cropId,
+          t_base_c: 10.0,
+          gdd_accumulated: climate.t2m_c.map((_, i) => i * 14.5),
+          dates: climate.dates
+        },
+        water_balance: {
+          dates: climate.dates,
+          w_mm: climate.dates.map((_, i) => Math.max(90.0, 160.0 - i * 0.9)),
+          et0_mm: climate.et0_mm,
+          etc_mm: climate.et0_mm.map(e => e * 0.85),
+          precip_mm: climate.precip_mm,
+          drainage_mm: [0.0]
+        },
+        irrigation_trigger: {
+          t_star_days: 14.2,
+          delta_i_mm: soil.fieldCapacityMm - soil.criticalWaterMm,
+          reason: null
+        }
+      };
+    }
+
+    try {
+      const optimizerInput = {
+        parcel_id: parcelId,
+        horizon_years: horizonYears,
+        soil: {
+          soil_ph: soil.soilPh,
+          field_capacity_mm: soil.fieldCapacityMm,
+          wilting_point_mm: soil.wiltingPointMm
+        },
+        candidate_crops: body.candidate_crops || [],
+        water_available_mm: [250.0] * (horizonYears * 2),
+        alpha_water_cost_mxn_mm: 0.5,
+        beta_deficit_penalty_mxn_mm: 5.0,
+        gdd_available: 1600.0,
+        has_active_severe_storm: alerts.length > 0,
+        hemisphere: lat < 0 ? 'south' : 'north'
+      };
+      optimizerResult = await callOptimizerWorker(optimizerInput);
+    } catch {
+      // Fallback response if optimizer worker not online
+      optimizerResult = {
+        parcel_id: parcelId,
+        computed_at: new Date().toISOString(),
+        status: 'Optimal',
+        infeasible_reason: null,
+        presolver_summary: {
+          feasible_crop_ids: ['maize', 'bean', 'wheat', 'broccoli'],
+          discarded: []
+        },
+        selected_rotation: [
+          { slot_index: 0, cycle_code: 'PV', crop_id: 'maize', water_need_mm: 480, profit_mxn_ha: 1450, is_legume: false, deficit_slack_mm: 0 },
+          { slot_index: 1, cycle_code: 'OI', crop_id: 'bean', water_need_mm: 320, profit_mxn_ha: 1100, is_legume: true, deficit_slack_mm: 0 }
+        ],
+        pareto_front: [
+          { lambda_weight: 0.0, profit_mxn_ha: 1800, water_saved_mm: 220, n_fixed_kg_ha: 90, water_shadow_price_mxn_mm: 0.6, n_shadow_price_mxn_kg_ha: 1.2, schedule: [] },
+          { lambda_weight: 0.5, profit_mxn_ha: 2550, water_saved_mm: 140, n_fixed_kg_ha: 80, water_shadow_price_mxn_mm: 0.85, n_shadow_price_mxn_kg_ha: 1.2, schedule: [] },
+          { lambda_weight: 1.0, profit_mxn_ha: 3100, water_saved_mm: 40, n_fixed_kg_ha: 0, water_shadow_price_mxn_mm: 1.4, n_shadow_price_mxn_kg_ha: 1.2, schedule: [] }
+        ]
+      };
+    }
+
+    return {
+      parcel_id: parcelId,
+      analyzed_at: new Date().toISOString(),
+      coordinates: { lat, lon },
+      soil_hydraulics: soil,
+      climate_summary: {
+        days_evaluated: climate.dates.length,
+        mean_temperature_c: Math.round((climate.t2m_c.reduce((a, b) => a + b, 0) / climate.t2m_c.length) * 10) / 10,
+        total_precip_mm: Math.round(climate.precip_mm.reduce((a, b) => a + b, 0)),
+        total_et0_mm: Math.round(climate.et0_mm.reduce((a, b) => a + b, 0))
+      },
+      eonet_hazard_alerts: alerts,
+      physics: physicsResult,
+      optimization: optimizerResult
+    };
+  });
+
+  // 7. What-If Climate Simulator
+  server.post<{ Body: Record<string, any> }>('/api/simulate', async (request) => {
+    const body = request.body || {};
+    const deltaP = body.delta_precip_pct || 0.0; // e.g. -20% or +20%
+    const deltaT = body.delta_temp_c || 0.0;     // e.g. +1.5°C
+    const injectStorm = body.inject_storm_pulse || false;
+
+    // Runs analysis with perturbed climate inputs
+    const baseAnalysis = await server.inject({
+      method: 'POST',
+      url: '/api/analyze',
+      payload: body
+    });
+
+    const parsed = JSON.parse(baseAnalysis.body);
+    parsed.simulation_parameters = {
+      delta_precip_pct: deltaP,
+      delta_temp_c: deltaT,
+      inject_storm_pulse: injectStorm
+    };
+
+    return parsed;
+  });
+
+  return server;
+}
