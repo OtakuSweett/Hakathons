@@ -203,6 +203,61 @@
       "minimum": 1,
       "maximum": 10,
       "description": "Planning horizon in years for MILP optimizer. T = horizon_years × 2 cycles/year."
+    },
+    "parcel_name": {
+      "type": "string",
+      "description": "Human-readable name given by farmer (e.g. 'Rancho San Isidro - Parcela 4')."
+    },
+    "area_ha": {
+      "type": "number",
+      "minimum": 0.1,
+      "description": "Field area in hectares (ha). Multiplies mm water needs to m3 and per-hectare profit to total revenue."
+    },
+    "elevation_m": {
+      "type": "number",
+      "description": "Elevation above sea level in meters (from DEM / NASA POWER Z coordinate)."
+    },
+    "slope_pct": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Average field slope percentage (influences runoff vs infiltration)."
+    },
+    "irrigation_type": {
+      "type": "string",
+      "enum": ["temporal_rainfed", "drip", "sprinkler", "gravity_furrow"],
+      "description": "Farm water application technology: rainfed (temporal), drip (goteo), sprinkler (aspersión), gravity (gravedad/rodado)."
+    },
+    "water_allocation_quota_mm": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Annual aquifer well concession or canal irrigation quota in mm (1 mm = 10 m3/ha)."
+    },
+    "farmer_priorities": {
+      "type": "object",
+      "description": "Farmer's personal strategic criteria and risk preferences.",
+      "additionalProperties": false,
+      "required": ["priority_goal", "risk_aversion"],
+      "properties": {
+        "priority_goal": {
+          "type": "string",
+          "enum": ["max_profit", "water_resilience", "soil_regeneration", "balanced"],
+          "description": "Primary optimization objective chosen by farmer."
+        },
+        "risk_aversion": {
+          "type": "string",
+          "enum": ["baja", "media", "alta"],
+          "description": "Willingness to take climatic/market risk."
+        },
+        "min_acceptable_profit_usd_ha": {
+          "type": "number",
+          "description": "Minimum livelihood profit threshold in USD/ha."
+        },
+        "organic_transition": {
+          "type": "boolean",
+          "description": "True if farmer is transitioning away from synthetic nitrogen to biological fixation."
+        }
+      }
     }
   }
 }

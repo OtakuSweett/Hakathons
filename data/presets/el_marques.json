@@ -1072,5 +1072,17 @@
     ]
   },
   "crop_id": "wheat",
-  "horizon_years": 2
+  "horizon_years": 2,
+  "parcel_name": "Rancho San Isidro - Parcela El Marqu\u00e9s",
+  "area_ha": 12.5,
+  "elevation_m": 1850.0,
+  "slope_pct": 1.5,
+  "irrigation_type": "drip",
+  "water_allocation_quota_mm": 450.0,
+  "farmer_priorities": {
+    "priority_goal": "balanced",
+    "risk_aversion": "media",
+    "min_acceptable_profit_usd_ha": 800.0,
+    "organic_transition": false
+  }
 }

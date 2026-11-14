@@ -1072,5 +1072,17 @@
     ]
   },
   "crop_id": "tomato",
-  "horizon_years": 2
+  "horizon_years": 2,
+  "parcel_name": "Valle de Celaya - M\u00f3dulo de Riego Intensivo",
+  "area_ha": 45.0,
+  "elevation_m": 1750.0,
+  "slope_pct": 0.8,
+  "irrigation_type": "sprinkler",
+  "water_allocation_quota_mm": 600.0,
+  "farmer_priorities": {
+    "priority_goal": "max_profit",
+    "risk_aversion": "baja",
+    "min_acceptable_profit_usd_ha": 1400.0,
+    "organic_transition": false
+  }
 }

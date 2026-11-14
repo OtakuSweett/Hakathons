@@ -1072,5 +1072,17 @@
     ]
   },
   "crop_id": "maize",
-  "horizon_years": 2
+  "horizon_years": 2,
+  "parcel_name": "Ejido Santa Cruz - San Juan del R\u00edo",
+  "area_ha": 20.0,
+  "elevation_m": 1920.0,
+  "slope_pct": 2.0,
+  "irrigation_type": "gravity_furrow",
+  "water_allocation_quota_mm": 480.0,
+  "farmer_priorities": {
+    "priority_goal": "water_resilience",
+    "risk_aversion": "alta",
+    "min_acceptable_profit_usd_ha": 650.0,
+    "organic_transition": false
+  }
 }

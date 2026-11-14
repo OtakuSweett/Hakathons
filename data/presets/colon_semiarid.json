@@ -1072,5 +1072,17 @@
     ]
   },
   "crop_id": "sorghum",
-  "horizon_years": 2
+  "horizon_years": 2,
+  "parcel_name": "Tierras de Secano - Col\u00f3n Semi\u00e1rido",
+  "area_ha": 6.5,
+  "elevation_m": 1980.0,
+  "slope_pct": 4.5,
+  "irrigation_type": "temporal_rainfed",
+  "water_allocation_quota_mm": 0.0,
+  "farmer_priorities": {
+    "priority_goal": "soil_regeneration",
+    "risk_aversion": "alta",
+    "min_acceptable_profit_usd_ha": 400.0,
+    "organic_transition": true
+  }
 }
