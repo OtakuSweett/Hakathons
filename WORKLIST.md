@@ -119,3 +119,5 @@
 - [x] A-19: Serialize analysis soil hydraulics in canonical snake_case so the web client can read the live analysis contract
 - [x] A-20: Fallback NASA POWER `-999`/missing daily values to complete Open-Meteo Archive series; support validated grower-entered soil profiles with explicit provenance.
 - [x] D-17: Improve visible processing/error states, Spanish non-arable recovery with manual soil entry, single parcel selection, and language menu interaction.
+- [x] D-18: Remove the redundant parcel-review screen from the normal flow; map selection now continues directly to crop selection, with a recovery screen only for soil errors.
+- [x] D-19: Localize remaining mixed-language UI and API errors; promote failures to visible alerts/toasts and explain irrigation timing and water depth in plain language.
