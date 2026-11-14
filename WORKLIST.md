@@ -109,3 +109,7 @@
 - [x] I-05: End-to-End Test on `colon_semiarid.json` (testing drought-tolerant crops)
 - [x] I-06: End-to-End Test on `celaya.json` (testing high-yield irrigated crops)
 - [x] I-07: Full DSS End-to-End Suite Verification — All 29 unit, contract, physics, optimization and gateway tests passing at 100%
+
+### Open Integration TODO
+- [ ] A-17: Add an orchestrator geocoding endpoint for place-name search (with provider, privacy, and attribution configured server-side); Track D must not call external services directly from the browser.
+- [x] D-14: Live-location workflow, search by coordinates, bounded map selection, all 20 crop choices, presentation screen, and field-observation recovery

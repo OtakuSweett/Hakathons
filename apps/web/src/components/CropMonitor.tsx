@@ -103,7 +103,7 @@ export const CropMonitor: React.FC<CropMonitorProps> = ({ data, lang }) => {
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
             <span className="text-[11px] uppercase tracking-wider text-emerald-400 font-semibold">
-              Función 5 / Módulos 1 & 3
+              SEGUIMIENTO · CULTIVO
             </span>
           </div>
           <h2 className="text-base sm:text-lg font-bold text-white mt-1">{t.title}</h2>

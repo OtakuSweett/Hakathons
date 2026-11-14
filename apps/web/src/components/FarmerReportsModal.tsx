@@ -1,5 +1,34 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Language } from '../types/index.js';
+import { apiFetch } from '../services/api.js';
+
+const compressPhoto = async (file: File): Promise<string> => {
+  const image = await createImageBitmap(file);
+  const scale = Math.min(1, 1280 / Math.max(image.width, image.height));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(1, Math.round(image.width * scale));
+  canvas.height = Math.max(1, Math.round(image.height * scale));
+  const context = canvas.getContext('2d');
+  if (!context) throw new Error('Image canvas unavailable');
+  context.drawImage(image, 0, 0, canvas.width, canvas.height);
+  image.close();
+  const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob((result) => result ? resolve(result) : reject(new Error('Photo compression failed')), 'image/jpeg', 0.72));
+  if (blob.size > 700_000) throw new Error('Photo is too large after compression');
+  return await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(new Error('Photo read failed'));
+    reader.readAsDataURL(blob);
+  });
+};
+
+type PendingReport = Record<string, unknown> & {
+  reportedAt?: string;
+  cropId?: string;
+  reporterName?: string;
+  coordinates?: { lat: number; lon: number };
+  hasPhoto?: boolean;
+};
 
 interface FarmerReportsModalProps {
   isOpen: boolean;
@@ -7,6 +36,7 @@ interface FarmerReportsModalProps {
   lat: number;
   lon: number;
   parcelId: string;
+  cropOptions: Array<{ id: string; label: string }>;
   lang: Language;
 }
 
@@ -16,16 +46,37 @@ export const FarmerReportsModal: React.FC<FarmerReportsModalProps> = ({
   lat,
   lon,
   parcelId,
+  cropOptions,
   lang
 }) => {
   const [reporterName, setReporterName] = useState('');
   const [cropStage, setCropStage] = useState('vegetativo');
+  const [observedCropId, setObservedCropId] = useState(cropOptions[0]?.id || '');
   const [moistureObs, setMoistureObs] = useState<'seco' | 'adecuado' | 'encharcado'>('adecuado');
   const [pestObs, setPestObs] = useState('');
   const [notes, setNotes] = useState('');
   const [fileName, setFileName] = useState<string | null>(null);
+  const [photoDataUrl, setPhotoDataUrl] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isPreparingPhoto, setIsPreparingPhoto] = useState(false);
   const [successMsg, setSuccessMsg] = useState(false);
+  const [savedLocally, setSavedLocally] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+  const [pendingReports, setPendingReports] = useState<PendingReport[]>([]);
+  const [isSyncingReports, setIsSyncingReports] = useState(false);
+  const [pendingStatus, setPendingStatus] = useState('');
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setObservedCropId(cropOptions[0]?.id || '');
+    setSubmitError('');
+    setSuccessMsg(false);
+    try {
+      setPendingReports(JSON.parse(localStorage.getItem('agro-dss-pending-reports') || '[]') as PendingReport[]);
+    } catch {
+      setPendingReports([]);
+    }
+  }, [isOpen, cropOptions[0]?.id]);
 
   if (!isOpen) return null;
 
@@ -34,6 +85,7 @@ export const FarmerReportsModal: React.FC<FarmerReportsModalProps> = ({
       title: 'Reporte de Observación en Campo (Ground Truthing)',
       subtitle: 'Tus observaciones georreferenciadas calibran y validan las predicciones satelitales (NASA POWER, MODIS NDVI e ISRIC SoilGrids).',
       farmerLabel: 'Nombre del Productor / Observador (Opcional):',
+      cropLabel: 'Cultivo observado:',
       coordsLabel: 'Coordenadas Geográficas:',
       stageLabel: 'Etapa Fenológica Observada:',
       stageOpts: {
@@ -57,12 +109,21 @@ export const FarmerReportsModal: React.FC<FarmerReportsModalProps> = ({
       submitButton: 'Enviar Reporte al Sistema DSS',
       submitting: 'Enviando...',
       success: '¡Reporte recibido exitosamente! Gracias por contribuir a la calibración del modelo.',
+      successLocal: 'Observación guardada en este dispositivo. Conserva este navegador para consultarla después.',
+      localPhotoNote: 'La foto requiere conexión; vuelve a adjuntarla para enviarla.',
+      pendingLabel: 'Observaciones guardadas en este dispositivo',
+      syncPending: 'Enviar ahora',
+      syncing: 'Enviando…',
+      synced: 'Observaciones pendientes enviadas.',
+      syncFailed: 'Algunas observaciones siguen pendientes. Conservamos una copia en este dispositivo.',
+      error: 'No se pudo guardar el reporte. Intenta nuevamente.',
       close: 'Cerrar'
     },
     en: {
       title: 'Field Observation Report (Ground Truthing)',
       subtitle: 'Your georeferenced observations calibrate and validate satellite models (NASA POWER, MODIS NDVI, and ISRIC SoilGrids).',
       farmerLabel: 'Farmer / Observer Name (Optional):',
+      cropLabel: 'Observed crop:',
       coordsLabel: 'Geographic Coordinates:',
       stageLabel: 'Observed Phenological Stage:',
       stageOpts: {
@@ -86,6 +147,14 @@ export const FarmerReportsModal: React.FC<FarmerReportsModalProps> = ({
       submitButton: 'Submit Report to DSS System',
       submitting: 'Submitting...',
       success: 'Report received successfully! Thank you for improving satellite ground truth calibration.',
+      successLocal: 'Observation saved on this device. Keep this browser to access it later.',
+      localPhotoNote: 'The photo needs a connection; attach it again when submitting.',
+      pendingLabel: 'Observations saved on this device',
+      syncPending: 'Send now',
+      syncing: 'Sending…',
+      synced: 'Pending observations sent.',
+      syncFailed: 'Some observations are still pending. A copy remains on this device.',
+      error: 'The report could not be saved. Please try again.',
       close: 'Close'
     }
   }[lang];
@@ -98,25 +167,41 @@ export const FarmerReportsModal: React.FC<FarmerReportsModalProps> = ({
       parcelId,
       coordinates: { lat, lon },
       reportedAt: new Date().toISOString(),
-      reporterName: reporterName || 'Anónimo',
+      reporterName: reporterName || (lang === 'es' ? 'Anónimo' : 'Anonymous'),
+      cropId: observedCropId,
       cropStage,
       soilMoistureStatus: moistureObs,
       pestSigns: pestObs,
       fieldNotes: notes,
-      hasPhoto: !!fileName
+      hasPhoto: !!fileName,
+      photoDataUrl
     };
 
     try {
-      await fetch('http://localhost:3000/api/farmer-reports', {
+      const response = await apiFetch('/api/farmer-reports', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
+      if (!response.ok) throw new Error('Report API unavailable');
+      setSavedLocally(false);
     } catch {
-      // offline fallback
+      try {
+        const existing = JSON.parse(localStorage.getItem('agro-dss-pending-reports') || '[]') as PendingReport[];
+        const { photoDataUrl: _photo, ...offlinePayload } = payload;
+        const updated = [...existing.slice(-19), offlinePayload as PendingReport];
+        localStorage.setItem('agro-dss-pending-reports', JSON.stringify(updated));
+        setPendingReports(updated);
+        setSavedLocally(true);
+      } catch {
+        setSubmitError(t.error);
+        setIsSubmitting(false);
+        return;
+      }
     }
 
     setIsSubmitting(false);
+    setSubmitError('');
     setSuccessMsg(true);
     setTimeout(() => {
       setSuccessMsg(false);
@@ -124,18 +209,48 @@ export const FarmerReportsModal: React.FC<FarmerReportsModalProps> = ({
     }, 2000);
   };
 
+  const syncPendingReports = async () => {
+    setIsSyncingReports(true);
+    setPendingStatus('');
+    const remaining: PendingReport[] = [];
+    for (let index = 0; index < pendingReports.length; index += 1) {
+      const report = pendingReports[index];
+      try {
+        const response = await apiFetch('/api/farmer-reports', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(report)
+        });
+        if (!response.ok) remaining.push(report);
+      } catch {
+        remaining.push(...pendingReports.slice(index));
+        break;
+      }
+    }
+    try {
+      localStorage.setItem('agro-dss-pending-reports', JSON.stringify(remaining));
+      setPendingReports(remaining);
+      setPendingStatus(remaining.length ? t.syncFailed : t.synced);
+    } catch {
+      setPendingStatus(t.syncFailed);
+    }
+    setIsSyncingReports(false);
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-      <div className="bg-zinc-950 rounded-2xl max-w-lg w-full shadow-2xl border border-white/[0.1] overflow-hidden flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+      <div role="dialog" aria-modal="true" aria-labelledby="field-report-title" className="bg-zinc-950 rounded-xl max-w-lg w-full shadow-xl border border-white/[0.1] overflow-hidden flex flex-col max-h-[90vh]">
         {/* Modal Header */}
         <div className="px-6 py-4 bg-zinc-900/80 border-b border-white/[0.08] flex items-center justify-between">
           <div>
             <span className="text-[10px] uppercase font-bold tracking-wider text-emerald-400">
-              Función 9 / Crowdsourcing & Satellites
+              {lang === 'es' ? 'OBSERVACIÓN DE CAMPO' : 'FIELD OBSERVATION'}
             </span>
-            <h3 className="text-sm font-bold text-white mt-0.5">{t.title}</h3>
+            <h3 id="field-report-title" className="text-sm font-bold text-white mt-0.5">{t.title}</h3>
           </div>
           <button
+            type="button"
+            aria-label={t.close}
             onClick={onClose}
             className="w-7 h-7 rounded-lg bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700 flex items-center justify-center transition-all cursor-pointer text-xs"
           >
@@ -146,6 +261,7 @@ export const FarmerReportsModal: React.FC<FarmerReportsModalProps> = ({
         {/* Modal Content */}
         <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-4 text-xs">
           <p className="text-zinc-400 -mt-1 leading-relaxed text-[11px]">{t.subtitle}</p>
+          {pendingReports.length > 0 && <details className="pending-report-list"><summary>{t.pendingLabel} · {pendingReports.length}</summary><div>{pendingReports.slice().reverse().map((report, index) => <p key={`${report.reportedAt || 'saved'}-${index}`}><b>{cropOptions.find((crop) => crop.id === report.cropId)?.label || String(report.cropId || '')}</b> · {report.coordinates?.lat?.toFixed(4)}, {report.coordinates?.lon?.toFixed(4)} {report.hasPhoto && `· ${t.localPhotoNote}`}</p>)}</div><button type="button" disabled={isSyncingReports || !navigator.onLine} onClick={() => void syncPendingReports()}>{isSyncingReports ? t.syncing : t.syncPending}</button>{pendingStatus && <small role="status">{pendingStatus}</small>}</details>}
 
           {/* Coordinates & Parcel */}
           <div className="bg-zinc-900/70 p-3 rounded-xl border border-white/[0.06] flex items-center justify-between">
@@ -158,6 +274,13 @@ export const FarmerReportsModal: React.FC<FarmerReportsModalProps> = ({
             <span className="text-[10px] bg-emerald-500/10 text-emerald-300 font-bold px-2 py-0.5 rounded-lg border border-emerald-500/30">
               {parcelId}
             </span>
+          </div>
+
+          <div>
+            <label className="font-semibold text-zinc-300 block mb-1">{t.cropLabel}</label>
+            <select value={observedCropId} onChange={(event) => setObservedCropId(event.target.value)} className="w-full px-3 py-2 bg-zinc-900 text-zinc-100 border border-white/[0.08] rounded-lg">
+              {cropOptions.map((crop) => <option key={crop.id} value={crop.id}>{crop.label}</option>)}
+            </select>
           </div>
 
           {/* Reporter Name */}
@@ -247,9 +370,21 @@ export const FarmerReportsModal: React.FC<FarmerReportsModalProps> = ({
                   accept="image/*"
                   className="hidden"
                   onChange={(e) => {
-                    if (e.target.files?.[0]) {
-                      setFileName(e.target.files[0].name);
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    setFileName(null);
+                    setPhotoDataUrl(null);
+                    if (!file.type.startsWith('image/') || file.size > 10 * 1024 * 1024) {
+                      setSubmitError(lang === 'es' ? 'Elige una imagen de hasta 10 MB.' : 'Choose an image up to 10 MB.');
+                      e.target.value = '';
+                      return;
                     }
+                    setIsPreparingPhoto(true);
+                    void compressPhoto(file).then((compressed) => {
+                      setFileName(file.name);
+                      setPhotoDataUrl(compressed);
+                      setSubmitError('');
+                    }).catch(() => setSubmitError(lang === 'es' ? 'No pudimos preparar esa imagen. Prueba con una foto más pequeña.' : 'We could not prepare that image. Try a smaller photo.')).finally(() => setIsPreparingPhoto(false));
                   }}
                 />
               </label>
@@ -259,13 +394,15 @@ export const FarmerReportsModal: React.FC<FarmerReportsModalProps> = ({
                 </span>
               )}
             </div>
+            {isPreparingPhoto && <small className="block mt-2 text-zinc-400" role="status">{lang === 'es' ? 'Preparando fotografía…' : 'Preparing photo…'}</small>}
           </div>
 
           {successMsg && (
             <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 rounded-xl font-medium text-center">
-              {t.success}
+              {savedLocally ? t.successLocal : t.success}{savedLocally && fileName && <small className="block mt-1">{t.localPhotoNote}</small>}
             </div>
           )}
+          {submitError && <p className="inline-message" role="alert">{submitError}</p>}
 
           {/* Buttons */}
           <div className="flex items-center justify-end gap-3 pt-3 border-t border-white/[0.08]">
@@ -278,7 +415,7 @@ export const FarmerReportsModal: React.FC<FarmerReportsModalProps> = ({
             </button>
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || isPreparingPhoto}
               className="px-5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold transition-all shadow-[0_0_15px_rgba(16,185,129,0.3)] cursor-pointer disabled:opacity-50"
             >
               {isSubmitting ? t.submitting : t.submitButton}

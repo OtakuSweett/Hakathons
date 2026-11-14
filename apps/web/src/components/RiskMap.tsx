@@ -22,7 +22,13 @@ interface RiskMapProps {
   onWaterRegimeChange: (regime: 'temporal' | 'goteo' | 'gravedad') => void;
   lang: Language;
   onMapClick: (lat: number, lon: number) => void;
+  onLocationSearch: (lat: number, lon: number) => void;
 }
+
+const fieldBounds = (lat: number, lon: number): [[number, number], [number, number]] => [
+  [Math.max(-90, lat - 0.025), Math.max(-180, lon - 0.03)],
+  [Math.min(90, lat + 0.025), Math.min(180, lon + 0.03)]
+];
 
 export const RiskMap: React.FC<RiskMapProps> = ({
   lat,
@@ -36,17 +42,21 @@ export const RiskMap: React.FC<RiskMapProps> = ({
   waterRegime,
   onWaterRegimeChange,
   lang,
-  onMapClick
+  onMapClick,
+  onLocationSearch
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markerRef = useRef<L.Marker | null>(null);
   const haloRef = useRef<L.CircleMarker | null>(null);
   const polygonRef = useRef<L.Polygon | null>(null);
+  const selectionBoundsRef = useRef<L.Rectangle | null>(null);
   const alertLayersRef = useRef<L.Circle[]>([]);
 
   const [baseMapType, setBaseMapType] = useState<'satellite' | 'streets'>('satellite');
-  const [showGibs, setShowGibs] = useState<boolean>(true);
+  const [showGibs, setShowGibs] = useState<boolean>(false);
+  const [locationQuery, setLocationQuery] = useState('');
+  const [searchError, setSearchError] = useState('');
 
   const baseLayerRef = useRef<L.TileLayer | null>(null);
   const gibsLayerRef = useRef<L.TileLayer | null>(null);
@@ -55,7 +65,7 @@ export const RiskMap: React.FC<RiskMapProps> = ({
     es: {
       title: 'Delimitación de Parcela y Mapa de Riesgos',
       subtitle: 'Exploración geográfica con imágenes satelitales Esri/NASA, alertas EONET v3 y dimensionamiento en hectáreas.',
-      searchLabel: 'Región Rápida:',
+      searchLabel: 'Ir a coordenadas',
       areaLabel: 'Tamaño de Parcela:',
       regimeLabel: 'Régimen Hídrico:',
       temporal: 'Temporal / Secano',
@@ -66,12 +76,12 @@ export const RiskMap: React.FC<RiskMapProps> = ({
       coordsLabel: 'Coordenadas:',
       satellite: 'Satelital HD',
       streets: 'Calles / Relieve',
-      clickHint: 'Haz clic dentro de la región para marcar el punto.'
+      clickHint: 'Escribe coordenadas o haz clic para marcar el centro.'
     },
     en: {
       title: 'Parcel Delimitation & Multi-Hazard Map',
       subtitle: 'Geographic exploration with Esri/NASA satellite imagery, EONET v3 hazards, and dynamic hectare sizing.',
-      searchLabel: 'Quick Region:',
+      searchLabel: 'Go to coordinates',
       areaLabel: 'Parcel Area:',
       regimeLabel: 'Water Regime:',
       temporal: 'Rainfed (Temporal)',
@@ -82,9 +92,30 @@ export const RiskMap: React.FC<RiskMapProps> = ({
       coordsLabel: 'Coordinates:',
       satellite: 'Satellite HD',
       streets: 'Streets / Terrain',
-      clickHint: 'Click within this region to mark a field location.'
+      clickHint: 'Enter coordinates or click to mark the center.'
     }
   }[lang];
+
+  const searchLocation = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const query = locationQuery.trim();
+    if (!query) return;
+    setSearchError('');
+    const coordinateMatch = query.match(/^\s*(-?\d+(?:\.\d+)?)\s*[,; ]\s*(-?\d+(?:\.\d+)?)\s*$/);
+    if (coordinateMatch) {
+      const searchedLat = Number(coordinateMatch[1]);
+      const searchedLon = Number(coordinateMatch[2]);
+      if (searchedLat < -90 || searchedLat > 90 || searchedLon < -180 || searchedLon > 180) {
+        setSearchError(lang === 'es' ? 'Coordenadas fuera del rango válido.' : 'Coordinates are outside the valid range.');
+        return;
+      }
+      setLocationQuery(`${searchedLat.toFixed(5)}, ${searchedLon.toFixed(5)}`);
+      mapInstanceRef.current?.setView([searchedLat, searchedLon], 13);
+      onLocationSearch(searchedLat, searchedLon);
+      return;
+    }
+    setSearchError(lang === 'es' ? 'Escribe latitud y longitud decimales, por ejemplo 20.5922, -100.1972.' : 'Enter decimal latitude and longitude, for example 20.5922, -100.1972.');
+  };
 
   // Initialize Leaflet map
   useEffect(() => {
@@ -95,9 +126,13 @@ export const RiskMap: React.FC<RiskMapProps> = ({
         center: [lat, lon],
         zoom: 13,
         zoomControl: true,
-        maxBounds: [[regionLat - 0.55, regionLon - 0.7], [regionLat + 0.55, regionLon + 0.7]],
+        maxBounds: fieldBounds(regionLat, regionLon),
         maxBoundsViscosity: 1
       });
+      selectionBoundsRef.current = L.rectangle(
+        fieldBounds(regionLat, regionLon),
+        { color: '#d4ec79', weight: 2, opacity: 0.95, fillColor: '#d4ec79', fillOpacity: 0.035, dashArray: '6 6', interactive: false }
+      ).addTo(map);
 
       // Esri World Imagery (Clean high-resolution satellite imagery, NO watermark)
       const satLayer = L.tileLayer(
@@ -124,8 +159,9 @@ export const RiskMap: React.FC<RiskMapProps> = ({
 
       mapInstanceRef.current = map;
     } else {
-      mapInstanceRef.current.setMaxBounds([[regionLat - 0.55, regionLon - 0.7], [regionLat + 0.55, regionLon + 0.7]]);
-      mapInstanceRef.current.setView([lat, lon], mapInstanceRef.current.getZoom());
+      mapInstanceRef.current.setMaxBounds(fieldBounds(regionLat, regionLon));
+        mapInstanceRef.current.setView([lat, lon], mapInstanceRef.current.getZoom());
+      selectionBoundsRef.current?.setBounds(fieldBounds(regionLat, regionLon));
     }
   }, [lat, lon, regionLat, regionLon]);
 
@@ -139,6 +175,7 @@ export const RiskMap: React.FC<RiskMapProps> = ({
     markerRef.current = null;
     haloRef.current = null;
     polygonRef.current = null;
+    selectionBoundsRef.current = null;
     baseLayerRef.current = null;
     gibsLayerRef.current = null;
     alertLayersRef.current = [];
@@ -316,6 +353,17 @@ export const RiskMap: React.FC<RiskMapProps> = ({
 
           </div>
         </div>
+
+        <form className="map-search" onSubmit={(event) => void searchLocation(event)}>
+          <label htmlFor="field-location-search">{t.searchLabel}</label>
+          <div className="map-search-control">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8" stroke="currentColor" strokeWidth="1.8"/><path d="m16 16 4.5 4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>
+            <input id="field-location-search" type="search" value={locationQuery} onChange={(event) => { setLocationQuery(event.target.value); setSearchError(''); }} placeholder="20.5922, -100.1972" minLength={2} />
+            <button type="submit" disabled={locationQuery.trim().length < 2}>{lang === 'es' ? 'Ir al punto' : 'Go to point'}</button>
+          </div>
+          <small>{lang === 'es' ? 'Búsqueda por coordenadas · puedes marcar cualquier punto terrestre.' : 'Coordinate search · you can mark any location on land.'}</small>
+          {searchError && <p className="map-search-error" role="alert">{searchError}</p>}
+        </form>
 
         {/* Dynamic Parcel Size Slider & Water Regime Config */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-slate-800/80">

@@ -21,12 +21,12 @@ export const SmartCalendar: React.FC<SmartCalendarProps> = ({ data, lang }) => {
       legumeFixation: 'Fijación de Nitrógeno',
       legumeYes: 'Leguminosa (+40-80 kg N/ha al suelo)',
       legumeNo: 'Extractor / No leguminosa',
-      gddMilestones: 'Hitos Térmicos Fenológicos (GDD - Módulo 2)',
+      gddMilestones: 'Etapas de crecimiento (GDD)',
       germination: 'Emergencia y Germinación',
       vegetative: 'Desarrollo Vegetativo Pleno',
       flowering: 'Floración y Llenado de Grano',
       maturity: 'Madurez Fisiológica y Cosecha',
-      irrigationSchedule: 'Programación de Riego (Módulo 4)',
+      irrigationSchedule: 'Fechas de riego sugeridas',
       recommendedIrrigation: 'Riego Preventivo Recomendado',
       noStressDetected: 'No se requiere riego de emergencia; la reserva hídrica permanece sobre el umbral crítico.',
       depthMm: 'Lámina a aplicar:',
@@ -43,12 +43,12 @@ export const SmartCalendar: React.FC<SmartCalendarProps> = ({ data, lang }) => {
       legumeFixation: 'Nitrogen Fixation',
       legumeYes: 'Legume (+40-80 kg N/ha to soil)',
       legumeNo: 'Depleting / Non-legume',
-      gddMilestones: 'Phenological Thermal Milestones (GDD - Module 2)',
+      gddMilestones: 'Crop growth stages (GDD)',
       germination: 'Emergence & Germination',
       vegetative: 'Peak Vegetative Growth',
       flowering: 'Flowering & Grain Filling',
       maturity: 'Physiological Maturity & Harvest',
-      irrigationSchedule: 'Scheduled Irrigation Dates (Module 4)',
+      irrigationSchedule: 'Suggested irrigation dates',
       recommendedIrrigation: 'Recommended Irrigation',
       noStressDetected: 'No emergency irrigation needed; soil water stays safely above critical threshold.',
       depthMm: 'Target depth to apply:',
@@ -70,7 +70,7 @@ export const SmartCalendar: React.FC<SmartCalendarProps> = ({ data, lang }) => {
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-teal-400"></span>
             <span className="text-[11px] uppercase tracking-wider text-teal-400 font-semibold">
-              Función 6 / Módulos 2, 4 & 6
+              TEMPORADAS · ETAPAS · RIEGO
             </span>
           </div>
           <h2 className="text-base sm:text-lg font-bold text-white mt-1">{t.title}</h2>

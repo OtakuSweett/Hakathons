@@ -46,7 +46,7 @@ export const EarlyWarningBanner: React.FC<EarlyWarningProps> = ({
           <div>
             <div className="flex items-center space-x-2">
               <span className="text-[11px] font-semibold text-zinc-400 tracking-wide uppercase">
-                {lang === 'es' ? 'Alertas Anticipadas de Estrés Hídrico (Módulo 4 Newton-Raphson)' : 'Predictive Water Stress Alerts (Module 4 Newton-Raphson)'}
+                {lang === 'es' ? 'ALERTA · ESTRÉS HÍDRICO' : 'ALERT · WATER STRESS'}
               </span>
               {isImminent && (
                 <span className="text-[10px] bg-rose-500/10 border border-rose-500/30 text-rose-400 font-bold px-2 py-0.5 rounded-full uppercase">
