@@ -139,10 +139,10 @@ pnpm test:py
 
 **Resultado verificado:**
 ```
-✓ tests/orchestrator.test.ts (9 tests) — 100% PASS (Penman-Monteith, Saxton-Rawls, Van Bemmelen, APIs)
-✓ tests/web.test.ts (10 tests) — 100% PASS (Invariante hidráulico, hemisferios, contratos de UI)
-✓ test_physics.py & test_optimizer.py (10 tests) — 100% PASS (Exactitud SciPy < 1e-9, HiGHS solver)
-======================= 29 passed out of 29 tests in total =======================
+✓ tests/orchestrator.test.ts (16 tests) — 100% PASS (FAO-56 Penman-Monteith, Saxton-Rawls, Van Bemmelen, Open-Meteo fallback, geocoding)
+✓ tests/web.test.ts (11 tests) — 100% PASS (Invariante hidráulico, hemisferios, contratos de UI, Pareto tolerante a vacíos)
+✓ test_physics.py & test_optimizer.py (10 tests) — 100% PASS (Exactitud SciPy < 1e-9, Runge-Kutta 4, Newton-Raphson, HiGHS solver)
+======================= 37 passed out of 37 tests in total =======================
 ```
 
 ---
