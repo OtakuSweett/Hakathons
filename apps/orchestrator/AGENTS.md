@@ -59,7 +59,9 @@ See [docs/ARCHITECTURE.md](file:///home/Sweett/hakathon/docs/ARCHITECTURE.md) fo
 4. **Cálculo Micrometeorológico de $ET_0$ (FAO-56 Penman-Monteith):**
    $$ET_0 = \frac{0.408 \Delta (R_n - G) + \gamma \left(\frac{900}{T+273}\right) u_2 (e_s - e_a)}{\Delta + \gamma (1 + 0.34 u_2)}$$
    - Viento a 2m: $u_2 = \text{WS2M}$ (o $u_{10} \times 0.748$ si solo se dispone de WS10M).
-   - Radiación solar: Convertir de $\text{kWh/m}^2/\text{día}$ a $\text{MJ/m}^2/\text{día}$ multiplicando por $3.6$ antes de aplicar el factor $0.408$.
+   - Radiación solar (VERIFICADA EN VIVO):
+     - Si se consulta NASA POWER con `community=AG`, el campo `ALLSKY_SFC_SW_DWN` **YA VIENE en `MJ/m^2/day`**. ¡NO MULTIPLICAR POR 3.6!
+     - Solo si se consulta con `community=RE` viene en `kW-hr/m^2/day` y debe multiplicarse por $3.6$ antes de aplicar el factor $0.408$.
 5. **Inyección de Pulsos Extremos EONET:**
    - Consultar eventos activos en NASA EONET v3 (`severeStorms`).
    - Si la trayectoria o polígono intersecta la parcela ($R \le 150\text{ km}$), agregar un pulso de lluvia extraordinaria en el vector de precipitación $P(t)$ enviado a `physics_worker` para simular riesgo de anegamiento.

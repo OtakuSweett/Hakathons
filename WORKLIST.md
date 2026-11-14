@@ -24,7 +24,7 @@
 > ES: Ingestión de datos, preprocesamiento edafológico/climático, gateway y soporte de las 9 funciones.
 
 - [ ] A-01: Ingestion — NASA POWER Hourly (`temporal/hourly/point`) with `LST` timestamp handling and `-999 -> null` filtering
-- [ ] A-02: Ingestion — NASA POWER Daily (`temporal/daily/point`) with solar radiation conversion ($1\text{ kWh/m}^2/\text{d} = 3.6\text{ MJ/m}^2/\text{d}$)
+- [ ] A-02: Ingestion — NASA POWER Daily (`temporal/daily/point`) with solar radiation handling (note: `community=AG` already returns `MJ/m^2/day`; only `community=RE` requires $\times 3.6$)
 - [ ] A-03: SoilGrids Ingestion & Scaling — `phh2o/10`, `soc/10`, `nitrogen/100`, `clay/10`, `sand/10` with $\ge 12\text{s}$ request throttling
 - [ ] A-04: Soil Preprocessing — USDA textural triangle classification + Van Bemmelen organic matter formula ($\text{MO}\% = \text{SOC}\% \times 1.724$)
 - [ ] A-05: Soil Pedotransfer — Saxton-Rawls calculation for $W_{\text{CC}}$, $W_{\text{PMP}}$, and $W_{\text{crítico}}$ ($Z_r = 600\text{ mm}$)

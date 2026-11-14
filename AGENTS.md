@@ -75,11 +75,14 @@ Decimal degrees; west is negative. Querétaro: lon=-100.3899, lat=20.5888.
 ### JSON Key Naming
 `snake_case` with unit suffix: `_pct` (percent), `_mm` (millimeters), `_vol` (m³/m³), `_g_kg` (g/kg), `_kpa`, `_m_s`, `_mj_m2_day`, `_c` (Celsius), `_kg_ha`, `_ton_ha`, `_usd_ton`.
 
-### Missing Value Protocol
+### Missing Value Protocol & Live Verification Notes
 - Raw API fill value: `-999` / `-999.0`
 - Orchestrator ingestion: `-999` → `null`
 - Gap-fill: Module 1 (natural cubic splines) fills `null` before Modules 2–4
 - Workers MUST reject payloads containing `NaN` or `-999` (not `null`) with HTTP 422
+- **NASA POWER Radiation Unit Note (VERIFIED LIVE):**
+  - In `community=AG`, `ALLSKY_SFC_SW_DWN` is ALREADY returned in **`MJ/m^2/day`**. Do NOT multiply by 3.6!
+  - In `community=RE`, it is returned in `kW-hr/m^2/day`, where $1\text{ kW-hr/m}^2/\text{day} = 3.6\text{ MJ/m}^2/\text{day}$.
 
 ### Canonical Unit Table
 | Field | Range | Unit |
