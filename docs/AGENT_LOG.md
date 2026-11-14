@@ -13,3 +13,4 @@
 | 2026-11-14T16:25:00Z | coordinator/global-dss | planetary-scope & presets | `AGENTS.md`, `docs/ARCHITECTURE.md`, `docs/API_REFERENCE.md`, `crops_catalog.*`, `parcel.schema.json`, `data/presets/*` | 20 crops schema green, 6 presets invariants pass 100% | [`daa3bd2`](file:///home/Sweett/hakathon) |
 | 2026-11-14T16:41:00Z | coordinator/roadmap | 23h-hackathon-plan | `docs/PLAN_HACKATHON_23H.md` | Roadmap pushed to main for team alignment | [`6157a0f`](file:///home/Sweett/hakathon) |
 | 2026-11-14T16:56:00Z | track-b-c/physics-opt | modules-1-to-7 | `services/py-workers/{physics_worker,optimizer_worker}/**` | 10 tests passed (100% green), SciPy exact match < 1e-9 | [`2302824`](file:///home/Sweett/hakathon) |
+| 2026-11-14T17:02:00Z | track-a/orchestrator | gateway-ingestion | `apps/orchestrator/src/**`, `apps/orchestrator/tests/**` | 9 Vitest tests passed (100% green), Brussels FAO-56 3.75-3.95 mm/d | [`d2f4c88`](file:///home/Sweett/hakathon) |

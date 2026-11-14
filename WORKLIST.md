@@ -24,22 +24,22 @@
 ## 🅰 Track A — Orchestrator (`apps/orchestrator/`, :3000)
 > ES: Ingestión de datos, preprocesamiento edafológico/climático, gateway y soporte de las 9 funciones.
 
-- [ ] A-01: Ingestion — NASA POWER Hourly (`temporal/hourly/point`) with `LST` timestamp handling and `-999 -> null` filtering
-- [ ] A-02: Ingestion — NASA POWER Daily (`temporal/daily/point`) with solar radiation handling (note: `community=AG` already returns `MJ/m^2/day`; only `community=RE` requires $\times 3.6$)
-- [ ] A-03: SoilGrids Ingestion & Scaling — `phh2o/10`, `soc/10`, `nitrogen/100`, `clay/10`, `sand/10` with $\ge 12\text{s}$ request throttling
-- [ ] A-04: Soil Preprocessing — USDA textural triangle classification + Van Bemmelen organic matter formula ($\text{MO}\% = \text{SOC}\% \times 1.724$)
-- [ ] A-05: Soil Pedotransfer — Saxton-Rawls calculation for $W_{\text{CC}}$, $W_{\text{PMP}}$, and $W_{\text{crítico}}$ ($Z_r = 600\text{ mm}$)
-- [ ] A-06: ET0 Calculation — FAO-56 Penman-Monteith full sub-equations ($e_s, e_a, \Delta, \gamma, R_n, R_a$) + wind height conversion $u_2 = 0.748 \cdot u_{10}$
-- [ ] A-07: Golden ET0 Vector — FAO-56 Brussels example verification ($3.75\text{ mm/day} \pm 0.05\text{ mm/day}$)
-- [ ] A-08: EONET v3 Ingestion — Fetch `severeStorms` GeoJSON, extract trajectory coordinates, wind magnitude (`kts`), and distance to parcel
-- [ ] A-09: Extreme Event Injection — Inject precipitation pulse into $P(t)$ for intersecting storms ($R \le 150\text{ km}$)
-- [ ] A-10: Caching Gateway — Cache read/write under `data/cache/` with `"source": "cache"` and `"fetched_at"` metadata envelope
-- [ ] A-11: Offline Fallback — Nearest preset loader from `data/presets/` upon network timeout or 503 response
-- [ ] A-12: Pest Risk Engine — Moving-window evaluation of temperature, humidity (`RH2M` $\ge 80\%$) and rain $\rightarrow$ `PestRiskOutput`
-- [ ] A-13: Farmer Reports Handler — `POST /api/farmer-reports` validating against `FarmerReportInput`
-- [ ] A-14: What-If Simulator Dispatcher — `POST /api/simulate` applying perturbation deltas ($\Delta P, \Delta T$)
-- [ ] A-15: Canonical Error Handling — Strict enforcement of `{ "error": { "code", "message", "details" } }`
-- [ ] A-16: End-of-Task Protocol — Tests passing, `docs/AGENT_LOG.md` row appended, `WORKLIST.md` ticked
+- [x] A-01: Ingestion — NASA POWER Hourly (`temporal/hourly/point`) with `LST` timestamp handling and `-999 -> null` filtering
+- [x] A-02: Ingestion — NASA POWER Daily (`temporal/daily/point`) with solar radiation handling (note: `community=AG` already returns `MJ/m^2/day`; only `community=RE` requires $\times 3.6$)
+- [x] A-03: SoilGrids Ingestion & Scaling — `phh2o/10`, `soc/10`, `nitrogen/100`, `clay/10`, `sand/10` with $\ge 12\text{s}$ request throttling
+- [x] A-04: Soil Preprocessing — USDA textural triangle classification + Van Bemmelen organic matter formula ($\text{MO}\% = \text{SOC}\% \times 1.724$)
+- [x] A-05: Soil Pedotransfer — Saxton-Rawls calculation for $W_{\text{CC}}$, $W_{\text{PMP}}$, and $W_{\text{crítico}}$ ($Z_r = 600\text{ mm}$)
+- [x] A-06: ET0 Calculation — FAO-56 Penman-Monteith full sub-equations ($e_s, e_a, \Delta, \gamma, R_n, R_a$) + wind height conversion $u_2 = 0.748 \cdot u_{10}$
+- [x] A-07: Golden ET0 Vector — FAO-56 Brussels example verification ($3.75\text{ mm/day} \pm 0.05\text{ mm/day}$)
+- [x] A-08: EONET v3 Ingestion — Fetch `severeStorms` GeoJSON, extract trajectory coordinates, wind magnitude (`kts`), and distance to parcel
+- [x] A-09: Extreme Event Injection — Inject precipitation pulse into $P(t)$ for intersecting storms ($R \le 150\text{ km}$)
+- [x] A-10: Caching Gateway — Cache read/write under `data/cache/` with `"source": "cache"` and `"fetched_at"` metadata envelope
+- [x] A-11: Offline Fallback — Nearest preset loader from `data/presets/` upon network timeout or 503 response
+- [x] A-12: Pest Risk Engine — Moving-window evaluation of temperature, humidity (`RH2M` $\ge 80\%$) and rain $\rightarrow$ `PestRiskOutput`
+- [x] A-13: Farmer Reports Handler — `POST /api/farmer-reports` validating against `FarmerReportInput`
+- [x] A-14: What-If Simulator Dispatcher — `POST /api/simulate` applying perturbation deltas ($\Delta P, \Delta T$)
+- [x] A-15: Canonical Error Handling — Strict enforcement of `{ "error": { "code", "message", "details" } }`
+- [x] A-16: End-of-Task Protocol — Tests passing, `docs/AGENT_LOG.md` row appended, `WORKLIST.md` ticked
 
 ---
 
