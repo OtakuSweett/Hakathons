@@ -66,7 +66,7 @@ export const RiskMap: React.FC<RiskMapProps> = ({
       coordsLabel: 'Coordenadas:',
       satellite: 'Satelital HD',
       streets: 'Calles / Relieve',
-      clickHint: 'Haz clic dentro de la región para consultar este punto.'
+      clickHint: 'Haz clic dentro de la región para marcar el punto.'
     },
     en: {
       title: 'Parcel Delimitation & Multi-Hazard Map',
@@ -82,7 +82,7 @@ export const RiskMap: React.FC<RiskMapProps> = ({
       coordsLabel: 'Coordinates:',
       satellite: 'Satellite HD',
       streets: 'Streets / Terrain',
-      clickHint: 'Click within this region to analyze a field location.'
+      clickHint: 'Click within this region to mark a field location.'
     }
   }[lang];
 
