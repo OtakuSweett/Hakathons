@@ -10,6 +10,7 @@ import { CropMonitor } from './components/CropMonitor.js';
 import { SmartCalendar } from './components/SmartCalendar.js';
 import { PestDetector } from './components/PestDetector.js';
 import { EconomicEvaluation } from './components/EconomicEvaluation.js';
+import { ShiftingLands } from './components/ShiftingLands.js';
 import { FarmerReportsModal } from './components/FarmerReportsModal.js';
 
 export const App: React.FC = () => {
@@ -19,6 +20,8 @@ export const App: React.FC = () => {
   const [data, setData] = useState<AnalysisResponse>(() => getMockAnalysis('el_marques_qro'));
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isReportModalOpen, setIsReportModalOpen] = useState<boolean>(false);
+  const [areaHa, setAreaHa] = useState<number>(15.0);
+  const [waterRegime, setWaterRegime] = useState<'temporal' | 'goteo' | 'gravedad'>('goteo');
 
   // Load parcel analysis data
   const loadAnalysis = useCallback(async (presetId: string, forceOffline: boolean) => {
@@ -38,7 +41,6 @@ export const App: React.FC = () => {
         setData(getMockAnalysis(presetId));
       }
     } catch {
-      // Offline fallback
       setData(getMockAnalysis(presetId));
     } finally {
       setIsLoading(false);
@@ -66,7 +68,6 @@ export const App: React.FC = () => {
         const json = await res.json();
         setData(json);
       } else {
-        // Fallback with custom coordinates
         setData((prev) => ({
           ...prev,
           coordinates: { lat, lon },
@@ -181,7 +182,15 @@ export const App: React.FC = () => {
           lang={lang}
         />
 
-        {/* Row 1: Mapa de Riesgos (F1) & Recomendaciones Agrícolas (F3) */}
+        {/* Shifting Lands: Motor de Desplazamiento Agroclimático & Adaptación de Granjas (Core Challenge) */}
+        <ShiftingLands
+          data={data}
+          areaHa={areaHa}
+          waterRegime={waterRegime}
+          lang={lang}
+        />
+
+        {/* Row 1: Delimitación de Parcela y Mapa de Riesgos (F1) & Recomendaciones Agrícolas (F3) */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           <div className="lg:col-span-7">
             <RiskMap
@@ -189,8 +198,13 @@ export const App: React.FC = () => {
               lon={data.coordinates.lon}
               parcelName={currentPresetName}
               eonetAlerts={data.eonet_hazard_alerts || []}
+              areaHa={areaHa}
+              onAreaChange={setAreaHa}
+              waterRegime={waterRegime}
+              onWaterRegimeChange={setWaterRegime}
               lang={lang}
               onMapClick={handleMapCoordinateSelect}
+              onSelectRegion={(rLat, rLon) => handleMapCoordinateSelect(rLat, rLon)}
             />
           </div>
           <div className="lg:col-span-5">
@@ -249,7 +263,7 @@ export const App: React.FC = () => {
           <div>
             <span className="font-bold text-slate-200 text-sm">Global Crop Rotation & Water Resilience DSS</span>
             <p className="text-[11px] text-emerald-400 mt-0.5">
-              NASA Space Apps Challenge 2026 — Planetary Engine with Demonstration Benchmarks
+              NASA Space Apps Challenge 2026 — Desplazamiento de campo: Adaptando granjas con datos de la NASA
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-4 text-[11px]">
