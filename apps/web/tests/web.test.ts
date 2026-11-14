@@ -1,7 +1,17 @@
 import { describe, it, expect } from 'vitest';
 import { DEMO_PRESETS_LIST, getMockAnalysis } from '../src/services/mockData.js';
+import { findClosestParetoPoint } from '../src/components/EconomicEvaluation.js';
 
 describe('Track D (Web Frontend) Core Suite', () => {
+  it('D-11: empty Pareto frontier is safe and nearest point selection is deterministic', () => {
+    expect(findClosestParetoPoint([], 0.5)).toBeUndefined();
+    const points = [
+      { lambda_weight: 0.25, profit_mxn_ha: 10, water_saved_mm: 5, n_fixed_kg_ha: 1, water_shadow_price_mxn_mm: 2 },
+      { lambda_weight: 0.75, profit_mxn_ha: 20, water_saved_mm: 3, n_fixed_kg_ha: 2, water_shadow_price_mxn_mm: 4 }
+    ];
+    expect(findClosestParetoPoint(points, 0.7)).toBe(points[1]);
+  });
+
   it('D-01: DEMO_PRESETS_LIST includes all 4 demonstration benchmarks', () => {
     expect(DEMO_PRESETS_LIST.length).toBeGreaterThanOrEqual(3);
     const presetIds = DEMO_PRESETS_LIST.map((p) => p.presetId);

@@ -360,6 +360,7 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
 .crop-water-hints span { padding: 3px 5px; color: #315d47; background: #eaf2ec; border-radius: 4px; font-size: 10px; }
 .alert-radius-legend { display: flex; align-items: flex-start; gap: 6px; margin-top: 6px; padding-top: 6px; color: #835055; border-top: 1px solid #e7dadd; font-size: 10px; line-height: 1.4; }
 .alert-radius-legend i { flex: 0 0 9px; width: 9px; height: 9px; margin-top: 2px; border: 2px solid #df5260; border-radius: 50%; }
+.map-tile-error { margin-top: 6px; padding: 6px 8px; color: #713f12; background: #fff3d6; border: 1px solid #e7c46f; border-radius: 6px; font-size: 10px; line-height: 1.4; }
 .location-panel .setup-heading { margin-bottom: 0; }
 .coordinate-entry { max-width: 740px; }
 .coordinate-entry > label, .map-search > label { display: block; margin-bottom: 8px; color: #294838; font-size: 13px; font-weight: 700; }

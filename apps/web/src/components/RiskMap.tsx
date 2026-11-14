@@ -80,6 +80,7 @@ export const RiskMap: React.FC<RiskMapProps> = ({
   const [searchResults, setSearchResults] = useState<GeocodePlace[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [searchAttribution, setSearchAttribution] = useState('');
+  const [mapTileError, setMapTileError] = useState(false);
 
   const baseLayerRef = useRef<L.TileLayer | null>(null);
   const gibsLayerRef = useRef<L.TileLayer | null>(null);
@@ -105,7 +106,8 @@ export const RiskMap: React.FC<RiskMapProps> = ({
       resultLabel: 'Elige el lugar correcto',
       noResults: 'No encontramos ese lugar. Prueba con ciudad y país o marca el mapa.',
       searchHelp: 'La búsqueda se envía solo al pulsar Buscar. También acepta latitud, longitud.',
-      alertLegend: 'Círculo rojo: radio de referencia de 60 km alrededor de una alerta EONET activa.'
+      alertLegend: 'Círculo rojo: radio de referencia de 60 km alrededor de una alerta EONET activa.',
+      mapTileError: 'No se pudieron cargar algunas imágenes del mapa. Prueba Calles / Relieve o revisa tu conexión.'
     },
     en: {
       title: 'Parcel Delimitation & Multi-Hazard Map',
@@ -127,7 +129,8 @@ export const RiskMap: React.FC<RiskMapProps> = ({
       resultLabel: 'Choose the right place',
       noResults: 'We could not find that place. Try city and country or select the map.',
       searchHelp: 'Your search is sent only when you press Search. Coordinates are accepted too.',
-      alertLegend: 'Red circle: 60 km reference radius around an active EONET alert.'
+      alertLegend: 'Red circle: 60 km reference radius around an active EONET alert.',
+      mapTileError: 'Some map imagery could not load. Try Streets / Terrain or check your connection.'
     }
   }[lang];
 
@@ -196,17 +199,6 @@ export const RiskMap: React.FC<RiskMapProps> = ({
         { color: '#d4ec79', weight: 2, opacity: 0.95, fillColor: '#d4ec79', fillOpacity: 0.035, dashArray: '6 6', interactive: false }
       ).addTo(map);
 
-      // Esri World Imagery (Clean high-resolution satellite imagery, NO watermark)
-      const satLayer = L.tileLayer(
-        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-        {
-          attribution: 'Tiles &copy; Esri, Earthstar Geographics',
-          maxZoom: 18
-        }
-      );
-      satLayer.addTo(map);
-      baseLayerRef.current = satLayer;
-
       // NASA GIBS WMTS NDVI Layer
       const gibs = L.tileLayer(
         'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_NDVI_8Day/default/default/GoogleMapsCompatible_Level9/{z}/{y}/{x}.png',
@@ -216,7 +208,6 @@ export const RiskMap: React.FC<RiskMapProps> = ({
           maxZoom: 9
         }
       );
-      gibs.addTo(map);
       gibsLayerRef.current = gibs;
 
       mapInstanceRef.current = map;
@@ -256,6 +247,7 @@ export const RiskMap: React.FC<RiskMapProps> = ({
   useEffect(() => {
     const map = mapInstanceRef.current;
     if (!map) return;
+    setMapTileError(false);
 
     if (baseLayerRef.current) {
       baseLayerRef.current.remove();
@@ -269,6 +261,7 @@ export const RiskMap: React.FC<RiskMapProps> = ({
           maxZoom: 18
         }
       );
+      sat.on('tileerror', () => setMapTileError(true));
       sat.addTo(map);
       baseLayerRef.current = sat;
     } else {
@@ -276,6 +269,7 @@ export const RiskMap: React.FC<RiskMapProps> = ({
         attribution: '&copy; OpenStreetMap contributors',
         maxZoom: 19
       });
+      osm.on('tileerror', () => setMapTileError(true));
       osm.addTo(map);
       baseLayerRef.current = osm;
     }
@@ -284,12 +278,13 @@ export const RiskMap: React.FC<RiskMapProps> = ({
     if (showGibs && gibsLayerRef.current) {
       gibsLayerRef.current.bringToFront();
     }
-  }, [baseMapType, showGibs]);
+  }, [baseMapType]);
 
   // Update GIBS layer visibility
   useEffect(() => {
     if (!mapInstanceRef.current || !gibsLayerRef.current) return;
     if (showGibs) {
+      gibsLayerRef.current.on('tileerror', () => setMapTileError(true));
       gibsLayerRef.current.addTo(mapInstanceRef.current);
       gibsLayerRef.current.bringToFront();
     } else {
@@ -514,6 +509,7 @@ export const RiskMap: React.FC<RiskMapProps> = ({
               <span>{eonetAlerts.length} {lang === 'es' ? 'alertas activas de EONET' : 'active EONET alerts'}</span>
             </div>
           )}
+          {mapTileError && <p className="map-tile-error" role="status">{t.mapTileError}</p>}
           {eonetAlerts.length > 0 && <small className="alert-radius-legend"><i aria-hidden="true" />{t.alertLegend}</small>}
         </div>
 

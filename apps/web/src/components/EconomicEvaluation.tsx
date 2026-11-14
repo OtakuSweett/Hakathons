@@ -16,6 +16,11 @@ interface EconomicEvaluationProps {
   lang: Language;
 }
 
+export const findClosestParetoPoint = (points: ParetoPoint[], lambda: number): ParetoPoint | undefined => points.reduce<ParetoPoint | undefined>((best, point) => {
+  if (!best) return point;
+  return Math.abs(point.lambda_weight - lambda) < Math.abs(best.lambda_weight - lambda) ? point : best;
+}, undefined);
+
 export const EconomicEvaluation: React.FC<EconomicEvaluationProps> = ({ data, lang }) => {
   const [lambdaVal, setLambdaVal] = useState<number>(0.5);
 
@@ -37,7 +42,8 @@ export const EconomicEvaluation: React.FC<EconomicEvaluationProps> = ({ data, la
       profitUsd: 'Ganancia Neta (USD/ha)',
       metricProfit: 'Ganancia Proyectada',
       metricWaterSaved: 'Ahorro Hídrico',
-      metricNitrogen: 'Nitrógeno Biológico'
+      metricNitrogen: 'Nitrógeno Biológico',
+      noPareto: 'El optimizador no generó resultados económicos para esta parcela. Revisa los cultivos y vuelve a calcular.'
     },
     en: {
       title: 'Economic Evaluation, Dual Shadow Prices & Pareto Frontier',
@@ -56,64 +62,15 @@ export const EconomicEvaluation: React.FC<EconomicEvaluationProps> = ({ data, la
       profitUsd: 'Net Profit (USD/ha)',
       metricProfit: 'Projected Profit',
       metricWaterSaved: 'Water Conservation',
-      metricNitrogen: 'Biological Nitrogen'
+      metricNitrogen: 'Biological Nitrogen',
+      noPareto: 'The optimizer did not produce economic results for this field. Review the selected crops and calculate again.'
     }
   }[lang];
 
-  const paretoPoints: ParetoPoint[] = data.optimization?.pareto_front || [
-    {
-      lambda_weight: 0.0,
-      profit_mxn_ha: 14200,
-      water_saved_mm: 120,
-      n_fixed_kg_ha: 85,
-      water_shadow_price_mxn_mm: 18.5,
-      n_shadow_price_mxn_kg_ha: 12.0,
-      schedule: []
-    },
-    {
-      lambda_weight: 0.25,
-      profit_mxn_ha: 19800,
-      water_saved_mm: 95,
-      n_fixed_kg_ha: 60,
-      water_shadow_price_mxn_mm: 22.0,
-      n_shadow_price_mxn_kg_ha: 9.5,
-      schedule: []
-    },
-    {
-      lambda_weight: 0.5,
-      profit_mxn_ha: 26500,
-      water_saved_mm: 65,
-      n_fixed_kg_ha: 45,
-      water_shadow_price_mxn_mm: 28.4,
-      n_shadow_price_mxn_kg_ha: 8.0,
-      schedule: []
-    },
-    {
-      lambda_weight: 0.75,
-      profit_mxn_ha: 31200,
-      water_saved_mm: 35,
-      n_fixed_kg_ha: 25,
-      water_shadow_price_mxn_mm: 34.0,
-      n_shadow_price_mxn_kg_ha: 5.5,
-      schedule: []
-    },
-    {
-      lambda_weight: 1.0,
-      profit_mxn_ha: 35800,
-      water_saved_mm: 0,
-      n_fixed_kg_ha: 0,
-      water_shadow_price_mxn_mm: 42.0,
-      n_shadow_price_mxn_kg_ha: 0.0,
-      schedule: []
-    }
-  ];
-
-  const activePoint = paretoPoints.reduce((prev, curr) =>
-    Math.abs(curr.lambda_weight - lambdaVal) < Math.abs(prev.lambda_weight - lambdaVal) ? curr : prev
-  );
-
-  const shadowPrice = activePoint.water_shadow_price_mxn_mm || 28.4;
-  const isHighShadow = shadowPrice > 25.0;
+  const paretoPoints = data.optimization?.pareto_front || [];
+  const activePoint = findClosestParetoPoint(paretoPoints, lambdaVal);
+  const shadowPrice = activePoint?.water_shadow_price_mxn_mm;
+  const isHighShadow = shadowPrice !== undefined && shadowPrice > 25.0;
 
   const chartData = paretoPoints.map((p) => ({
     x: p.water_saved_mm,
@@ -160,6 +117,7 @@ export const EconomicEvaluation: React.FC<EconomicEvaluationProps> = ({ data, la
               max="1"
               step="0.05"
               value={lambdaVal}
+              disabled={!activePoint}
               onChange={(e) => setLambdaVal(parseFloat(e.target.value))}
               className="w-full h-1.5 bg-zinc-800 rounded-lg appearance-none cursor-pointer"
             />
@@ -171,7 +129,7 @@ export const EconomicEvaluation: React.FC<EconomicEvaluationProps> = ({ data, la
           </div>
 
           {/* Dynamic KPI readout */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4 pt-3 border-t border-white/[0.05]">
+          {activePoint ? <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4 pt-3 border-t border-white/[0.05]">
             <div className="bg-zinc-900/70 p-3 rounded-xl border border-white/[0.05]">
               <span className="text-zinc-400 text-[10px] block">{t.metricProfit}</span>
               <span className="text-base sm:text-lg font-black text-white font-mono">
@@ -190,11 +148,11 @@ export const EconomicEvaluation: React.FC<EconomicEvaluationProps> = ({ data, la
                 +{activePoint.n_fixed_kg_ha} kg N/ha
               </span>
             </div>
-          </div>
+          </div> : <p className="mt-4 pt-3 border-t border-white/[0.05] text-sm text-amber-200" role="status">{t.noPareto}</p>}
         </div>
 
         {/* Dual Water Shadow Price (y_water) Card */}
-        <div className="p-4 rounded-xl border border-teal-500/20 bg-teal-950/20">
+        {activePoint && shadowPrice !== undefined && <div className="p-4 rounded-xl border border-teal-500/20 bg-teal-950/20">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-2">
             <div>
               <div className="flex items-center gap-2">
@@ -221,7 +179,7 @@ export const EconomicEvaluation: React.FC<EconomicEvaluationProps> = ({ data, la
           <div className="mt-2.5 p-2.5 bg-zinc-900/80 rounded-lg border border-white/[0.05] text-[11px] text-zinc-200">
             {isHighShadow ? t.shadowAdviceHigh : t.shadowAdviceLow}
           </div>
-        </div>
+        </div>}
 
         {/* Pareto Frontier Scatter Chart */}
         <div>
@@ -230,7 +188,7 @@ export const EconomicEvaluation: React.FC<EconomicEvaluationProps> = ({ data, la
             <span className="text-[10px] text-zinc-400 font-mono">HiGHS LP Dual Relaxation</span>
           </div>
 
-          <div className="h-56 w-full">
+          {paretoPoints.length ? <div className="h-56 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <ScatterChart margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
@@ -258,7 +216,7 @@ export const EconomicEvaluation: React.FC<EconomicEvaluationProps> = ({ data, la
                 <Scatter name={lang === 'es' ? 'Frontera de Pareto (M7)' : 'Pareto Frontier (M7)'} data={chartData} fill="#10b981" />
               </ScatterChart>
             </ResponsiveContainer>
-          </div>
+          </div> : <p className="text-sm text-zinc-400" role="status">{t.noPareto}</p>}
         </div>
       </div>
     </div>
