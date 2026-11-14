@@ -1,87 +1,121 @@
 # Architecture — NASA Agro-DSS
-> ES: Arquitectura del sistema. Contratos de API y flujo de datos.
+> ES: Arquitectura del sistema, flujo de datos, integración de modelos matemáticos y especificación de las 9 funciones del producto.
 
-## System Overview
-> ES: Vista general del sistema.
+---
+
+## 1. System Topology / Topología del Sistema
+> ES: Diagrama de interacción entre frontend, gateway orquestador y microservicios numéricos.
 
 ```
-User Browser
-    │  HTTP
-    ▼
-apps/web (:5173)  — React 19 + Tailwind v4 + Leaflet
-    │  REST
-    ▼
-apps/orchestrator (:3000)  — Node.js/TS gateway
-    ├──► services/py-workers/physics_worker (:8001)   — Modules 1–4
-    └──► services/py-workers/optimizer_worker (:8002) — Modules 5–7
+┌────────────────────────────────────────────────────────────────────────┐
+│                        User Browser / PWA                              │
+│         apps/web (:5173) — React 19 + Tailwind v4 + Leaflet            │
+└───────────────────────────────────┬────────────────────────────────────┘
+                                    │ HTTP / REST / JSON
+                                    ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│                  apps/orchestrator Gateway (:3000)                     │
+│                  Node.js + TypeScript + Fastify/Express                │
+│                                                                        │
+│  - Ingestión externa: NASA POWER (horaria/diaria LST),                 │
+│    ISRIC SoilGrids v2.0, NASA EONET v3, Open-Meteo.                    │
+│  - Limpieza y filtrado: Centinelas -999 -> null                        │
+│  - Preprocesamiento pedológico: Triángulo USDA + Van Bemmelen (%MO)   │
+│  - Cálculo micrometeorológico: ET0 (FAO-56 Penman-Monteith)           │
+│  - Inyección de pulsos extremos EONET en balance hídrico               │
+│  - Caché persistente: data/cache/ (soil_*, climate_*)                  │
+│  - Fallback offline: data/presets/*.json                              │
+│  - Módulos auxiliares: Detector de Plagas + Reportes de Agricultores   │
+└───────────────────┬────────────────────────────────┬───────────────────┘
+                    │                                │
+     POST /physics  │                                │  POST /optimize
+                    ▼                                ▼
+┌──────────────────────────────────────┐ ┌──────────────────────────────────────┐
+│     services/py-workers/             │ │     services/py-workers/             │
+│     physics_worker (:8001)           │ │     optimizer_worker (:8002)         │
+│     FastAPI + NumPy + SciPy          │ │     FastAPI + PuLP/Pyomo + HiGHS     │
+│                                      │ │                                      │
+│  - M1: Splines Cúbicos Naturales     │ │  - M5: Pre-Solver Agronómico         │
+│       (TDMA Thomas + CubicSpline)    │ │       (GDD, pH, Filtro Ciclón EONET) │
+│  - M2: Simpson 1/3 Compuesto         │ │  - M6: Optimizador MILP              │
+│       (Integral GDD térmico)         │ │       (Rotación Multianual 3-4 años) │
+│  - M3: Balance Hídrico EDO RK4       │ │  - M7: Frontera de Pareto Dual       │
+│       (dW/dt dinámico + Saxton-Rawls)│ │       (Precios Sombra .pi de agua/N) │
+│  - M4: Newton-Raphson                │ │                                      │
+│       (Cruce crítico Wcrit, t*, ΔI)  │ │                                      │
+└──────────────────────────────────────┘ └──────────────────────────────────────┘
 ```
 
-## Data Flow
-> ES: Flujo de datos desde las APIs hasta la UI.
+---
 
-1. Orchestrator fetches data from external sources: NASA POWER, SoilGrids, Open-Meteo, EONET (see [docs/API_REFERENCE.md](file:///home/Sweett/hakathon/docs/API_REFERENCE.md)).
-2. Orchestrator preprocesses raw data:
-   - `-999` / `-999.0` fill values converted to `null`.
-   - SoilGrids d-factor scalings applied (`phh2o/10`, `soc/10`, `nitrogen/100`, `clay/10`, `sand/10`).
-   - Silt clamped: `silt_pct = max(0, 100 - clay_pct - sand_pct)`.
-   - FAO-56 Penman-Monteith reference evapotranspiration `ET0` computed.
-3. Orchestrator validates and packages the bundle as `ClimateSoilBundle` conforming to [packages/contracts/parcel.schema.json](file:///home/Sweett/hakathon/packages/contracts/parcel.schema.json).
-4. Orchestrator POSTs payload to `physics_worker (:8001)/physics`.
-5. Physics worker executes Modules 1–4:
-   - M1: Natural cubic splines (TDMA) to fill NDVI gaps.
-   - M2: GDD accumulation via composite Simpson 1/3 rule.
-   - M3: Soil moisture balance $W(t)$ using explicit 4th-order Runge-Kutta (RK4).
-   - M4: Newton-Raphson solver to determine optimal irrigation trigger timing $t^*$ and depth $\Delta I$.
-   - Output conforms to [packages/contracts/physics.schema.json](file:///home/Sweett/hakathon/packages/contracts/physics.schema.json).
-6. Orchestrator packages input conforming to [packages/contracts/optimizer.schema.json](file:///home/Sweett/hakathon/packages/contracts/optimizer.schema.json) and POSTs to `optimizer_worker (:8002)/optimize`.
-7. Optimizer worker executes Modules 5–7:
-   - M5: Pre-solver agronomic pruning (GDD requirement and pH tolerance).
-   - M6: Mixed-Integer Linear Programming (MILP) crop rotation solver via PuLP + HiGHS.
-   - M7: Pareto frontier generation over $\lambda \in [0.0, 1.0]$ with dual shadow prices.
-8. Orchestrator consolidates responses and delivers unified JSON to `apps/web`.
-9. `apps/web` renders the interactive dashboard: Leaflet map with GIBS visual layers, Recharts time-series, Pareto $\lambda$ slider, and EONET alert banners.
+## 2. Master Integration Table / Tabla Maestra de los 7 Módulos Matemáticos
+> ES: Mapeo exacto entre orden de ejecución, API externa, parámetros JSON y transformaciones matemáticas.
 
-## API Endpoints (Contract-First)
-> ES: Endpoints definidos por contrato. Sin lógica de aplicación en scaffold.
+| Orden | Módulo Backend | Endpoint / Fuente Externa | Parámetros JSON Consumidos | Transformación Matemática y Librería | Output hacia Siguiente Fase |
+| :---: | :--- | :--- | :--- | :--- | :--- |
+| **1** | **Módulo 1: Reconstrucción de Series Temporales** (`mod1_splines.py`) | `power.larc.nasa.gov/api/temporal/hourly/point` + MODIS NDVI | `T2M`, `RH2M`, `PRECTOTCORR`, `WS10M`, `LST` | Eje $x$ en LST. Filtrar `-999`. Resolver sistema tridiagonal con $c_0 = c_n = 0$. `scipy.interpolate.CubicSpline(bc_type='natural')`. | Series horarias y diarias continuas completas hacia M2 y M3. |
+| **2** | **Módulo 2: Cuantificación Térmica GDD** (`mod2_simpson.py`) | Salida M1 (`T2M`) + `crops_catalog.json` | `T2M` (24h LST), $T_{\text{base}}$ | Extraer $T_{\max}, T_{\min}$ diarios. Integrar $f(t) = \max\left(0, \frac{T_{\max}+T_{\min}}{2} - T_{\text{base}}\right)$ con `scipy.integrate.simpson` ($h=1\text{ d}$). | Acumulado $GDD_{\text{disponible}}$ por ciclo hacia M5 y Calendario. |
+| **3** | **Módulo 3: Balance Hídrico Dinámico** (`mod3_rk4.py`) | Salida M1 + ISRIC SoilGrids + NASA EONET v3 | `PRECTOTCORR`, `clay`, `sand`, `soc`, pulso EONET | Dividir entre `d_factor`. Triángulo USDA + Van Bemmelen ($\text{MO}\% = \text{SOC}\% \times 1.724$). Saxton-Rawls $\rightarrow W_{\text{CC}}, W_{\text{PMP}}$. EDO $\frac{dW}{dt} = P + I - ET_c - D$ resuelta con RK4 ($h=1\text{ d}$). | Curva continua $W(t)$ y derivada $\frac{dW}{dt}$ hacia M4. |
+| **4** | **Módulo 4: Detección Predictiva de Estrés** (`mod4_newton.py`) | Salida M3 + SoilGrids | $W(t)$, $\frac{dW}{dt}$, $W_{\text{CC}}$, $W_{\text{PMP}}$, $p=0.5$ | $W_{\text{crítico}} = W_{\text{PMP}} + p(W_{\text{CC}} - W_{\text{PMP}})$. Resolver $W(t) - W_{\text{crítico}} = 0$ con `scipy.optimize.newton(fprime=dW_dt, tol=0.01)`. | Día crítico exacto $t^*$ y lámina $\Delta I = W_{\text{CC}} - W_{\text{crítico}}$. |
+| **5** | **Módulo 5: Pre-Solver Agronómico** (`mod5_presolver.py`) | Salida M2 + SoilGrids + NASA EONET v3 | $GDD_{\text{disp}}$, `soil_ph`, `status=open` en `severeStorms` | Filtrado vectorial Pandas: si $GDD_{\text{disp}} < GDD_{\text{req}}$ o $\text{pH} \notin [\text{pH}_{\min}, \text{pH}_{\max}] \implies x_{i,t}=0$. Si hay ciclón/inundación activa, bloquear siembra inmediata para cultivos sensibles. | Subconjunto de cultivos agronómicamente viables hacia M6. |
+| **6** | **Módulo 6: Optimizador MILP Multianual** (`mod6_milp.py`) | Salida M3 y M5 + SoilGrids (`nitrogen`, `soc`) + Costos | $\text{AguaDisponible}_t$, `nitrogen`, precios, costos | MILP: $\max Z = \text{Ganancias} - (\alpha \text{Agua} + \beta s_t^+)$. Sujeto a unicidad de ciclo, agua disponible, anti-monocultivo y rotación con leguminosas según nivel de nitrógeno de SoilGrids. Solver HiGHS (`highspy`). | Secuencia óptima de siembra multianual (3-4 años). |
+| **7** | **Módulo 7: Análisis Dual y Frontera de Pareto** (`mod7_pareto.py`) | Salida M6 (HiGHS) + Slider $\lambda \in [0, 1]$ | Valores duales `.pi` de restricciones de agua y nitrógeno | Precios sombra $y_k = \frac{\partial Z^*}{\partial b_k}$. Escalarización $\max \lambda f_1 + (1-\lambda) f_2$. Soporta $\lambda$ continuo y barrido de 5 puntos $\{0, 0.25, 0.5, 0.75, 1.0\}$. | Puntos no dominados de la curva de Pareto y recomendación económica de riego. |
 
-| Method | Path | Service | Schema in | Schema out | Purpose |
-|--------|------|---------|-----------|------------|---------|
-| POST | `/analyze` | orchestrator (:3000) | `parcel.schema.json` | Consolidated DSS response | Complete parcel evaluation |
-| POST | `/physics` | physics_worker (:8001) | `parcel.schema.json` | `physics.schema.json` | M1–M4 physics simulation |
-| POST | `/optimize` | optimizer_worker (:8002) | `optimizer.schema.json` | `optimizer.schema.json` | M5–M7 rotation optimization |
-| GET | `/health` | all services | none | `{"status": "ok"}` | Service health probe |
-| GET | `/events` | orchestrator (:3000) | none | EONET GeoJSON | Bounded hazard alerts |
+---
 
-## Module Pipeline
-> ES: Pipeline de módulos numéricos.
+## 3. Mapeo de las 9 Funciones del Producto (Frontend & Gateway)
+> ES: Especificación de las 9 funciones clave de la aplicación para el agricultor.
 
-| Module | Service | Method | Input | Output |
-|--------|---------|--------|-------|--------|
-| M1 | physics_worker | Natural cubic spline (TDMA) | Cloud-gapped NDVI series | Continuous NDVI trajectory |
-| M2 | physics_worker | Composite Simpson 1/3 | Daily $T_{\max}, T_{\min}$ series | Cumulative Growing Degree Days (GDD) |
-| M3 | physics_worker | Explicit RK4 ($h=1\text{ day}$) | Initial water $W(0)$, $P$, $ET_0$, $K_c$ | Daily soil moisture $W(t)$ |
-| M4 | physics_worker | Newton-Raphson ($W(t) - W_{\text{crit}} = 0$) | RK4 derivative slope | Irrigation date $t^*$, depth $\Delta I$ |
-| M5 | optimizer_worker | Feasibility pruning | Crop catalog, GDD, pH | Feasible crop candidate set |
-| M6 | optimizer_worker | MILP (PuLP + HiGHS) | Feasible crops, water, profit | Optimal crop rotation sequence |
-| M7 | optimizer_worker | Multi-objective $\lambda$-sweep | Objectives $f_1, f_2$ | 11-point Pareto front + shadow prices |
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│                        NASA AGRO-DSS SUITE                             │
+├──────────────────────────┬─────────────────────────────┬───────────────┤
+│ 1. Mapa de Riesgos       │ 4. Simulador Climático      │ 7. Plagas     │
+│ 2. Alertas Anticipadas   │ 5. Monitoreo de Cultivos    │ 8. Economía   │
+│ 3. Recomendaciones       │ 6. Calendario Inteligente   │ 9. Reportes   │
+└──────────────────────────┴─────────────────────────────┴───────────────┘
+```
 
-## Schema Locations
-> ES: Ubicación de los esquemas y catálogos.
+1. **Mapa de Riesgos (Geospatial Hazard Map):**
+   - Mapa interactivo Leaflet centrado en la parcela (Querétaro / El Bajío: `-100.3899, 20.5888`).
+   - Capa base vectorial + superposición WMTS de NASA GIBS (`MODIS_Terra_NDVI_8Day`).
+   - Marcadores GeoJSON de eventos activos NASA EONET v3 (`severeStorms`, `drought`, `floods`, `wildfires`) con radio de impacto y distancia geodésica a la parcela.
+2. **Alertas Anticipadas (Early Warning Banner):**
+   - Notificación de día crítico exacto $t^*$ de estrés hídrico generado por el Módulo 4 (Newton-Raphson).
+   - Semáforo de advertencia meteorológica (heladas si $T_{\min} \le 0^\circ\text{C}$, olas de calor si $T_{\max} \ge 35^\circ\text{C}$, ciclones activos por EONET).
+3. **Recomendaciones Agrícolas (Crop Feasibility Advisor):**
+   - Panel comparativo de cultivos viables vs. descartados generado por el Módulo 5 (Pre-Solver).
+   - Justificación agronómica explícita: compatibilidad de pH, balance térmico $GDD$ y tolerancia climática (sequía, viento, heladas, inundación).
+4. **Simulador Climático ("What-If" Engine):**
+   - Controles interactivos para alterar parámetros: variación de lluvia ($\pm 10\%, \pm 30\%$), aumento de temperatura ($+1^\circ\text{C}, +2^\circ\text{C}$), o inyección manual de pulso de tormenta severa.
+   - Re-ejecución instantánea del pipeline (M3 RK4 $\rightarrow$ M4 Newton $\rightarrow$ M6 MILP $\rightarrow$ M7 Pareto).
+5. **Monitoreo de Cultivos (NDVI Trajectory Tracker):**
+   - Gráfico temporal comparativo (Recharts): serie cruda MODIS con huecos por nubes (`null`) vs. trayectoria continua reconstruida por Splines Cúbicos (Módulo 1).
+6. **Calendario Inteligente (Smart Cropping Calendar):**
+   - Cronograma multianual interactivo (3 a 4 años) que despliega la rotación óptima calculada por el Módulo 6.
+   - Hitos fenológicos: fecha estimada de germinación, acumulación térmica GDD (Módulo 2), ventanas de floración y fecha recomendada de riego preventivo ($t^*$ del Módulo 4).
+7. **Detector Preventivo de Plagas (Pest & Disease Risk Evaluator):**
+   - Evaluación fitosanitaria automática a partir de ventanas móviles de temperatura (`T2M`), humedad relativa (`RH2M` $\ge 80\%$) y lluvia de NASA POWER.
+   - Semáforo de riesgo para tizón, roya, gusano cogollero y enfermedades fúngicas.
+8. **Evaluación Económica (Economic & Resilience Trade-Offs):**
+   - Desglose detallado de costos (semillas, fertilizantes, agua de riego) e ingresos brutos proyectados por tonelada y por hectárea.
+   - Precios sombra del agua ($y_{\text{agua}} = \text{constraint.pi}$) para determinar la viabilidad de adquirir pipas o derechos de pozo.
+   - Gráfica interactiva de la Frontera de Pareto con selector deslizante $\lambda \in [0, 1]$ (Módulo 7).
+9. **Reportes de Agricultores (Crowdsourced Field Observations):**
+   - Modal georreferenciado para que el agricultor registre observaciones de campo, síntomas visibles de plagas y fotografías (base64/URL).
+   - Complementa los diagnósticos satelitales con validación *in situ*.
 
-- Parcel schema: [packages/contracts/parcel.schema.json](file:///home/Sweett/hakathon/packages/contracts/parcel.schema.json)
-- Physics schema: [packages/contracts/physics.schema.json](file:///home/Sweett/hakathon/packages/contracts/physics.schema.json)
-- Optimizer schema: [packages/contracts/optimizer.schema.json](file:///home/Sweett/hakathon/packages/contracts/optimizer.schema.json)
-- Crop catalog: [packages/contracts/crops_catalog.json](file:///home/Sweett/hakathon/packages/contracts/crops_catalog.json)
-- Presets: [data/presets/](file:///home/Sweett/hakathon/data/presets/)
+---
 
-All JSON Schemas comply with draft 2020-12 and enforce `additionalProperties: false`.
+## 4. Canonical API Endpoints (Gateway Contract-First)
 
-## Service Port Allocation
-> ES: Asignación de puertos para desarrollo local.
-
-| Service | Port | Dev Command |
-|---------|------|-------------|
-| web | 5173 | `pnpm --filter web dev` |
-| orchestrator | 3000 | `pnpm --filter orchestrator dev` |
-| physics_worker | 8001 | `uv run --project services/py-workers uvicorn physics_worker.main:app --port 8001` |
-| optimizer_worker | 8002 | `uv run --project services/py-workers uvicorn optimizer_worker.main:app --port 8002` |
+| Método | Ruta | Servicio Responsable | Esquema Entrada | Esquema Salida | Propósito |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `POST` | `/api/analyze` | Orchestrator (:3000) | `parcel.schema.json` | `AnalysisResponse` | Análisis integral de parcela (M1–M7) |
+| `POST` | `/api/simulate` | Orchestrator (:3000) | `SimulationRequest` | `AnalysisResponse` | Motor "What-If" con perturbaciones climáticas |
+| `GET` | `/api/events` | Orchestrator (:3000) | Ninguno | EONET GeoJSON | Eventos extremos filtrados por bounding box |
+| `GET` | `/api/pest-risk` | Orchestrator (:3000) | `parcel_id` + `crop_id` | `PestRiskOutput` | Evaluación de riesgo fúngico y de plagas |
+| `POST` | `/api/farmer-reports` | Orchestrator (:3000) | `FarmerReportInput` | `FarmerReportRecord`| Almacenamiento de reportes de campo |
+| `POST` | `/physics` | `physics_worker` (:8001) | `parcel.schema.json` | `physics.schema.json` | Módulos 1–4 de física y balance hídrico |
+| `POST` | `/optimize` | `optimizer_worker` (:8002) | `optimizer.schema.json` | `optimizer.schema.json` | Módulos 5–7 de optimización y Pareto |
+| `GET` | `/health` | Todos los servicios | Ninguno | `{"status": "ok"}` | Health-check de infraestructura |

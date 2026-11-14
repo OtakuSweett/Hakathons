@@ -1,0 +1,141 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nasa-agro-dss/schemas/schemas.json",
+  "title": "ExtendedContractsSchema",
+  "description": "Unified JSON Schemas for Pest Detection, Farmer Reports, and Climate Simulation What-If Engine.",
+  "$defs": {
+    "PestRiskOutput": {
+      "type": "object",
+      "description": "Output schema for the Preventive Pest & Disease Detection engine (Feature 7).",
+      "additionalProperties": false,
+      "required": [
+        "parcel_id",
+        "crop_id",
+        "evaluated_at",
+        "overall_risk_level",
+        "fungal_risk",
+        "insect_pest_risk",
+        "environmental_factors",
+        "recommended_actions"
+      ],
+      "properties": {
+        "parcel_id": { "type": "string" },
+        "crop_id": { "type": "string" },
+        "evaluated_at": { "type": "string", "format": "date-time" },
+        "overall_risk_level": { "type": "string", "enum": ["bajo", "medio", "alto", "critico"] },
+        "fungal_risk": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["risk_score_pct", "conditions_met", "primary_pathogen"],
+          "properties": {
+            "risk_score_pct": { "type": "number", "minimum": 0, "maximum": 100 },
+            "conditions_met": { "type": "boolean" },
+            "primary_pathogen": { "type": "string", "description": "e.g. Roya (Puccinia spp.), Tizón foliar, Cenicilla" }
+          }
+        },
+        "insect_pest_risk": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["risk_score_pct", "primary_pest"],
+          "properties": {
+            "risk_score_pct": { "type": "number", "minimum": 0, "maximum": 100 },
+            "primary_pest": { "type": "string", "description": "e.g. Gusano cogollero (Spodoptera frugiperda), Pulgón" }
+          }
+        },
+        "environmental_factors": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["avg_t2m_c", "avg_rh2m_pct", "consecutive_wet_hours", "cumulative_precip_mm"],
+          "properties": {
+            "avg_t2m_c": { "type": "number" },
+            "avg_rh2m_pct": { "type": "number" },
+            "consecutive_wet_hours": { "type": "integer", "minimum": 0 },
+            "cumulative_precip_mm": { "type": "number", "minimum": 0 }
+          }
+        },
+        "recommended_actions": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "FarmerReportInput": {
+      "type": "object",
+      "description": "Crowdsourced farmer field observation payload (Feature 9).",
+      "additionalProperties": false,
+      "required": [
+        "parcel_id",
+        "lon",
+        "lat",
+        "current_crop",
+        "damage_category",
+        "severity_level",
+        "field_notes",
+        "reported_at"
+      ],
+      "properties": {
+        "parcel_id": { "type": "string" },
+        "lon": { "type": "number", "minimum": -180, "maximum": 180 },
+        "lat": { "type": "number", "minimum": -90, "maximum": 90 },
+        "current_crop": { "type": "string" },
+        "damage_category": {
+          "type": "string",
+          "enum": ["plaga_insecto", "enfermedad_hongos", "estres_hidrico", "dano_helada", "dano_viento", "inundacion", "otro"]
+        },
+        "severity_level": { "type": "string", "enum": ["leve", "moderado", "severo"] },
+        "field_notes": { "type": "string", "maxLength": 1000 },
+        "image_url_or_base64": { "type": "string" },
+        "reported_at": { "type": "string", "format": "date-time" }
+      }
+    },
+    "FarmerReportRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "report_id",
+        "parcel_id",
+        "status",
+        "submitted_at",
+        "input"
+      ],
+      "properties": {
+        "report_id": { "type": "string" },
+        "parcel_id": { "type": "string" },
+        "status": { "type": "string", "enum": ["recibido", "en_revision", "verificado"] },
+        "submitted_at": { "type": "string", "format": "date-time" },
+        "input": { "$ref": "#/$defs/FarmerReportInput" }
+      }
+    },
+    "SimulationRequest": {
+      "type": "object",
+      "description": "Climate What-If Simulator perturbation parameters (Feature 4).",
+      "additionalProperties": false,
+      "required": ["parcel_id", "delta_precip_pct", "delta_temp_c", "inject_storm_pulse"],
+      "properties": {
+        "parcel_id": { "type": "string" },
+        "delta_precip_pct": {
+          "type": "number",
+          "minimum": -50,
+          "maximum": 50,
+          "description": "Percentage precipitation offset (e.g. -20 for drought, +20 for wet year)"
+        },
+        "delta_temp_c": {
+          "type": "number",
+          "minimum": -5,
+          "maximum": 5,
+          "description": "Temperature delta in °C (e.g. +1.5 for heatwave stress)"
+        },
+        "inject_storm_pulse": {
+          "type": "boolean",
+          "description": "If true, simulates extreme storm pulse from EONET severeStorms"
+        },
+        "storm_intensity_mm": {
+          "type": "number",
+          "minimum": 0,
+          "default": 80.0,
+          "description": "Rainfall pulse depth in mm injected on day 15 if inject_storm_pulse is true"
+        }
+      }
+    }
+  }
+}

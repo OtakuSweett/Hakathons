@@ -1,12 +1,12 @@
 # AGENTS.md — apps/web/ (Track D)
-> ES: Reglas del Track D: interfaz web React 19, Tailwind v4, Leaflet y gráficos.
+> ES: Reglas del Track D: interfaz de usuario web React 19, Tailwind CSS v4, visualización geoespacial con Leaflet, gráficos interactivos con Recharts y cobertura de las 9 funciones clave del producto.
 
 See root [AGENTS.md](file:///home/Sweett/hakathon/AGENTS.md) §1–§6 for all shared rules (canonical units, JSON rules, git workflow, and end-of-task protocol).
-See [docs/API_REFERENCE.md](file:///home/Sweett/hakathon/docs/API_REFERENCE.md) for GIBS WMTS tile templates and EONET GeoJSON schemas.
+See [docs/ARCHITECTURE.md](file:///home/Sweett/hakathon/docs/ARCHITECTURE.md) for data flows and the 9 product functions.
 
 ---
 
-## §1 Scope
+## §1 Scope & Permissions
 > ES: Alcance de edición para el Track D.
 
 - **Files you MAY edit:** `apps/web/src/**`, `apps/web/package.json`, `apps/web/tsconfig.json`, `apps/web/index.html`
@@ -22,41 +22,74 @@ See [docs/API_REFERENCE.md](file:///home/Sweett/hakathon/docs/API_REFERENCE.md) 
 
 ---
 
-## §3 Architecture & Rules
-> ES: Reglas de arquitectura y presentación para el Track D.
+## §3 Architectural & Styling Rules
+> ES: Reglas de arquitectura y presentación.
 
-- **Direct API Prohibition:** Never make direct requests from the browser to NASA POWER or SoilGrids. All external data flows strictly through the orchestrator at `:3000`.
-- **GIBS Layer Role:** NASA GIBS tiles (MODIS NDVI, SMAP soil moisture) are strictly visual overlays in Leaflet. They MUST NEVER be sampled or used as numerical inputs for DSS mathematical models.
-- **Tailwind v4 Styling:** Configured exclusively using CSS `@import "tailwindcss";` and `@theme {}`. No `tailwind.config.js` and no PostCSS configuration files are allowed.
-- **Bilingual Interface:** All UI components must support English and Spanish via an explicit language toggle.
-- **Offline / Standalone Fallback:** The web client must detect when the orchestrator is offline and offer loading preset files directly from `data/presets/`.
-
----
-
-## §4 UI Components & Features
-> ES: Componentes clave de la interfaz.
-
-1. **Interactive Geospatial View (Leaflet):** Centered at El Bajío / Querétaro (`lat: 20.5888, lon: -100.3899`). Supports GIBS WMTS raster overlays.
-2. **Hazard Alert Banner:** Displays NASA EONET v3 severe events filtered client-side by distance to the parcel.
-3. **Agronomic & Climate Charts (Recharts):**
-   - Daily soil water balance trajectory $W(t)$ showing wilting point $W_{\text{wp}}$, critical threshold $W_{\text{crit}}$, and field capacity $W_{\text{fc}}$.
-   - Cumulative Growing Degree Days (GDD) with crop maturity target markers.
-   - 16-day NDVI trajectory highlighting gap-filled spline regions.
-4. **Pareto Trade-off Explorer:** Interactive slider for $\lambda \in [0.0, 1.0]$ with real-time updates for economic profit versus water conservation and dual shadow prices.
+1. **Sin Llamadas Directas a APIs Externas:** Todas las consultas se canalizan a través del orquestador en `:3000`. Nunca realizar peticiones directas desde el navegador hacia NASA POWER o SoilGrids.
+2. **Uso Exclusivo de NASA GIBS:** Las capas WMTS de GIBS (ej. `MODIS_Terra_NDVI_8Day`) son puramente visuales sobre Leaflet. Nunca se deben muestrear para cálculos agronómicos.
+3. **Tailwind CSS v4:** Configuración pura en CSS mediante `@import "tailwindcss";` y bloque `@theme {}`. Prohibido crear `tailwind.config.js` o archivos de configuración de PostCSS.
+4. **Bilingüismo Completo (EN/ES):** Todos los componentes y etiquetas deben soportar cambio de idioma dinámico mediante un interruptor visible.
+5. **Modo Autónomo Offline:** Si el orquestador o la red están desconectados, la UI debe cargar los paquetes de demostración desde `data/presets/` sin fallar.
 
 ---
 
-## §5 Done Criteria
-> ES: Criterios de aceptación para Track D.
+## §4 Componentes y las 9 Funciones del Producto
+> ES: Especificación de las 9 funciones de la suite DSS en el frontend.
 
-- **Component Tests:** Vitest suites run and verify render integrity without runtime errors:
-  ```bash
-  pnpm --filter web test
-  ```
-- **GIBS Tile Formatting:** WMTS URL generator produces valid EPSG:4326 tile coordinate requests.
-- **EONET Bbox Filtering:** Events outside $\pm 2^\circ$ bounding box are excluded from the notification banner.
-- **Lambda Selector:** Slider strictly produces discrete step increments $\lambda \in \{0.0, 0.1, \dots, 1.0\}$.
-- **Offline Mode:** Switching network simulation to offline cleanly loads and visualizes `el_marques.json`.
+### 1. Mapa de Riesgos (`components/RiskMap.tsx`)
+- Mapa interactivo con **Leaflet** centrado en la parcela (`lon: -100.3899, lat: 20.5888`).
+- Capa base vectorial + capa raster WMTS de NASA GIBS.
+- Marcadores interactivos para eventos activos de **NASA EONET v3** (`severeStorms`, `drought`, `floods`, `wildfires`) con círculos de radio de afectación y distancia a la parcela.
+
+### 2. Alertas Anticipadas (`components/EarlyWarningBanner.tsx`)
+- Banner de notificación destacando el **día crítico exacto $t^*$ de estrés hídrico** generado por el Módulo 4 (Newton-Raphson).
+- Tarjetas de advertencia meteorológica ante riesgo de heladas ($T_{\min} \le 0^\circ\text{C}$), olas de calor ($T_{\max} \ge 35^\circ\text{C}$) y tormentas severas.
+
+### 3. Recomendaciones Agrícolas (`components/CropAdvisor.tsx`)
+- Panel de cultivos **viables vs. descartados** proveniente del Pre-Solver (Módulo 5).
+- Desglose con badges de color para tolerancia a sequía, sensibilidad al viento, sensibilidad a inundaciones y compatibilidad de pH del suelo.
+
+### 4. Simulador Climático ("What-If") (`components/ClimateSimulator.tsx`)
+- Controles deslizantes para simular perturbaciones climáticas:
+  - Variación de lluvia: $\Delta P \in [-50\%, +50\%]$.
+  - Aumento de temperatura: $\Delta T \in [-2^\circ\text{C}, +5^\circ\text{C}]$.
+  - Inyección de pulso de tormenta severa (EONET).
+- Botón "Simular Escenario" que re-ejecuta el pipeline numérico y refresca gráficos en tiempo real.
+
+### 5. Monitoreo de Cultivos (`components/CropMonitoring.tsx`)
+- Gráfica temporal en **Recharts** con dos series superpuestas:
+  1. Puntos discretos de NDVI crudo MODIS con huecos vacíos (`null`).
+  2. Curva continua suavizada reconstruida por el Módulo 1 (Splines Cúbicos).
+
+### 6. Calendario Inteligente (`components/SmartCalendar.tsx`)
+- Línea de tiempo multianual (3 a 4 años, 6 a 8 ciclos) representando la rotación óptima del Módulo 6 (MILP).
+- Despliegue de progreso térmico acumulado $GDD$ del Módulo 2 y marca de fecha programada de riego preventivo ($t^*$ del Módulo 4).
+
+### 7. Detector Preventivo de Plagas (`components/PestDetector.tsx`)
+- Semáforo fitosanitario (Verde/Amarillo/Rojo) calculado por el orquestador a partir de ventanas móviles de temperatura, humedad relativa ($\ge 80\%$) y lluvia.
+- Indicadores de riesgo para tizón, roya, hongos foliares y gusano cogollero con recomendaciones preventivas.
+
+### 8. Evaluación Económica (`components/EconomicAnalysis.tsx`)
+- Desglose de costos (semillas, fertilizantes, agua de riego) y utilidad neta proyectada en MXN/ha.
+- Indicador del **precio sombra del agua** ($y_{\text{agua}} = \text{constraint.pi}$) con recomendación de si es rentable invertir en riego extra.
+- Curva de la **Frontera de Pareto** con control deslizante $\lambda \in [0, 1]$ (Módulo 7) para alternar entre máxima ganancia y máxima conservación de recursos.
+
+### 9. Reportes de Agricultores (`components/FarmerReportModal.tsx`)
+- Formulario georreferenciado para que el productor reporte observaciones de campo: cultivo actual, tipo de daño (plagas, hongos, helada, sequía), notas y fotografía (base64 o URL) para contrastar datos satelitales.
+
+---
+
+## §5 Done Criteria & Vitest
+> ES: Criterios de aceptación con Vitest.
+
+```bash
+pnpm --filter web test
+pnpm --filter web lint
+```
+- Cobertura de pruebas unitarias para cada uno de los 9 componentes.
+- El control de $\lambda$ emite valores discretos o continuos en $[0, 1]$.
+- El mapa de Leaflet se inicializa con coordenadas correctas sin desbordamiento de memoria.
+- Modo offline probado con desconexión simulada de red.
 
 ---
 
