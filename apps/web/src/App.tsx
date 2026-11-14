@@ -43,8 +43,6 @@ const provenanceMessages = (data: AnalysisResponse, lang: Language) => {
   if (provenance.climate?.retrieval === 'live_fallback') {
     messages.push(lang === 'es' ? 'Clima: se usó Open-Meteo Archive porque NASA POWER no entregó una serie completa. Son datos meteorológicos históricos de esta ubicación.' : 'Climate: Open-Meteo Archive was used because NASA POWER did not provide a complete series. These are historical weather data for this location.');
   }
-  const cached = [provenance.soil?.retrieval === 'cache' ? (lang === 'es' ? 'suelo' : 'soil') : '', provenance.climate?.retrieval === 'cache' ? (lang === 'es' ? 'clima' : 'climate') : ''].filter(Boolean);
-  if (cached.length) messages.push(lang === 'es' ? `Se reutilizó caché de esta misma ubicación para ${cached.join(' y ')}.` : `Cached data for this exact location were reused for ${cached.join(' and ')}.`);
   if (provenance.soil?.retrieval === 'preset_fallback') {
     messages.push(lang === 'es' ? `Suelo de referencia regional (${provenance.soil.preset_id || 'benchmark'}); no es una medición de esta parcela.` : `Regional reference soil (${provenance.soil.preset_id || 'benchmark'}); this is not a measurement from this field.`);
   }
