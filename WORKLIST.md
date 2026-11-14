@@ -46,37 +46,37 @@
 ## 🅱 Track B — Physics Worker (`services/py-workers/physics_worker/`, :8001)
 > ES: Módulos numéricos 1–4: splines cúbicos, energía térmica GDD, balance hídrico RK4 y detección de estrés Newton-Raphson.
 
-- [ ] B-01: Module 1 (`mod1_splines.py`) — Natural cubic spline with explicit Thomas algorithm (TDMA) for second derivatives ($c_0 = c_n = 0$)
-- [ ] B-02: Module 1 Validation — Assert TDMA matches `scipy.interpolate.CubicSpline(bc_type='natural')` to $< 10^{-9}$; fills missing NDVI/climate points; forbids extrapolation
-- [ ] B-03: Module 2 (`mod2_simpson.py`) — 24-hour LST grouping for daily $T_{\max}, T_{\min}$; composite Simpson 1/3 integration via `scipy.integrate.simpson` ($h = 1\text{ d}$)
-- [ ] B-04: Module 2 Validation — Constant-temperature analytic integral exact to $< 10^{-10}$; $\text{GDD} \ge 0$; handles even and odd point counts
-- [ ] B-05: Module 3 (`mod3_rk4.py`) — Dynamic soil moisture ODE $\frac{dW}{dt} = P(t) + I(t) - ET_c(W, t) - D(W)$ with 4th-order Runge-Kutta ($h = 1\text{ d}$)
-- [ ] B-06: Module 3 Ingestion & Pulses — Integrates SoilGrids pedotransfer ($W_{\text{CC}}, W_{\text{PMP}}, W_0$) and EONET hurricane/storm precipitation pulses
-- [ ] B-07: Module 3 Validation — Order-4 convergence test (halving $h$ reduces error by $\approx 16$); mass-balance residual $< 10^{-6}\text{ mm}$
-- [ ] B-08: Module 4 (`mod4_newton.py`) — Continuous spline representation of $W(t)$ and Newton-Raphson solver for $W(t) - W_{\text{crítico}} = 0$
-- [ ] B-09: Module 4 Derivative — Derivative evaluated directly from RK4 analytical slope $\frac{dW}{dt}$ (no finite-difference noise)
-- [ ] B-10: Module 4 Trigger — Returns exact trigger day $t^*$ and irrigation depth $\Delta I = W_{\text{CC}} - W_{\text{crítico}}$; returns diagnostic `reason` if no crossing
-- [ ] B-11: FastAPI Microservice — `POST /physics` and `GET /health` endpoints matching `physics.schema.json`
-- [ ] B-12: End-of-Task Protocol — Pytest suite passes, `docs/AGENT_LOG.md` row appended, `WORKLIST.md` ticked
+- [x] B-01: Module 1 (`mod1_splines.py`) — Natural cubic spline with explicit Thomas algorithm (TDMA) for second derivatives ($c_0 = c_n = 0$)
+- [x] B-02: Module 1 Validation — Assert TDMA matches `scipy.interpolate.CubicSpline(bc_type='natural')` to $< 10^{-9}$; fills missing NDVI/climate points; forbids extrapolation
+- [x] B-03: Module 2 (`mod2_simpson.py`) — 24-hour LST grouping for daily $T_{\max}, T_{\min}$; composite Simpson 1/3 integration via `scipy.integrate.simpson` ($h = 1\text{ d}$)
+- [x] B-04: Module 2 Validation — Constant-temperature analytic integral exact to $< 10^{-10}$; $\text{GDD} \ge 0$; handles even and odd point counts
+- [x] B-05: Module 3 (`mod3_rk4.py`) — Dynamic soil moisture ODE $\frac{dW}{dt} = P(t) + I(t) - ET_c(W, t) - D(W)$ with 4th-order Runge-Kutta ($h = 1\text{ d}$)
+- [x] B-06: Module 3 Ingestion & Pulses — Integrates SoilGrids pedotransfer ($W_{\text{CC}}, W_{\text{PMP}}, W_0$) and EONET hurricane/storm precipitation pulses
+- [x] B-07: Module 3 Validation — Order-4 convergence test (halving $h$ reduces error by $\approx 16$); mass-balance residual $< 10^{-6}\text{ mm}$
+- [x] B-08: Module 4 (`mod4_newton.py`) — Continuous spline representation of $W(t)$ and Newton-Raphson solver for $W(t) - W_{\text{crítico}} = 0$
+- [x] B-09: Module 4 Derivative — Derivative evaluated directly from RK4 analytical slope $\frac{dW}{dt}$ (no finite-difference noise)
+- [x] B-10: Module 4 Trigger — Returns exact trigger day $t^*$ and irrigation depth $\Delta I = W_{\text{CC}} - W_{\text{crítico}}$; returns diagnostic `reason` if no crossing
+- [x] B-11: FastAPI Microservice — `POST /physics` and `GET /health` endpoints matching `physics.schema.json`
+- [x] B-12: End-of-Task Protocol — Pytest suite passes, `docs/AGENT_LOG.md` row appended, `WORKLIST.md` ticked
 
 ---
 
 ## 🅲 Track C — Optimizer Worker (`services/py-workers/optimizer_worker/`, :8002)
 > ES: Módulos 5–7: pre-solver agronómico con filtro EONET, optimización MILP multianual con HiGHS y análisis dual de Pareto.
 
-- [ ] C-01: Module 5 (`mod5_presolver.py`) — Fast vectorized Pandas filtering: $GDD_{\text{disp}} < GDD_{\text{req}} \implies x_{i,t} = 0$; $\text{pH}_{\text{suelo}} \notin [\text{pH}_{\min}, \text{pH}_{\max}] \implies x_{i,t} = 0$
-- [ ] C-02: Module 5 Disaster Filter — Blocks immediate cycle planting ($x_{i,1} = 0$) for wind- or flood-sensitive crops under active EONET severe storm alerts
-- [ ] C-03: Module 5 Diagnostic Output — Structured `discarded` log with deterministic order and bilingual reason explanations
-- [ ] C-04: Module 6 (`mod6_milp.py`) — Multi-year planning horizon ($T = 6 \text{ to } 8$ cycles across 3–4 years, alternating PV and OI)
-- [ ] C-05: Module 6 Economic Formulation — $\text{Ganancia}_{i,t} = (\text{PrecioVenta}_i \times \text{Rendimiento}_i) - (\text{CostoSemilla}_i + \text{CostoRiego}_i + \text{CostoFertilizante}_i)$
-- [ ] C-06: Module 6 Nutrient Constraints — SoilGrids N & SOC calibrates fertilizer cost and enforces annual legume rotation ($\ge 1$ legume per year)
-- [ ] C-07: Module 6 Water & Agronomic Constraints — Single crop per slot ($\sum_i x_{i,t} \le 1$), anti-monoculture ($x_{i,t} + x_{i,t+1} \le 1$), single deficit slack $s_t^+ \ge 0$
-- [ ] C-08: Module 6 HiGHS Solver — PuLP/Pyomo integration with HiGHS (`highspy`), 30s timeout, deterministic solution
-- [ ] C-09: Module 7 (`mod7_pareto.py`) — Dual shadow prices extraction ($y_{\text{agua}} = \text{constraint.pi}$) from continuous LP relaxation
-- [ ] C-10: Module 7 Pareto Scalarization — $\max \lambda f_1 + (1-\lambda) f_2$ supporting continuous slider $\lambda \in [0, 1]$ and 5-point discrete sweep $\{0, 0.25, 0.5, 0.75, 1.0\}$
-- [ ] C-11: Module 7 Frontier Pruning — Filtering of dominated solutions to guarantee monotone non-increasing profit $f_1$
-- [ ] C-12: FastAPI Microservice — `POST /optimize` and `GET /health` endpoints matching `optimizer.schema.json`
-- [ ] C-13: End-of-Task Protocol — Pytest suite passes, `docs/AGENT_LOG.md` row appended, `WORKLIST.md` ticked
+- [x] C-01: Module 5 (`mod5_presolver.py`) — Fast vectorized Pandas filtering: $GDD_{\text{disp}} < GDD_{\text{req}} \implies x_{i,t} = 0$; $\text{pH}_{\text{suelo}} \notin [\text{pH}_{\min}, \text{pH}_{\max}] \implies x_{i,t} = 0$
+- [x] C-02: Module 5 Disaster Filter — Blocks immediate cycle planting ($x_{i,1} = 0$) for wind- or flood-sensitive crops under active EONET severe storm alerts
+- [x] C-03: Module 5 Diagnostic Output — Structured `discarded` log with deterministic order and bilingual reason explanations
+- [x] C-04: Module 6 (`mod6_milp.py`) — Multi-year planning horizon ($T = 6 \text{ to } 8$ cycles across 3–4 years, alternating PV and OI)
+- [x] C-05: Module 6 Economic Formulation — $\text{Ganancia}_{i,t} = (\text{PrecioVenta}_i \times \text{Rendimiento}_i) - (\text{CostoSemilla}_i + \text{CostoRiego}_i + \text{CostoFertilizante}_i)$
+- [x] C-06: Module 6 Nutrient Constraints — SoilGrids N & SOC calibrates fertilizer cost and enforces annual legume rotation ($\ge 1$ legume per year)
+- [x] C-07: Module 6 Water & Agronomic Constraints — Single crop per slot ($\sum_i x_{i,t} \le 1$), anti-monoculture ($x_{i,t} + x_{i,t+1} \le 1$), single deficit slack $s_t^+ \ge 0$
+- [x] C-08: Module 6 HiGHS Solver — PuLP/Pyomo integration with HiGHS (`highspy`), 30s timeout, deterministic solution
+- [x] C-09: Module 7 (`mod7_pareto.py`) — Dual shadow prices extraction ($y_{\text{agua}} = \text{constraint.pi}$) from continuous LP relaxation
+- [x] C-10: Module 7 Pareto Scalarization — $\max \lambda f_1 + (1-\lambda) f_2$ supporting continuous slider $\lambda \in [0, 1]$ and 5-point discrete sweep $\{0, 0.25, 0.5, 0.75, 1.0\}$
+- [x] C-11: Module 7 Frontier Pruning — Filtering of dominated solutions to guarantee monotone non-increasing profit $f_1$
+- [x] C-12: FastAPI Microservice — `POST /optimize` and `GET /health` endpoints matching `optimizer.schema.json`
+- [x] C-13: End-of-Task Protocol — Pytest suite passes, `docs/AGENT_LOG.md` row appended, `WORKLIST.md` ticked
 
 ---
 
