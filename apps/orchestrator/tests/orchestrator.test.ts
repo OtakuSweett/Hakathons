@@ -9,7 +9,7 @@ import { calculateFAO56ET0 } from '../src/services/et0.js';
 import { computeSoilHydraulics, classifyUSDATexture } from '../src/services/pedotransfer.js';
 import { evaluatePestRisk } from '../src/services/pestRisk.js';
 import { listPresets, loadPresetById } from '../src/services/presets.js';
-import { buildServer } from '../src/server.js';
+import { buildServer, serializeSoilHydraulics } from '../src/server.js';
 import { fetchOpenMeteoArchive } from '../src/ingestion/openMeteoArchive.js';
 import { fetchNasaPowerDaily } from '../src/ingestion/nasaPower.js';
 
@@ -73,6 +73,14 @@ describe('Track A: Soil Hydraulics & Pedotransfer', () => {
     expect(classifyUSDATexture(55.0, 15.0, 30.0)).toBe('Clay');
     expect(classifyUSDATexture(5.0, 90.0, 5.0)).toBe('Sand');
     expect(classifyUSDATexture(10.0, 10.0, 80.0)).toBe('Silt');
+  });
+
+  it('serializes soil response fields in the canonical snake_case contract', () => {
+    const soil = computeSoilHydraulics({ clayPct: 28, sandPct: 32, soilPh: 6.8, socGKg: 14.2 });
+    const response = serializeSoilHydraulics(soil);
+    expect(response).toMatchObject({ soil_ph: 6.8, clay_pct: 28, sand_pct: 32, field_capacity_mm: soil.fieldCapacityMm });
+    expect(response).not.toHaveProperty('soilPh');
+    expect(response).not.toHaveProperty('fieldCapacityMm');
   });
 });
 

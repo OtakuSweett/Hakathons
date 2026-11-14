@@ -13,6 +13,21 @@ import { fetchEonetStormAlerts } from './ingestion/eonet.js';
 import { evaluatePestRisk } from './services/pestRisk.js';
 import { callPhysicsWorker, callOptimizerWorker } from './services/dispatcher.js';
 import { geocoderAttribution, geocoderProvider, searchPlaces } from './services/geocoder.js';
+import { SoilHydraulicsOutput } from './services/pedotransfer.js';
+
+export const serializeSoilHydraulics = (soil: SoilHydraulicsOutput) => ({
+  clay_pct: soil.clayPct,
+  sand_pct: soil.sandPct,
+  silt_pct: soil.siltPct,
+  om_pct: soil.omPct,
+  soil_ph: soil.soilPh,
+  soc_g_kg: soil.socGKg,
+  nitrogen_g_kg: soil.nitrogenGKg,
+  usda_texture_class: soil.usdaTextureClass,
+  field_capacity_mm: soil.fieldCapacityMm,
+  wilting_point_mm: soil.wiltingPointMm,
+  critical_water_mm: soil.criticalWaterMm
+});
 
 export function buildServer(): FastifyInstance {
   const server = Fastify({
@@ -291,7 +306,7 @@ export function buildServer(): FastifyInstance {
       parcel_id: parcelId,
       analyzed_at: new Date().toISOString(),
       coordinates: { lat, lon },
-      soil_hydraulics: soil,
+      soil_hydraulics: serializeSoilHydraulics(soil),
       climate_summary: {
         days_evaluated: climate.dates.length,
         mean_temperature_c: Math.round((climate.t2m_c.reduce((a, b) => a + b, 0) / climate.t2m_c.length) * 10) / 10,
