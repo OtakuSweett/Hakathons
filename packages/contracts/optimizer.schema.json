@@ -167,7 +167,7 @@
             "required": ["crop_id", "reason_code", "reason_text_es", "reason_text_en"],
             "properties": {
               "crop_id": { "type": "string" },
-              "reason_code": { "type": "string", "enum": ["GDD_INSUFFICIENT", "PH_OUT_OF_RANGE"] },
+              "reason_code": { "type": "string", "enum": ["GDD_INSUFFICIENT", "PH_OUT_OF_RANGE", "EXTREME_EVENT_LOCKOUT"] },
               "reason_text_es": { "type": "string" },
               "reason_text_en": { "type": "string" }
             }
