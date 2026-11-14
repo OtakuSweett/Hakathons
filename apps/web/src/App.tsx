@@ -244,7 +244,9 @@ export const App: React.FC = () => {
         let detail = '';
         try {
           const body = await response.json();
-          detail = body?.error?.message || body?.message || '';
+          const code = body?.error?.code;
+          const message = body?.error?.message || body?.message || '';
+          detail = [code, message].filter(Boolean).join(': ');
         } catch { /* The gateway may return an empty or non-JSON error. */ }
         throw new Error(detail || `HTTP ${response.status}`);
       }
