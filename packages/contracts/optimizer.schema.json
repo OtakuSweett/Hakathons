@@ -1,0 +1,206 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nasa-agro-dss/schemas/optimizer.schema.json",
+  "title": "OptimizerSchema",
+  "description": "Contracts for Track C optimizer_worker (Modules 5–7): pre-solver pruning, MILP crop rotation, and Pareto frontier with shadow prices.",
+  "$defs": {
+    "OptimizerInput": {
+      "type": "object",
+      "description": "Payload sent to optimizer_worker/optimize.",
+      "additionalProperties": false,
+      "required": [
+        "parcel_id",
+        "horizon_years",
+        "soil",
+        "candidate_crops",
+        "water_available_mm",
+        "alpha_water_cost_mxn_mm",
+        "beta_deficit_penalty_mxn_mm"
+      ],
+      "properties": {
+        "parcel_id": {
+          "type": "string",
+          "description": "Identifier of the parcel."
+        },
+        "horizon_years": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5,
+          "description": "Planning horizon in years (T = 2 * horizon_years cycles)."
+        },
+        "soil": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["soil_ph", "field_capacity_mm", "wilting_point_mm"],
+          "properties": {
+            "soil_ph": { "type": "number", "minimum": 0, "maximum": 14, "description": "Soil pH." },
+            "field_capacity_mm": { "type": "number", "minimum": 0, "description": "Field capacity in mm." },
+            "wilting_point_mm": { "type": "number", "minimum": 0, "description": "Wilting point in mm." }
+          }
+        },
+        "candidate_crops": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "List of crop IDs from crops_catalog.json to consider."
+        },
+        "water_available_mm": {
+          "type": "array",
+          "items": { "type": "number", "minimum": 0 },
+          "description": "Water allocation cap in mm per cycle t."
+        },
+        "alpha_water_cost_mxn_mm": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Volumetric water cost in MXN per mm."
+        },
+        "beta_deficit_penalty_mxn_mm": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Penalty multiplier in MXN per mm of deficit slack s_t^+."
+        }
+      }
+    },
+    "ParetoPoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "lambda_weight",
+        "profit_mxn_ha",
+        "water_saved_mm",
+        "n_fixed_kg_ha",
+        "water_shadow_price_mxn_mm",
+        "n_shadow_price_mxn_kg_ha",
+        "schedule"
+      ],
+      "properties": {
+        "lambda_weight": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Objective balance weight lambda in [0, 1] (0.0=pure resilience, 1.0=pure profit)."
+        },
+        "profit_mxn_ha": {
+          "type": "number",
+          "description": "Net economic profit in MXN/ha (Objective f1)."
+        },
+        "water_saved_mm": {
+          "type": "number",
+          "description": "Conserved water in mm compared to baseline water quota."
+        },
+        "n_fixed_kg_ha": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Biologically fixed soil nitrogen in kg/ha."
+        },
+        "water_shadow_price_mxn_mm": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Dual shadow price for water constraint (marginal value of 1 extra mm of water in MXN)."
+        },
+        "n_shadow_price_mxn_kg_ha": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Dual shadow price for legume nitrogen constraint in MXN per kg/ha."
+        },
+        "schedule": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["slot_index", "cycle_code", "crop_id"],
+            "properties": {
+              "slot_index": { "type": "integer", "minimum": 0 },
+              "cycle_code": { "type": "string", "enum": ["PV", "OI"] },
+              "crop_id": { "type": "string" }
+            }
+          }
+        }
+      }
+    }
+  },
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "parcel_id",
+    "computed_at",
+    "status",
+    "infeasible_reason",
+    "presolver_summary",
+    "selected_rotation",
+    "pareto_front"
+  ],
+  "properties": {
+    "parcel_id": {
+      "type": "string",
+      "description": "Unique parcel identifier."
+    },
+    "computed_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO-8601 UTC timestamp of optimizer completion."
+    },
+    "status": {
+      "type": "string",
+      "enum": ["Optimal", "Infeasible", "Error"],
+      "description": "Solver status code from PuLP / HiGHS."
+    },
+    "infeasible_reason": {
+      "type": ["string", "null"],
+      "description": "Diagnostic reason if status is Infeasible (e.g., 'LEGUME_CONSTRAINT_UNSATISFIABLE', 'WATER_DEMAND_EXCEEDED')."
+    },
+    "presolver_summary": {
+      "type": "object",
+      "description": "Module 5: Diagnostic output from agronomic pre-solver pruning.",
+      "additionalProperties": false,
+      "required": ["feasible_crop_ids", "discarded"],
+      "properties": {
+        "feasible_crop_ids": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Crops that passed both GDD and soil pH thresholds."
+        },
+        "discarded": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["crop_id", "reason_code", "reason_text_es", "reason_text_en"],
+            "properties": {
+              "crop_id": { "type": "string" },
+              "reason_code": { "type": "string", "enum": ["GDD_INSUFFICIENT", "PH_OUT_OF_RANGE"] },
+              "reason_text_es": { "type": "string" },
+              "reason_text_en": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "selected_rotation": {
+      "type": "array",
+      "description": "Optimal rotation schedule for recommended lambda=0.5 balance.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["slot_index", "cycle_code", "crop_id", "water_need_mm", "profit_mxn_ha", "is_legume", "deficit_slack_mm"],
+        "properties": {
+          "slot_index": { "type": "integer", "minimum": 0 },
+          "cycle_code": { "type": "string", "enum": ["PV", "OI"] },
+          "crop_id": { "type": "string" },
+          "water_need_mm": { "type": "number", "minimum": 0 },
+          "profit_mxn_ha": { "type": "number" },
+          "is_legume": { "type": "boolean" },
+          "deficit_slack_mm": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Soft deficit slack s_t^+ in mm. Note: Surplus slack s_t^- is not modeled and omitted."
+          }
+        }
+      }
+    },
+    "pareto_front": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/ParetoPoint" },
+      "description": "Module 7: Non-dominated Pareto solutions evaluated across lambda in [0.0, 1.0]."
+    }
+  }
+}

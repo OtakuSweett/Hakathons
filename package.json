@@ -1,0 +1,15 @@
+{
+  "name": "nasa-agro-dss",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@12.19.0",
+  "scripts": {
+    "dev": "concurrently \"pnpm --filter orchestrator dev\" \"pnpm --filter web dev\" \"uv run --project services/py-workers uvicorn physics_worker.main:app --port 8001 --reload\" \"uv run --project services/py-workers uvicorn optimizer_worker.main:app --port 8002 --reload\"",
+    "test": "pnpm --filter orchestrator test && pnpm --filter web test",
+    "test:py": "uv run --project services/py-workers pytest",
+    "lint": "pnpm --filter orchestrator lint && pnpm --filter web lint"
+  },
+  "devDependencies": {
+    "concurrently": "10.0.7"
+  }
+}

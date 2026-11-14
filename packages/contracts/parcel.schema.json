@@ -1,0 +1,208 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nasa-agro-dss/schemas/parcel.schema.json",
+  "title": "ClimateSoilBundle",
+  "description": "Input bundle sent from orchestrator to physics_worker and optimizer_worker. Contains parcel metadata, soil properties, 90-day climate arrays, and NDVI time-series.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["parcel_id", "lon", "lat", "source", "fetched_at", "soil", "climate", "ndvi_series"],
+  "properties": {
+    "parcel_id": {
+      "type": "string",
+      "description": "Unique parcel identifier (e.g. 'el_marques_qro')"
+    },
+    "lon": {
+      "type": "number",
+      "minimum": -180,
+      "maximum": 180,
+      "description": "Longitude in decimal degrees, west negative. Querétaro reference: -100.3899"
+    },
+    "lat": {
+      "type": "number",
+      "minimum": -90,
+      "maximum": 90,
+      "description": "Latitude in decimal degrees. Querétaro reference: 20.5888"
+    },
+    "source": {
+      "type": "string",
+      "enum": ["live", "cache", "preset"],
+      "description": "Data provenance: 'live' = fetched from API now, 'cache' = from local cache file, 'preset' = synthetic demonstration bundle"
+    },
+    "fetched_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO-8601 UTC timestamp of when data was fetched or generated (YYYY-MM-DDTHH:mm:ssZ)"
+    },
+    "synthetic": {
+      "type": "boolean",
+      "description": "True if data is synthetically generated for demonstration purposes (must be true when source='preset')"
+    },
+    "soil": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "clay_pct", "sand_pct", "silt_pct", "soil_ph",
+        "soc_g_kg", "nitrogen_g_kg", "om_pct",
+        "field_capacity_mm", "wilting_point_mm", "critical_water_mm"
+      ],
+      "properties": {
+        "clay_pct": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Clay content in % (0-100). From SoilGrids: clay_raw_value / 10. Thickness-weighted mean over 0-30cm."
+        },
+        "sand_pct": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Sand content in % (0-100). From SoilGrids: sand_raw_value / 10. Thickness-weighted mean over 0-30cm."
+        },
+        "silt_pct": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Silt content in % (0-100). Computed as max(0, 100 - clay_pct - sand_pct). Thickness-weighted mean over 0-30cm."
+        },
+        "soil_ph": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 14,
+          "description": "Soil pH in water (pH units, 0-14). From SoilGrids: phh2o_raw_value / 10."
+        },
+        "soc_g_kg": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Soil organic carbon in g/kg. From SoilGrids: soc_raw_value / 10."
+        },
+        "nitrogen_g_kg": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Total nitrogen in g/kg. From SoilGrids: nitrogen_raw_value / 100."
+        },
+        "om_pct": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Organic matter in % (0-100). Computed as (soc_g_kg / 10) * 1.724."
+        },
+        "field_capacity_mm": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Volumetric water content at field capacity in mm, over root zone Z_r=600mm (Saxton-Rawls pedotransfer). Invariant: wilting_point_mm < critical_water_mm < field_capacity_mm."
+        },
+        "wilting_point_mm": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Volumetric water content at permanent wilting point in mm, over root zone Z_r=600mm (Saxton-Rawls pedotransfer). Invariant: wilting_point_mm < critical_water_mm < field_capacity_mm."
+        },
+        "critical_water_mm": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Critical soil water threshold in mm = wilting_point_mm + p * (field_capacity_mm - wilting_point_mm), where p=depletion_p from crops_catalog.json. Invariant: wilting_point_mm < critical_water_mm < field_capacity_mm."
+        },
+        "usda_texture_class": {
+          "type": "string",
+          "description": "USDA texture class derived from clay/sand/silt triangle (e.g. 'SiltLoam', 'ClayLoam', 'SandyLoam', 'SiltyClay')."
+        },
+        "depth_aggregation_rule": {
+          "type": "string",
+          "description": "Depth aggregation method used: thickness-weighted mean of 0-5cm (weight=5/30), 5-15cm (weight=10/30), 15-30cm (weight=15/30)."
+        }
+      }
+    },
+    "climate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["dates", "t2m_max_c", "t2m_min_c", "rh2m_pct", "rs_mj_m2_day", "ps_kpa", "u2_m_s", "precip_mm", "et0_mm"],
+      "properties": {
+        "dates": {
+          "type": "array",
+          "items": { "type": "string", "format": "date" },
+          "description": "Daily dates in YYYY-MM-DD format. Length determines array sizes for all climate variables."
+        },
+        "t2m_max_c": {
+          "type": "array",
+          "items": { "type": ["number", "null"] },
+          "description": "Daily maximum 2m air temperature in °C. null indicates -999 fill value from NASA POWER (gap to be filled by M1 splines)."
+        },
+        "t2m_min_c": {
+          "type": "array",
+          "items": { "type": ["number", "null"] },
+          "description": "Daily minimum 2m air temperature in °C. null indicates -999 fill value from NASA POWER."
+        },
+        "rh2m_pct": {
+          "type": "array",
+          "items": { "type": ["number", "null"] },
+          "description": "Relative humidity at 2m in % (0-100). From NASA POWER RH2M. null indicates gap."
+        },
+        "rs_mj_m2_day": {
+          "type": "array",
+          "items": { "type": ["number", "null"] },
+          "description": "Downwelling solar radiation in MJ/m²/day. From NASA POWER ALLSKY_SFC_SW_DWN. If POWER returns kWh/m²/day, multiply by 3.6 to convert."
+        },
+        "ps_kpa": {
+          "type": "array",
+          "items": { "type": ["number", "null"] },
+          "description": "Surface pressure in kPa (≥0). From NASA POWER PS."
+        },
+        "u2_m_s": {
+          "type": "array",
+          "items": { "type": ["number", "null"] },
+          "description": "Wind speed at 2m height in m/s (≥0). Prefer WS2M from NASA POWER. Use u10×0.748 only if WS2M unavailable."
+        },
+        "precip_mm": {
+          "type": "array",
+          "items": { "type": ["number", "null"] },
+          "description": "Precipitation in mm/day (≥0). From NASA POWER PRECTOTCORR."
+        },
+        "et0_mm": {
+          "type": "array",
+          "items": { "type": ["number", "null"] },
+          "description": "Reference evapotranspiration in mm/day (≥0). Computed by orchestrator via FAO-56 Penman-Monteith. null only if required inputs are missing."
+        },
+        "gwetroot": {
+          "type": "array",
+          "items": { "type": ["number", "null"] },
+          "description": "Root zone soil wetness fraction (0-1) from NASA POWER GWETROOT. Used for W(0) calibration in Open-Meteo fallback."
+        },
+        "soil_moisture_vol": {
+          "type": "array",
+          "items": { "type": ["number", "null"] },
+          "description": "Volumetric soil moisture in m³/m³ (0-1, NOT percent). From Open-Meteo soil_moisture_0_to_1cm or SMAP. W(0) = soil_moisture_vol[0] * Z_r where Z_r=600mm."
+        }
+      }
+    },
+    "ndvi_series": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["dates", "ndvi"],
+      "properties": {
+        "dates": {
+          "type": "array",
+          "items": { "type": "string", "format": "date" },
+          "description": "16-day composite acquisition dates in YYYY-MM-DD (MOD13A2 cadence from AppEEARS/GIBS)."
+        },
+        "ndvi": {
+          "type": "array",
+          "items": { "type": ["number", "null"] },
+          "description": "NDVI values in range -1 to 1. null = cloud-contaminated gap; Module 1 (natural cubic spline TDMA) fills nulls before Modules 2-4."
+        },
+        "qa_cloud_mask": {
+          "type": "array",
+          "items": { "type": ["integer", "null"] },
+          "description": "QA cloud mask flag from MOD13A2 (0=clear, 1=cloud/gap). Aligns with ndvi array."
+        }
+      }
+    },
+    "crop_id": {
+      "type": "string",
+      "description": "Active crop ID referencing crops_catalog.json (e.g. 'maize'). Used for W(0) calibration via depletion_p and for GDD t_base lookup."
+    },
+    "horizon_years": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 10,
+      "description": "Planning horizon in years for MILP optimizer. T = horizon_years × 2 cycles/year."
+    }
+  }
+}

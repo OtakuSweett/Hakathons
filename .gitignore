@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+*.egg-info/
+
+# Environment — NEVER commit real secrets
+.env
+.env.local
+.env.*.local
+
+# Runtime cache (keep data/presets — it has committed JSON)
+data/cache/*
+!data/cache/.gitkeep
+
+# Build outputs
+dist/
+build/
+.turbo/
+
+# Editor
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Lockfiles ARE committed (pnpm-lock.yaml, uv.lock)
+# node_modules and .venv are NOT

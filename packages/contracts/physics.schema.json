@@ -1,0 +1,139 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nasa-agro-dss/schemas/physics.schema.json",
+  "title": "PhysicsOutput",
+  "description": "Simulation outputs from physics_worker (Modules 1–4): natural cubic splines, GDD accumulation, soil water balance RK4, and Newton-Raphson irrigation trigger.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "parcel_id",
+    "computed_at",
+    "source",
+    "spline_result",
+    "gdd_result",
+    "water_balance",
+    "irrigation_trigger"
+  ],
+  "properties": {
+    "parcel_id": {
+      "type": "string",
+      "description": "Unique parcel identifier matching the input ClimateSoilBundle."
+    },
+    "computed_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO-8601 UTC timestamp of computation completion."
+    },
+    "source": {
+      "type": "string",
+      "enum": ["live", "cache", "preset"],
+      "description": "Origin of input data used for physics computation."
+    },
+    "spline_result": {
+      "type": "object",
+      "description": "Module 1: Gap-filled NDVI trajectory generated via natural cubic spline (TDMA).",
+      "additionalProperties": false,
+      "required": ["dates", "ndvi_filled", "used_tdma"],
+      "properties": {
+        "dates": {
+          "type": "array",
+          "items": { "type": "string", "format": "date" },
+          "description": "Evaluation date coordinates (daily or 16-day composite)."
+        },
+        "ndvi_filled": {
+          "type": "array",
+          "items": { "type": "number", "minimum": -1, "maximum": 1 },
+          "description": "Continuous NDVI values with all cloud gaps interpolated. No null or NaN allowed."
+        },
+        "used_tdma": {
+          "type": "boolean",
+          "description": "True if solved with explicit Thomas algorithm (TDMA), verified against SciPy."
+        }
+      }
+    },
+    "gdd_result": {
+      "type": "object",
+      "description": "Module 2: Thermal time accumulation via composite Simpson 1/3 integration.",
+      "additionalProperties": false,
+      "required": ["crop_id", "t_base_c", "gdd_accumulated", "dates"],
+      "properties": {
+        "crop_id": {
+          "type": "string",
+          "description": "Crop identifier evaluated."
+        },
+        "t_base_c": {
+          "type": "number",
+          "description": "Base temperature in °C used for integration threshold."
+        },
+        "gdd_accumulated": {
+          "type": "array",
+          "items": { "type": "number", "minimum": 0 },
+          "description": "Cumulative Growing Degree Days (°C-days) over time. Monotonically non-decreasing."
+        },
+        "dates": {
+          "type": "array",
+          "items": { "type": "string", "format": "date" },
+          "description": "Corresponding timeline dates."
+        }
+      }
+    },
+    "water_balance": {
+      "type": "object",
+      "description": "Module 3: Daily soil moisture storage W(t) computed via explicit RK4 numerical integration.",
+      "additionalProperties": false,
+      "required": ["dates", "w_mm", "et0_mm", "etc_mm", "precip_mm", "drainage_mm"],
+      "properties": {
+        "dates": {
+          "type": "array",
+          "items": { "type": "string", "format": "date" },
+          "description": "Daily simulation dates."
+        },
+        "w_mm": {
+          "type": "array",
+          "items": { "type": "number", "minimum": 0 },
+          "description": "Root zone available water storage in mm over Zr=600mm. Invariant: 0 <= W(t)."
+        },
+        "et0_mm": {
+          "type": "array",
+          "items": { "type": "number", "minimum": 0 },
+          "description": "Reference evapotranspiration in mm/day (FAO-56 Penman-Monteith)."
+        },
+        "etc_mm": {
+          "type": "array",
+          "items": { "type": "number", "minimum": 0 },
+          "description": "Crop evapotranspiration under water stress in mm/day."
+        },
+        "precip_mm": {
+          "type": "array",
+          "items": { "type": "number", "minimum": 0 },
+          "description": "Daily effective precipitation in mm."
+        },
+        "drainage_mm": {
+          "type": "array",
+          "items": { "type": "number", "minimum": 0 },
+          "description": "Deep percolation drainage in mm/day when W > field_capacity_mm."
+        }
+      }
+    },
+    "irrigation_trigger": {
+      "type": "object",
+      "description": "Module 4: Newton-Raphson trigger timing when W(t) drops to critical threshold Wcrit.",
+      "additionalProperties": false,
+      "required": ["t_star_days", "delta_i_mm", "reason"],
+      "properties": {
+        "t_star_days": {
+          "type": ["number", "null"],
+          "description": "Exact day offset when irrigation is required (f(t*)=0), or null if threshold is never crossed."
+        },
+        "delta_i_mm": {
+          "type": ["number", "null"],
+          "description": "Recommended irrigation depth in mm = field_capacity_mm - critical_water_mm."
+        },
+        "reason": {
+          "type": ["string", "null"],
+          "description": "Diagnostic reason if t_star_days is null (e.g. 'W_never_crosses_Wcrit', 'W_already_below_Wcrit')."
+        }
+      }
+    }
+  }
+}
