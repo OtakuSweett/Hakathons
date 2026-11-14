@@ -111,6 +111,7 @@
 - [x] I-07: Full DSS End-to-End Suite Verification — All 29 unit, contract, physics, optimization and gateway tests passing at 100%
 
 ### Open Integration TODO
-- [ ] A-17: Add an orchestrator geocoding endpoint for place-name search (with provider, privacy, and attribution configured server-side); Track D must not call external services directly from the browser.
+- [x] A-17: Add an orchestrator geocoding endpoint for place-name search (with provider, privacy, and attribution configured server-side); Track D must not call external services directly from the browser.
 - [x] D-14: Live-location workflow, search by coordinates, bounded map selection, all 20 crop choices, presentation screen, and field-observation recovery
 - [x] D-15: Put the interactive map on location step; show crop-based per-cycle water estimates, explain EONET alert radius, and surface API failure detail with retry
+- [x] A-18: Add NASA POWER → Open-Meteo Archive climate fallback, exact-source provenance, explicit SoilGrids failure without synthetic soil substitution, EONET outage status, and parallel provider ingestion

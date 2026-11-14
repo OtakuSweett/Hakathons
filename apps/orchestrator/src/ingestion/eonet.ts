@@ -53,7 +53,7 @@ export async function fetchEonetStormAlerts(
   lat: number,
   lon: number,
   maxRadiusKm = 150.0
-): Promise<{ alerts: IntersectingStormAlert[]; rawEvents: any[] }> {
+): Promise<{ alerts: IntersectingStormAlert[]; rawEvents: any[]; retrieval: 'live' | 'unavailable'; fallback_reason?: string }> {
   const url = 'https://eonet.gsfc.nasa.gov/api/v3/events/geojson?category=severeStorms&status=open';
 
   try {
@@ -64,7 +64,7 @@ export async function fetchEonetStormAlerts(
     clearTimeout(timeout);
 
     if (!res.ok) {
-      return { alerts: [], rawEvents: [] };
+      return { alerts: [], rawEvents: [], retrieval: 'unavailable', fallback_reason: `NASA EONET returned HTTP ${res.status}` };
     }
 
     const data = await res.json() as Record<string, any>;
@@ -114,9 +114,9 @@ export async function fetchEonetStormAlerts(
       }
     }
 
-    return { alerts, rawEvents: features.slice(0, 20) };
-  } catch {
+    return { alerts, rawEvents: features.slice(0, 20), retrieval: 'live' };
+  } catch (error) {
     // Graceful fallback to empty alerts if NASA EONET is unreachable
-    return { alerts: [], rawEvents: [] };
+    return { alerts: [], rawEvents: [], retrieval: 'unavailable', fallback_reason: error instanceof Error ? error.message : 'network error' };
   }
 }

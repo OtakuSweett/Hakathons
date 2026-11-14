@@ -6,6 +6,8 @@
 
 import { calculateFAO56ET0 } from '../services/et0.js';
 import { readCache, writeCache, getNearestPreset } from '../services/presets.js';
+import { fetchOpenMeteoArchive } from './openMeteoArchive.js';
+import { AppError } from '../utils/errors.js';
 
 export interface ClimateDailySeries {
   dates: string[];
@@ -18,6 +20,10 @@ export interface ClimateDailySeries {
   ps_kpa: number[];
   precip_mm: number[];
   et0_mm: number[];
+  provider?: 'nasa_power' | 'open_meteo_archive' | 'regional_benchmark';
+  retrieval?: 'live' | 'live_fallback' | 'cache' | 'preset_fallback';
+  fetched_at?: string;
+  fallback_reason?: string;
 }
 
 export async function fetchNasaPowerDaily(
@@ -29,7 +35,8 @@ export async function fetchNasaPowerDaily(
   const cacheKey = `climate_${lat.toFixed(4)}_${lon.toFixed(4)}`;
   const cached = readCache(cacheKey);
   if (cached && (cached as unknown as ClimateDailySeries).dates?.length >= 30) {
-    return cached as unknown as ClimateDailySeries;
+    const series = cached as unknown as ClimateDailySeries;
+    return { ...series, provider: series.provider || 'nasa_power', retrieval: 'cache' };
   }
 
   // NASA POWER observational data has a 2-day latency
@@ -139,16 +146,31 @@ export async function fetchNasaPowerDaily(
       rs_mj_m2_day,
       ps_kpa,
       precip_mm,
-      et0_mm
+      et0_mm,
+      provider: 'nasa_power',
+      retrieval: 'live',
+      fetched_at: new Date().toISOString()
     };
 
     writeCache(cacheKey, series as unknown as Record<string, unknown>);
     return series;
   } catch (err: unknown) {
+    const cause = err instanceof Error ? err.message : 'unknown provider error';
     if (allowFallback) {
       const nearest = getNearestPreset(lat, lon) as Record<string, any>;
       if (nearest && nearest.climate) {
-        return nearest.climate as ClimateDailySeries;
+        return { ...(nearest.climate as ClimateDailySeries), provider: 'regional_benchmark', retrieval: 'preset_fallback', fallback_reason: cause };
+      }
+    } else {
+      try {
+        const archive = await fetchOpenMeteoArchive(lat, lon, startDate, endDate);
+        writeCache(cacheKey, archive as unknown as Record<string, unknown>);
+        return archive;
+      } catch (fallbackError) {
+        throw new AppError('CLIMATE_SOURCES_UNAVAILABLE', 'NASA POWER and the historical weather fallback are unavailable for this location.', 503, {
+          nasa_power: cause,
+          open_meteo_archive: fallbackError instanceof Error ? fallbackError.message : 'unknown provider error'
+        });
       }
     }
     throw err;

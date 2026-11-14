@@ -25,6 +25,11 @@ export interface SoilHydraulicsOutput {
   fieldCapacityMm: number;
   wiltingPointMm: number;
   criticalWaterMm: number;
+  provider?: 'soilgrids' | 'regional_benchmark';
+  retrieval?: 'live' | 'cache' | 'preset_fallback';
+  fetched_at?: string;
+  fallback_reason?: string;
+  fallback_preset_id?: string;
 }
 
 export function classifyUSDATexture(clay: number, sand: number, silt: number): string {

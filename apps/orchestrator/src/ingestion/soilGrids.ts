@@ -6,7 +6,7 @@
 
 import { AppError } from '../utils/errors.js';
 import { computeSoilHydraulics, SoilHydraulicsOutput } from '../services/pedotransfer.js';
-import { readCache, writeCache } from '../services/presets.js';
+import { getNearestPreset, readCache, writeCache } from '../services/presets.js';
 
 export interface SoilGridsLayer {
   name: string;
@@ -28,12 +28,13 @@ export interface SoilGridsResponse {
 export async function fetchSoilGrids(
   lat: number,
   lon: number,
-  allowFallback = true
+  allowFallback = false
 ): Promise<SoilHydraulicsOutput> {
   const cacheKey = `soil_${lat.toFixed(4)}_${lon.toFixed(4)}`;
   const cached = readCache(cacheKey);
   if (cached) {
-    return cached as unknown as SoilHydraulicsOutput;
+    const soil = cached as unknown as SoilHydraulicsOutput;
+    return { ...soil, provider: soil.provider || 'soilgrids', retrieval: 'cache' };
   }
 
   const url = `https://rest.isric.org/soilgrids/v2.0/properties/query?lon=${lon}&lat=${lat}&property=clay&property=sand&property=silt&property=phh2o&property=soc&property=nitrogen&depth=0-5cm&depth=5-15cm&depth=15-30cm&value=mean`;
@@ -100,13 +101,18 @@ export async function fetchSoilGrids(
     const socGKg = (socRaw || 150) / 10.0;
     const nitrogenGKg = (nRaw || 150) / 100.0;
 
-    const hydraulics = computeSoilHydraulics({
+    const hydraulics = {
+      ...computeSoilHydraulics({
       clayPct,
       sandPct,
       soilPh,
       socGKg,
       nitrogenGKg
-    });
+      }),
+      provider: 'soilgrids' as const,
+      retrieval: 'live' as const,
+      fetched_at: new Date().toISOString()
+    };
 
     writeCache(cacheKey, hydraulics as unknown as Record<string, unknown>);
     return hydraulics;
@@ -116,17 +122,33 @@ export async function fetchSoilGrids(
     }
 
     if (allowFallback) {
-      // Offline fallback: typical agricultural loam
-      const defaultHydraulics = computeSoilHydraulics({
-        clayPct: 28.0,
-        sandPct: 32.0,
-        soilPh: 6.8,
-        socGKg: 14.0,
-        nitrogenGKg: 1.4
-      });
+      const benchmark = getNearestPreset(lat, lon);
+      const soil = benchmark.soil as Record<string, unknown> | undefined;
+      if (!soil) throw new AppError('SOIL_BENCHMARK_INVALID', 'The selected offline benchmark has no soil profile.', 503);
+      const defaultHydraulics = {
+        clayPct: Number(soil.clay_pct),
+        sandPct: Number(soil.sand_pct),
+        siltPct: Number(soil.silt_pct),
+        soilPh: Number(soil.soil_ph),
+        socGKg: Number(soil.soc_g_kg),
+        nitrogenGKg: Number(soil.nitrogen_g_kg),
+        omPct: Number(soil.om_pct),
+        usdaTextureClass: String(soil.usda_texture_class),
+        fieldCapacityMm: Number(soil.field_capacity_mm),
+        wiltingPointMm: Number(soil.wilting_point_mm),
+        criticalWaterMm: Number(soil.critical_water_mm),
+        provider: 'regional_benchmark' as const,
+        retrieval: 'preset_fallback' as const,
+        fetched_at: new Date().toISOString(),
+        fallback_reason: err instanceof Error ? err.message : 'upstream unavailable',
+        fallback_preset_id: String(benchmark.parcel_id || 'unknown')
+      };
+      if (Object.values(defaultHydraulics).some((value) => typeof value === 'number' && !Number.isFinite(value))) {
+        throw new AppError('SOIL_BENCHMARK_INVALID', 'The selected offline benchmark has an incomplete soil profile.', 503, { preset_id: benchmark.parcel_id });
+      }
       return defaultHydraulics;
     }
 
-    throw new AppError('SOILGRIDS_UNAVAILABLE', `Failed to retrieve soil data: ${(err as Error).message}`, 503);
+    throw new AppError('SOILGRIDS_UNAVAILABLE', `SoilGrids is unavailable and there is no exact-coordinate soil cache. No nearby or demo soil values were substituted. ${(err as Error).message}`, 503, { provider: 'SoilGrids', cache_key: cacheKey });
   }
 }

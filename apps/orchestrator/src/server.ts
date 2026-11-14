@@ -12,6 +12,7 @@ import { fetchNasaPowerDaily } from './ingestion/nasaPower.js';
 import { fetchEonetStormAlerts } from './ingestion/eonet.js';
 import { evaluatePestRisk } from './services/pestRisk.js';
 import { callPhysicsWorker, callOptimizerWorker } from './services/dispatcher.js';
+import { geocoderAttribution, geocoderProvider, searchPlaces } from './services/geocoder.js';
 
 export function buildServer(): FastifyInstance {
   const server = Fastify({
@@ -26,7 +27,7 @@ export function buildServer(): FastifyInstance {
   server.setErrorHandler((error, request, reply) => {
     const statusCode = (error as any).statusCode || (error instanceof AppError ? error.statusCode : 500);
     const code = (error as any).code || 'INTERNAL_SERVER_ERROR';
-    const message = error.message || 'An unexpected internal error occurred.';
+    const message = error instanceof Error ? error.message : 'An unexpected internal error occurred.';
     const details = (error as any).details || {};
 
     reply.status(statusCode).send({
@@ -41,6 +42,11 @@ export function buildServer(): FastifyInstance {
   // 1. Health check
   server.get('/health', async () => {
     return { status: 'ok', service: 'orchestrator' };
+  });
+
+  server.get<{ Querystring: { q?: string; lang?: string } }>('/api/geocode', async (request) => {
+    const results = await searchPlaces(request.query.q || '', request.query.lang || 'es');
+    return { results, provider: geocoderProvider(), attribution: geocoderAttribution() };
   });
 
   // 2. Presets listing & retrieval
@@ -60,10 +66,12 @@ export function buildServer(): FastifyInstance {
   server.get<{ Querystring: { lat?: string; lon?: string } }>('/api/events', async (request) => {
     const lat = request.query.lat ? parseFloat(request.query.lat) : 20.59;
     const lon = request.query.lon ? parseFloat(request.query.lon) : -100.39;
-    const { alerts, rawEvents } = await fetchEonetStormAlerts(lat, lon);
+    const { alerts, rawEvents, retrieval, fallback_reason } = await fetchEonetStormAlerts(lat, lon);
     return {
       parcelCoordinates: [lon, lat],
       intersectingAlerts: alerts,
+      retrieval,
+      fallback_reason,
       openEventsCount: rawEvents.length,
       events: rawEvents
     };
@@ -78,7 +86,7 @@ export function buildServer(): FastifyInstance {
       const parcelId = request.query.parcel_id || 'parcel_custom';
       const cropId = request.query.crop_id || 'maize';
 
-      const climate = await fetchNasaPowerDaily(lat, lon, 30);
+      const climate = await fetchNasaPowerDaily(lat, lon, 30, false);
       const risk = evaluatePestRisk(
         parcelId,
         {
@@ -119,6 +127,9 @@ export function buildServer(): FastifyInstance {
         source = 'preset';
         const preset = loadPresetById(request.query.presetId);
         if (preset) {
+          if (typeof preset.lat !== 'number' || typeof preset.lon !== 'number' || typeof preset.parcel_id !== 'string') {
+            throw new AppError('PRESET_INVALID', 'The selected benchmark is missing valid coordinates or an ID.', 500, { preset_id: request.query.presetId });
+          }
           lat = preset.lat;
           lon = preset.lon;
           parcelId = preset.parcel_id;
@@ -146,28 +157,31 @@ export function buildServer(): FastifyInstance {
     const lat = typeof body.lat === 'number' ? body.lat : 20.5922;
     const lon = typeof body.lon === 'number' ? body.lon : -100.1972;
     const parcelId = body.parcel_id || 'parcel_live';
-    const source = body.source || 'live';
+    const requestedSource = body.source || 'live';
     const horizonYears = body.horizon_years || 3;
     const cropId = body.crop_id || 'maize';
     const areaHa = body.area_ha || 15.0;
 
     // A. Ingest soil (triggers 422 NON_ARABLE_LAND if ocean/urban)
-    const soil = await fetchSoilGrids(lat, lon, source === 'preset');
-
-    // B. Ingest climate (NASA POWER + FAO-56 Penman-Monteith)
-    const climate = await fetchNasaPowerDaily(lat, lon, 90, source === 'preset');
-
-    // C. Check EONET extreme events
-    const { alerts } = await fetchEonetStormAlerts(lat, lon);
+    // Independent providers run concurrently to avoid serially stacking their timeouts.
+    const [soil, climate, eonet] = await Promise.all([
+      fetchSoilGrids(lat, lon, requestedSource === 'preset'),
+      fetchNasaPowerDaily(lat, lon, 90, requestedSource === 'preset'),
+      fetchEonetStormAlerts(lat, lon)
+    ]);
+    const { alerts } = eonet;
+    const usedRegionalBenchmark = soil.retrieval === 'preset_fallback' || climate.retrieval === 'preset_fallback';
+    const effectiveSource = usedRegionalBenchmark ? 'preset' : soil.retrieval === 'cache' && climate.retrieval === 'cache' ? 'cache' : 'live';
+    const workerFallbacks: string[] = [];
 
     // D. Assemble ClimateSoilBundle
     const climateSoilBundle = {
       parcel_id: parcelId,
       lon,
       lat,
-      source,
+      source: effectiveSource,
       fetched_at: new Date().toISOString(),
-      synthetic: source === 'preset',
+      synthetic: usedRegionalBenchmark,
       soil: {
         clay_pct: soil.clayPct,
         sand_pct: soil.sandPct,
@@ -199,6 +213,7 @@ export function buildServer(): FastifyInstance {
       physicsResult = await callPhysicsWorker(climateSoilBundle);
     } catch {
       // Fallback response if physics worker not online
+      workerFallbacks.push('physics_worker');
       physicsResult = {
         parcel_id: parcelId,
         computed_at: new Date().toISOString(),
@@ -250,6 +265,7 @@ export function buildServer(): FastifyInstance {
       optimizerResult = await callOptimizerWorker(optimizerInput);
     } catch {
       // Fallback response if optimizer worker not online
+      workerFallbacks.push('optimizer_worker');
       optimizerResult = {
         parcel_id: parcelId,
         computed_at: new Date().toISOString(),
@@ -283,6 +299,12 @@ export function buildServer(): FastifyInstance {
         total_et0_mm: Math.round(climate.et0_mm.reduce((a, b) => a + b, 0))
       },
       eonet_hazard_alerts: alerts,
+      data_provenance: {
+        soil: { provider: soil.provider || 'soilgrids', retrieval: soil.retrieval || 'live', fetched_at: soil.fetched_at, fallback_reason: soil.fallback_reason, preset_id: soil.fallback_preset_id },
+        climate: { provider: climate.provider || 'nasa_power', retrieval: climate.retrieval || 'live', fetched_at: climate.fetched_at, fallback_reason: climate.fallback_reason },
+        eonet: { provider: 'nasa_eonet', retrieval: eonet.retrieval, fallback_reason: eonet.fallback_reason },
+        workers: { fallback: workerFallbacks }
+      },
       physics: physicsResult,
       optimization: optimizerResult
     };

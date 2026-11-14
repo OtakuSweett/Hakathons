@@ -4,12 +4,14 @@
  * non-arable land validation, and server endpoints.
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { calculateFAO56ET0 } from '../src/services/et0.js';
 import { computeSoilHydraulics, classifyUSDATexture } from '../src/services/pedotransfer.js';
 import { evaluatePestRisk } from '../src/services/pestRisk.js';
 import { listPresets, loadPresetById } from '../src/services/presets.js';
 import { buildServer } from '../src/server.js';
+import { fetchOpenMeteoArchive } from '../src/ingestion/openMeteoArchive.js';
+import { fetchNasaPowerDaily } from '../src/ingestion/nasaPower.js';
 
 describe('Track A: FAO-56 Penman-Monteith ET0 Calculation', () => {
   it('verifies against FAO-56 Brussels golden vector (3.75 +/- 0.05 mm/day)', () => {
@@ -120,6 +122,19 @@ describe('Track A: Fastify Server & API Endpoints', () => {
     expect(body.error.code).toBe('PRESET_NOT_FOUND');
   });
 
+  it('geocodes place names through the server and returns map bounds plus attribution', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify([{
+      lat: '20.5888', lon: '-100.3899', display_name: 'Querétaro, Mexico', addresstype: 'city', boundingbox: ['20.4', '20.7', '-100.6', '-100.2']
+    }]), { status: 200, headers: { 'content-type': 'application/json' } })));
+    const res = await app.inject({ method: 'GET', url: '/api/geocode?q=Quer%C3%A9taro&lang=es' });
+    vi.unstubAllGlobals();
+    expect(res.statusCode).toBe(200);
+    const body = JSON.parse(res.body);
+    expect(body.provider).toBe('OpenStreetMap Nominatim');
+    expect(body.attribution).toContain('OpenStreetMap');
+    expect(body.results[0]).toMatchObject({ lat: 20.5888, lon: -100.3899, name: 'Querétaro, Mexico', bounds: [[20.4, -100.6], [20.7, -100.2]] });
+  });
+
   it('allows crowdsourced farmer reports submission', async () => {
     const res = await app.inject({
       method: 'POST',
@@ -135,5 +150,61 @@ describe('Track A: Fastify Server & API Endpoints', () => {
     const body = JSON.parse(res.body);
     expect(body.reportId).toBeDefined();
     expect(body.submittedAt).toBeDefined();
+  });
+});
+
+describe('Track A: Open-Meteo Archive climate fallback', () => {
+  it('aggregates hourly data to Local Solar Time and computes ET0 with parcel coordinates', async () => {
+    const start = new Date('2026-08-01T00:00:00Z');
+    const times = Array.from({ length: 24 }, (_, hour) => `2026-08-01T${String(hour).padStart(2, '0')}:00`);
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ hourly: {
+      time: times,
+      temperature_2m: Array(24).fill(20),
+      relative_humidity_2m: Array(24).fill(60),
+      wind_speed_10m: Array(24).fill(10),
+      shortwave_radiation: Array(24).fill(200),
+      surface_pressure: Array(24).fill(850),
+      precipitation: Array(24).fill(0)
+    } }), { status: 200, headers: { 'content-type': 'application/json' } })));
+    const result = await fetchOpenMeteoArchive(0, 0, start, start);
+    vi.unstubAllGlobals();
+    expect(result.provider).toBe('open_meteo_archive');
+    expect(result.retrieval).toBe('live_fallback');
+    expect(result.dates).toEqual(['2026-08-01']);
+    expect(result.rs_mj_m2_day[0]).toBeCloseTo(17.28, 5);
+    expect(result.u2_m_s[0]).toBeCloseTo(10 / 3.6 * 0.748, 5);
+    expect(result.et0_mm[0]).toBeGreaterThan(0);
+  });
+
+  it('uses Open-Meteo Archive only after NASA POWER fails for a live parcel', async () => {
+    const end = new Date();
+    end.setDate(end.getDate() - 2);
+    const start = new Date(end);
+    start.setDate(start.getDate() - 1);
+    const first = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), start.getUTCDate() - 1));
+    const last = new Date(Date.UTC(end.getUTCFullYear(), end.getUTCMonth(), end.getUTCDate() + 1, 23));
+    const times: string[] = [];
+    for (let hour = first.getTime(); hour <= last.getTime(); hour += 3_600_000) {
+      const stamp = new Date(hour);
+      times.push(`${stamp.toISOString().slice(0, 10)}T${stamp.toISOString().slice(11, 16)}`);
+    }
+    const mockedFetch = vi.fn()
+      .mockResolvedValueOnce(new Response('NASA unavailable', { status: 503 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ hourly: {
+        time: times,
+        temperature_2m: Array(times.length).fill(20),
+        relative_humidity_2m: Array(times.length).fill(60),
+        wind_speed_10m: Array(times.length).fill(10),
+        shortwave_radiation: Array(times.length).fill(200),
+        surface_pressure: Array(times.length).fill(850),
+        precipitation: Array(times.length).fill(0)
+      } }), { status: 200, headers: { 'content-type': 'application/json' } }));
+    vi.stubGlobal('fetch', mockedFetch);
+    const result = await fetchNasaPowerDaily(0, 0, 1, false);
+    vi.unstubAllGlobals();
+    expect(mockedFetch).toHaveBeenCalledTimes(2);
+    expect(result.provider).toBe('open_meteo_archive');
+    expect(result.retrieval).toBe('live_fallback');
+    expect(result.dates).toHaveLength(2);
   });
 });
