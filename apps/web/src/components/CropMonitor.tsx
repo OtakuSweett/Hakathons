@@ -215,7 +215,7 @@ export const CropMonitor: React.FC<CropMonitorProps> = ({ data, lang }) => {
                 <div className="bg-white p-2.5 rounded-lg border border-[#e2eae5]">
                   <div className="flex justify-between text-xs mb-1">
                     <span className="text-[#236040] font-bold">{t.fcLabel}</span>
-                    <span className="font-mono text-[#1b362b] font-semibold">{sh?.field_capacity_mm.toFixed(0) || 165} mm</span>
+                    <span className="font-mono text-[#1b362b] font-semibold">{(sh?.field_capacity_mm ?? 165).toFixed(0)} mm</span>
                   </div>
                   <div className="w-full bg-[#e3eae5] rounded-full h-2">
                     <div className="bg-[#2f6b4f] h-2 rounded-full" style={{ width: '100%' }} />
@@ -238,20 +238,20 @@ export const CropMonitor: React.FC<CropMonitorProps> = ({ data, lang }) => {
                 <div className="bg-white p-2.5 rounded-lg border border-[#e2eae5]">
                   <div className="flex justify-between text-xs mb-1">
                     <span className="text-[#925f19] font-bold">{t.critLabel}</span>
-                    <span className="font-mono text-[#1b362b] font-semibold">{sh?.critical_water_mm.toFixed(0) || 122} mm</span>
+                    <span className="font-mono text-[#1b362b] font-semibold">{(sh?.critical_water_mm ?? 122).toFixed(0)} mm</span>
                   </div>
                   <div className="w-full bg-[#e3eae5] rounded-full h-2">
-                    <div className="bg-[#b47a24] h-2 rounded-full" style={{ width: `${((sh?.critical_water_mm || 122) / (sh?.field_capacity_mm || 180)) * 100}%` }} />
+                    <div className="bg-[#b47a24] h-2 rounded-full" style={{ width: `${(((sh?.critical_water_mm ?? 122)) / (sh?.field_capacity_mm || 180)) * 100}%` }} />
                   </div>
                 </div>
 
                 <div className="bg-white p-2.5 rounded-lg border border-[#e2eae5]">
                   <div className="flex justify-between text-xs mb-1">
                     <span className="text-[#a43b29] font-bold">{t.wpLabel}</span>
-                    <span className="font-mono text-[#1b362b] font-semibold">{sh?.wilting_point_mm.toFixed(0) || 80} mm</span>
+                    <span className="font-mono text-[#1b362b] font-semibold">{(sh?.wilting_point_mm ?? 80).toFixed(0)} mm</span>
                   </div>
                   <div className="w-full bg-[#e3eae5] rounded-full h-2">
-                    <div className="bg-[#c2412b] h-2 rounded-full" style={{ width: `${((sh?.wilting_point_mm || 80) / (sh?.field_capacity_mm || 180)) * 100}%` }} />
+                    <div className="bg-[#c2412b] h-2 rounded-full" style={{ width: `${(((sh?.wilting_point_mm ?? 80)) / (sh?.field_capacity_mm || 180)) * 100}%` }} />
                   </div>
                 </div>
               </div>
@@ -388,22 +388,22 @@ export const CropMonitor: React.FC<CropMonitorProps> = ({ data, lang }) => {
                 <tbody className="divide-y divide-[#e2eae5] bg-white">
                   <tr className="hover:bg-[#f9fbf9]">
                     <td className="py-2 px-3 font-semibold text-[#1e583d]">{t.fcLabel}</td>
-                    <td className="py-2 px-3 text-right font-mono text-[#173d30]">{sh.field_capacity_mm.toFixed(0)} mm</td>
+                    <td className="py-2 px-3 text-right font-mono text-[#173d30]">{(sh.field_capacity_mm ?? 165).toFixed(0)} mm</td>
                     <td className="py-2 px-3 text-[#526a5c] text-[11px]">{lang === 'es' ? 'Límite máximo de retención sin pérdida por drenaje' : 'Maximum water retention without deep drainage'}</td>
                   </tr>
                   <tr className="hover:bg-[#f9fbf9]">
                     <td className="py-2 px-3 font-semibold text-[#b47a24]">{t.critLabel}</td>
-                    <td className="py-2 px-3 text-right font-mono text-[#b47a24]">{sh.critical_water_mm.toFixed(0)} mm</td>
+                    <td className="py-2 px-3 text-right font-mono text-[#b47a24]">{(sh.critical_water_mm ?? 122).toFixed(0)} mm</td>
                     <td className="py-2 px-3 text-[#526a5c] text-[11px]">{lang === 'es' ? 'Umbral donde comienza el estrés hídrico; detona riego' : 'Moisture threshold where stress begins; triggers irrigation'}</td>
                   </tr>
                   <tr className="hover:bg-[#f9fbf9]">
                     <td className="py-2 px-3 font-semibold text-[#c2412b]">{t.wpLabel}</td>
-                    <td className="py-2 px-3 text-right font-mono text-[#c2412b]">{sh.wilting_point_mm.toFixed(0)} mm</td>
+                    <td className="py-2 px-3 text-right font-mono text-[#c2412b]">{(sh.wilting_point_mm ?? 80).toFixed(0)} mm</td>
                     <td className="py-2 px-3 text-[#526a5c] text-[11px]">{lang === 'es' ? 'Límite de sequedad donde la raíz no puede absorber agua' : 'Moisture limit where plant roots cannot extract water'}</td>
                   </tr>
                   <tr className="hover:bg-[#f9fbf9]">
                     <td className="py-2 px-3 font-semibold text-[#1a5b6c]">{lang === 'es' ? 'Agua Disponible (RAW)' : 'Readily Available Water (RAW)'}</td>
-                    <td className="py-2 px-3 text-right font-mono text-[#1a5b6c]">{(sh.field_capacity_mm - sh.critical_water_mm).toFixed(0)} mm</td>
+                    <td className="py-2 px-3 text-right font-mono text-[#1a5b6c]">{((sh.field_capacity_mm ?? 165) - (sh.critical_water_mm ?? 122)).toFixed(0)} mm</td>
                     <td className="py-2 px-3 text-[#526a5c] text-[11px]">{lang === 'es' ? 'Reserva que el cultivo aprovecha libremente a máxima transpiración' : 'Water buffer the crop extracts freely at full transpiration'}</td>
                   </tr>
                 </tbody>

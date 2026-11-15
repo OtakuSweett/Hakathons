@@ -174,7 +174,7 @@ export const CropAdvisor: React.FC<CropAdvisorProps> = ({
               </thead>
               <tbody className="divide-y divide-[#e2eae5] bg-white">
                 {viableCropIds.slice(0, 4).map((cid) => (
-                  <tr key={cid} className="hover:bg-[#f9fbf9]">
+                  <tr key={`advisor-viable-${cid}`} className="hover:bg-[#f9fbf9]">
                     <td className="py-2 px-2.5 font-semibold text-[#173d30] capitalize">
                       {cropLabel(cid)}
                     </td>
@@ -188,8 +188,8 @@ export const CropAdvisor: React.FC<CropAdvisorProps> = ({
                     </td>
                   </tr>
                 ))}
-                {discarded.map((disc) => (
-                  <tr key={disc.crop_id} className="hover:bg-[#f9fbf9]">
+                {discarded.map((disc, idx) => (
+                  <tr key={`advisor-discarded-${disc.crop_id}-${idx}`} className="hover:bg-[#f9fbf9]">
                     <td className="py-2 px-2.5 font-semibold text-[#173d30] capitalize">
                       {cropLabel(disc.crop_id)}
                     </td>

@@ -318,11 +318,10 @@ export const SmartCalendar: React.FC<SmartCalendarProps> = ({ data, lang }) => {
 
                   return (
                     <tr
-                      key={idx}
-                      className={`transition-colors cursor-pointer ${
+                      key={`smart-cal-slot-${slot.slot_index ?? idx}`}
+                      className={`transition-colors ${
                         isSelected ? 'bg-[#eef5f0] font-semibold' : 'hover:bg-[#f9fbf9]'
                       }`}
-                      onClick={() => setSelectedSlotIndex(idx)}
                     >
                       <td className="py-2.5 px-3 text-[#173d30]">
                         <div className="flex items-center gap-1.5">
@@ -353,11 +352,8 @@ export const SmartCalendar: React.FC<SmartCalendarProps> = ({ data, lang }) => {
                       <td className="py-2.5 px-3 text-center">
                         <button
                           type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedSlotIndex(idx);
-                          }}
-                          className={`px-2 py-0.5 rounded text-[10px] font-semibold border ${
+                          onClick={() => setSelectedSlotIndex(idx)}
+                          className={`px-2 py-0.5 rounded text-[10px] font-semibold border cursor-pointer ${
                             isSelected
                               ? 'bg-[#1e583d] text-white border-[#1e583d]'
                               : 'bg-white text-[#1e583d] border-[#cbd8cf] hover:border-[#1e583d]'

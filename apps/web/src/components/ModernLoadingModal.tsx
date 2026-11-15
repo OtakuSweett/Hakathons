@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Language } from '../types/index.js';
 
 interface ModernLoadingModalProps {
@@ -14,7 +14,7 @@ export const ModernLoadingModal: React.FC<ModernLoadingModalProps> = ({
 }) => {
   const [currentStep, setCurrentStep] = useState(0);
 
-  const steps = [
+  const steps = useMemo(() => [
     {
       id: 'power',
       title: lang === 'es' ? 'Descargando Telemetría NASA POWER' : 'Downloading NASA POWER Telemetry',
@@ -40,7 +40,7 @@ export const ModernLoadingModal: React.FC<ModernLoadingModalProps> = ({
       title: lang === 'es' ? 'Optimizando Rotación con Solver MILP (HiGHS)' : 'Optimizing Rotation with MILP Solver (HiGHS)',
       desc: lang === 'es' ? 'Construyendo frontera de Pareto multiobjetivo (ganancia financiera vs resiliencia de agua y nitrógeno).' : 'Building multi-objective Pareto trade-off frontier (net profit vs water conservation).'
     }
-  ];
+  ], [lang]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -54,6 +54,12 @@ export const ModernLoadingModal: React.FC<ModernLoadingModalProps> = ({
   }, [isOpen, steps.length]);
 
   if (!isOpen) return null;
+
+  const activeStep = steps[currentStep] ?? steps[0] ?? {
+    id: 'telemetry',
+    title: '',
+    desc: ''
+  };
 
   return (
     <div
@@ -125,10 +131,10 @@ export const ModernLoadingModal: React.FC<ModernLoadingModalProps> = ({
             </div>
             <div className="flex-1 min-w-0">
               <h4 className="text-xs font-bold text-[#1b362b] truncate">
-                {steps[currentStep].title}
+                {activeStep.title}
               </h4>
               <p className="text-[11px] text-[#55695f] mt-0.5 leading-snug">
-                {steps[currentStep].desc}
+                {activeStep.desc}
               </p>
             </div>
           </div>
@@ -142,16 +148,16 @@ export const ModernLoadingModal: React.FC<ModernLoadingModalProps> = ({
               />
             </div>
             <div className="flex justify-between items-center text-[10px] text-[#718277] font-mono mt-1.5">
-              <span>{steps[currentStep].id.toUpperCase()}</span>
+              <span>{activeStep.id.toUpperCase()}</span>
               <span>{Math.round(((currentStep + 1) / steps.length) * 100)}%</span>
             </div>
           </div>
 
           {/* Step dots */}
           <div className="flex justify-center gap-1.5 pt-1">
-            {steps.map((_, idx) => (
+            {steps.map((step, idx) => (
               <span
-                key={idx}
+                key={step.id}
                 className={`h-1.5 rounded-full transition-all duration-300 ${
                   idx === currentStep
                     ? 'w-5 bg-[#2f6b4f]'

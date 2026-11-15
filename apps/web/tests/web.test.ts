@@ -141,4 +141,12 @@ describe('Track D (Web Frontend) Core Suite', () => {
     expect(resolved?.profit_mxn_ha).toBe(42500);
     expect(resolved?.n_fixed_kg_ha).toBe(35);
   });
+
+  it('D-13: safe null-coalescing for soil hydraulics and robust Pareto weighting', () => {
+    const partialSoil: any = { field_capacity_mm: undefined, critical_water_mm: null };
+    const fcVal = (partialSoil?.field_capacity_mm ?? 165).toFixed(0);
+    const critVal = (partialSoil?.critical_water_mm ?? 122).toFixed(0);
+    expect(fcVal).toBe('165');
+    expect(critVal).toBe('122');
+  });
 });

@@ -219,6 +219,7 @@ export const EconomicEvaluation: React.FC<EconomicEvaluationProps> = ({ data, la
                 step="0.05"
                 value={lambdaVal}
                 disabled={!activePoint}
+                aria-label={t.sliderTitle}
                 onChange={(e) => setLambdaVal(parseFloat(e.target.value))}
                 className="w-full h-1.5 bg-[#dbe5e0] rounded-lg appearance-none cursor-pointer accent-[#1e583d]"
               />
@@ -312,11 +313,10 @@ export const EconomicEvaluation: React.FC<EconomicEvaluationProps> = ({ data, la
                     const planName = getPlanLabel(idx, distinctPoints.length, point.lambda_weight);
                     return (
                       <tr
-                        key={idx}
-                        className={`transition-colors cursor-pointer ${
+                        key={`pareto-plan-${point.lambda_weight.toFixed(2)}-${idx}`}
+                        className={`transition-colors ${
                           isSelected ? 'bg-[#eef5f0] font-semibold' : 'hover:bg-[#f9fbf9]'
                         }`}
-                        onClick={() => setLambdaVal(point.lambda_weight)}
                       >
                         <td className="py-2.5 px-3 text-[#173d30]">
                           <div className="flex items-center gap-1.5">
@@ -337,7 +337,7 @@ export const EconomicEvaluation: React.FC<EconomicEvaluationProps> = ({ data, la
                           +{Math.round(point.n_fixed_kg_ha)} kg
                         </td>
                         <td className="py-2.5 px-3 text-right font-mono text-[#526a5c]">
-                          ${point.water_shadow_price_mxn_mm.toFixed(2)}
+                          ${(point.water_shadow_price_mxn_mm ?? 0).toFixed(2)}
                         </td>
                         <td className="py-2.5 px-3 text-center">
                           {isSelected ? (
@@ -347,11 +347,8 @@ export const EconomicEvaluation: React.FC<EconomicEvaluationProps> = ({ data, la
                           ) : (
                             <button
                               type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setLambdaVal(point.lambda_weight);
-                              }}
-                              className="px-2.5 py-0.5 rounded-md border border-[#cbd8cf] hover:border-[#1e583d] text-[#1e583d] text-[10px] font-semibold bg-white"
+                              onClick={() => setLambdaVal(point.lambda_weight)}
+                              className="px-2.5 py-0.5 rounded-md border border-[#cbd8cf] hover:border-[#1e583d] text-[#1e583d] text-[10px] font-semibold bg-white cursor-pointer"
                             >
                               {t.btnSelect}
                             </button>
@@ -531,7 +528,7 @@ export const EconomicEvaluation: React.FC<EconomicEvaluationProps> = ({ data, la
                       : (lang === 'es' ? `Año ${yearNum} · Otoño-Invierno (OI)` : `Year ${yearNum} · Fall-Winter (FW)`);
 
                     return (
-                      <tr key={slot.slot_index || index} className="hover:bg-[#f9fbf9]">
+                      <tr key={`eval-slot-${slot.slot_index ?? index}`} className="hover:bg-[#f9fbf9]">
                         <td className="py-2.5 px-3 text-[#173d30] font-medium whitespace-nowrap">
                           {cycleLabel}
                         </td>

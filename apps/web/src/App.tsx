@@ -187,27 +187,53 @@ export const App: React.FC = () => {
 
   const handleSimulate = async (deltaPrecip: number, deltaTemp: number, eonetPulse: boolean) => {
     setIsLoading(true);
-    try {
-      if (isOfflineMode) throw new Error('Offline simulation');
-      const res = await apiFetch('/api/simulate', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ parcelId: data.parcel_id, deltaPrecipPct: deltaPrecip, deltaTempC: deltaTemp, injectEonetPulse: eonetPulse })
-      });
-      if (!res.ok) throw new Error('Simulation unavailable');
-      const simData = await res.json();
-      setData((prev) => ({ ...prev, physics: simData.physics || prev.physics, optimization: simData.optimization || prev.optimization }));
-    } catch {
-      if (!isOfflineMode) {
-        setLocationMessage(text('El servicio de simulación no respondió; aplicamos un cálculo local para que puedas seguir explorando.', 'The simulation service did not respond; a local calculation is active so you can keep exploring.'));
+    const applyLocalSimulation = (fallbackMessage?: string) => {
+      if (fallbackMessage && !isOfflineMode) {
+        setLocationMessage(fallbackMessage);
       }
       setData((prev) => {
         const wb = prev.physics.water_balance;
         const factor = 1 + deltaPrecip / 100;
         const newW = wb.w_mm.map((w, i) => Math.max(40, w * factor + (i === 15 && eonetPulse ? 65 : 0) - deltaTemp * 1.5));
         const isCritical = newW.some((w) => w < prev.soil_hydraulics.critical_water_mm);
-        return { ...prev, physics: { ...prev.physics, water_balance: { ...wb, w_mm: newW }, irrigation_trigger: { t_star_days: isCritical ? 9 : null, delta_i_mm: isCritical ? 48 : null, reason: isCritical ? 'Stress simulated by what-if scenario' : null } } };
+        return {
+          ...prev,
+          physics: {
+            ...prev.physics,
+            water_balance: { ...wb, w_mm: newW },
+            irrigation_trigger: {
+              t_star_days: isCritical ? 9 : null,
+              delta_i_mm: isCritical ? 48 : null,
+              reason: isCritical ? 'Stress simulated by what-if scenario' : null
+            }
+          }
+        };
       });
-    } finally { setIsLoading(false); }
+    };
+
+    if (isOfflineMode) {
+      applyLocalSimulation();
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const res = await apiFetch('/api/simulate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ parcelId: data.parcel_id, deltaPrecipPct: deltaPrecip, deltaTempC: deltaTemp, injectEonetPulse: eonetPulse })
+      });
+      if (!res.ok) {
+        applyLocalSimulation(text('El servicio de simulación no respondió; aplicamos un cálculo local para que puedas seguir explorando.', 'The simulation service did not respond; a local calculation is active so you can keep exploring.'));
+        return;
+      }
+      const simData = await res.json();
+      setData((prev) => ({ ...prev, physics: simData.physics || prev.physics, optimization: simData.optimization || prev.optimization }));
+    } catch {
+      applyLocalSimulation(text('El servicio de simulación no respondió; aplicamos un cálculo local para que puedas seguir explorando.', 'The simulation service did not respond; a local calculation is active so you can keep exploring.'));
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const toggleCrop = (cropId: string) => setSelectedCrops((current) => current.includes(cropId) ? current.filter((id) => id !== cropId) : [...current, cropId]);
@@ -226,24 +252,6 @@ export const App: React.FC = () => {
     setIsOfflineMode(true);
     setLocationMessage(text('Continuamos con el ejemplo guardado de Querétaro. El marcador volvió a sus coordenadas de referencia.', 'Continuing with the saved Querétaro example. The marker returned to its reference coordinates.'));
     setStep(2);
-  };
-
-  const toggleDataMode = () => {
-    if (isOfflineMode) {
-      setIsOfflineMode(false);
-      return;
-    }
-    const preset = DEMO_PRESETS_LIST.find((item) => item.presetId === selectedPresetId);
-    const benchmark = getMockAnalysis(selectedPresetId);
-    setIsOfflineMode(true);
-    setData(benchmark);
-    setSelectedCoordinates(benchmark.coordinates);
-    setDataSource('benchmark');
-    setMapSelectionBounds(null);
-    setMapRegionCenter({ lat: preset?.lat ?? benchmark.coordinates.lat, lon: preset?.lon ?? benchmark.coordinates.lon });
-    setSelectedCrops(presetCropSelection(selectedPresetId, benchmark));
-    setParcelRejected(false);
-    setMapRequestFailed(false);
   };
 
   const applyCropSelection = async () => {
@@ -299,6 +307,7 @@ export const App: React.FC = () => {
         return;
       }
       if (!response.ok) {
+        setServiceAvailable(false);
         let detail = '';
         try {
           const body = await response.json();
@@ -315,11 +324,33 @@ export const App: React.FC = () => {
             ? `${code}: ${localizedErrors[code][lang === 'es' ? 0 : 1]}`
             : code ? text(`El servidor devolvió el error ${code}.`, `The server returned error ${code}.`) : message;
         } catch { /* The gateway may return an empty or non-JSON error. */ }
+
+        if (apiErrorCode === 'SOILGRIDS_UNAVAILABLE') {
+          setParcelRejected(true);
+          setManualSoilOpen(true);
+          setMapRequestFailed(false);
+          setStep(1);
+          const soilMsg = text(
+            'SoilGrids no está disponible ahora para esta parcela. Puedes capturar un análisis de suelo y volver a consultar el clima y las alertas.',
+            'SoilGrids is unavailable for this field right now. Enter a soil test to continue querying climate and hazard data.'
+          );
+          setLocationMessage(soilMsg);
+          setErrorModalCode('SOILGRIDS_UNAVAILABLE');
+          setErrorModalMessage(soilMsg);
+          setErrorModalOpen(true);
+          return;
+        }
+
+        setMapRequestFailed(true);
         const errMsg = detail || `HTTP ${response.status}`;
+        const failureMsg = lang === 'es'
+          ? `El servicio de análisis no respondió (${errMsg}). Conservamos tu ubicación y cultivos; puedes reintentar.`
+          : `The analysis service did not respond (${errMsg}). Your location and crops are saved; you can retry.`;
+        setLocationMessage(failureMsg);
         setErrorModalCode(apiErrorCode || `HTTP_${response.status}`);
-        setErrorModalMessage(errMsg);
+        setErrorModalMessage(failureMsg);
         setErrorModalOpen(true);
-        throw new Error(errMsg);
+        return;
       }
       const analysis = await response.json() as AnalysisResponse;
       setData(analysis);
@@ -329,21 +360,6 @@ export const App: React.FC = () => {
       setStep(3);
     } catch (error) {
       setServiceAvailable(false);
-      if (apiErrorCode === 'SOILGRIDS_UNAVAILABLE') {
-        setParcelRejected(true);
-        setManualSoilOpen(true);
-        setMapRequestFailed(false);
-        setStep(1);
-        const soilMsg = text(
-          'SoilGrids no está disponible ahora para esta parcela. Puedes capturar un análisis de suelo y volver a consultar el clima y las alertas.',
-          'SoilGrids is unavailable for this field right now. Enter a soil test to continue querying climate and hazard data.'
-        );
-        setLocationMessage(soilMsg);
-        setErrorModalCode('SOILGRIDS_UNAVAILABLE');
-        setErrorModalMessage(soilMsg);
-        setErrorModalOpen(true);
-        return;
-      }
       setMapRequestFailed(true);
       const reason = error instanceof TypeError
         ? (lang === 'es' ? 'no hay conexión con el servicio de análisis' : 'the analysis service is unreachable')

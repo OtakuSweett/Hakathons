@@ -373,7 +373,9 @@ export const RiskMap: React.FC<RiskMapProps> = ({
     // Draw scaled parcel polygon around the center point (1 ha = 10,000 m2)
     const sideKm = Math.sqrt(areaHa * 0.01) / 2.0;
     const dLat = sideKm / 111.0;
-    const dLon = sideKm / (111.0 * Math.cos((lat * Math.PI) / 180.0));
+    const cosLat = Math.cos((lat * Math.PI) / 180.0);
+    const safeCos = Math.abs(cosLat) > 1e-4 ? cosLat : 1e-4;
+    const dLon = sideKm / (111.0 * safeCos);
 
     const polygonCoords: [number, number][] = [
       [lat - dLat, lon - dLon],
@@ -531,6 +533,7 @@ export const RiskMap: React.FC<RiskMapProps> = ({
               max="200"
               step="1"
               value={areaHa}
+              aria-label={t.areaLabel}
               onChange={(e) => onAreaChange(parseFloat(e.target.value))}
               className="w-full h-1.5 bg-[#ccdcd0] rounded-lg appearance-none cursor-pointer accent-[#2f6b4f]"
             />
