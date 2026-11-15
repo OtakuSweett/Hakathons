@@ -20,6 +20,17 @@ interface CropPhenology {
 }
 
 const CROP_PHENOLOGY: Record<string, CropPhenology> = {
+  fallow: {
+    tBase: 0.0,
+    totalGdd: 0,
+    depletionDays: 0,
+    stages: [
+      { name: ['Descanso y Descompactación', 'Rest & Decompaction'], desc: ['Recuperación de estructura y porosidad edáfica', 'Soil aeration and structure recovery'], gddPct: 0.25 },
+      { name: ['Recarga Hídrica Profunda', 'Subsoil Moisture Recharge'], desc: ['Infiltración de lluvia y reserva de agua en el perfil', 'Rainfall infiltration and root-zone water banking'], gddPct: 0.50 },
+      { name: ['Mineralización Biológica', 'Organic Mineralization'], desc: ['Activación microbiana que libera nitrógeno asimilable', 'Microbial release of available mineral nitrogen'], gddPct: 0.75 },
+      { name: ['Preparación de Cama de Siembra', 'Seedbed Preparation'], desc: ['Suelo descansado listo para el siguiente ciclo productivo', 'Rested soil ready for next productive cycle'], gddPct: 1.0 }
+    ]
+  },
   oats: {
     tBase: 5.0,
     totalGdd: 1150,
@@ -170,7 +181,8 @@ const getPhenologyForCrop = (cropId: string, waterNeedMm: number): CropPhenology
   };
 };
 
-const getLegumeBadgeLabel = (isLegume: boolean, spanish: boolean) => {
+const getLegumeBadgeLabel = (cropId: string, isLegume: boolean, spanish: boolean) => {
+  if (cropId === 'fallow') return spanish ? '🛑 Barbecho · Descanso' : '🛑 Fallow · Rest';
   if (isLegume) return spanish ? '🌱 Leguminosa (+N)' : '🌱 Legume (+N)';
   return spanish ? '🌾 Extractor / Cereal' : '🌾 Depleting / Non-Legume';
 };
@@ -202,7 +214,8 @@ export const SmartCalendar: React.FC<SmartCalendarProps> = ({ data, lang }) => {
     maize: ['Maíz', 'Maize'], sorghum: ['Sorgo', 'Sorghum'], wheat: ['Trigo', 'Wheat'], barley: ['Cebada', 'Barley'], beans: ['Frijol', 'Beans'], chickpea: ['Garbanzo', 'Chickpea'],
     alfalfa: ['Alfalfa', 'Alfalfa'], broccoli: ['Brócoli', 'Broccoli'], tomato: ['Jitomate', 'Tomato'], onion: ['Cebolla', 'Onion'], garlic: ['Ajo', 'Garlic'], strawberry: ['Fresa', 'Strawberry'],
     oats: ['Avena', 'Oats'], vetch: ['Veza', 'Vetch'], chili_pepper: ['Chile', 'Chili pepper'], asparagus: ['Espárrago', 'Asparagus'], soybean: ['Soya', 'Soybean'],
-    sunflower: ['Girasol', 'Sunflower'], potato: ['Papa', 'Potato'], canola: ['Canola', 'Canola']
+    sunflower: ['Girasol', 'Sunflower'], potato: ['Papa', 'Potato'], canola: ['Canola', 'Canola'],
+    fallow: ['Barbecho', 'Fallow']
   };
 
   const isEs = lang === 'es';
@@ -353,16 +366,23 @@ export const SmartCalendar: React.FC<SmartCalendarProps> = ({ data, lang }) => {
                   {getCropLabel(slot.crop_id)}
                 </div>
                 <div className="text-[11px] mt-1 text-[#1d577a] font-mono font-medium">
-                  {Math.round(slot.water_need_mm)} mm
+                  {slot.crop_id === 'fallow' ? (isEs ? '0 mm (Descanso)' : '0 mm (Rest)') : `${Math.round(slot.water_need_mm)} mm`}
                 </div>
-                {slot.is_legume && (
+                {slot.crop_id === 'fallow' ? (
+                  <span
+                    style={{ backgroundColor: '#fff5df', color: '#805600', borderColor: '#d6ba78' }}
+                    className="inline-block mt-1 text-[9px] px-1.5 py-0.5 rounded font-bold border"
+                  >
+                    {isEs ? '🛑 Barbecho' : '🛑 Fallow'}
+                  </span>
+                ) : slot.is_legume ? (
                   <span
                     style={isSelected ? { backgroundColor: '#1e583d', color: '#ffffff', borderColor: '#1e583d' } : { backgroundColor: '#e7f0ea', color: '#1e583d', borderColor: '#a8c5ab' }}
                     className="inline-block mt-1 text-[9px] px-1.5 py-0.5 rounded font-bold border slot-legume-badge"
                   >
                     {t.legumeTag}
                   </span>
-                )}
+                ) : null}
               </button>
             );
           })}
@@ -387,19 +407,25 @@ export const SmartCalendar: React.FC<SmartCalendarProps> = ({ data, lang }) => {
                 </span>
                 <h3 className="text-base font-bold text-[#173d30] flex items-center gap-2">
                   <span>{getCropLabel(activeSlot.crop_id)}</span>
-                  <span className="text-xs font-normal text-[#1d577a] font-mono">· {Math.round(activeSlot.water_need_mm)} mm demanda</span>
+                  <span className="text-xs font-normal text-[#1d577a] font-mono">
+                    · {activeSlot.crop_id === 'fallow' ? (isEs ? '0 mm (Descanso)' : '0 mm (Rest)') : `${Math.round(activeSlot.water_need_mm)} mm demanda`}
+                  </span>
                 </h3>
               </div>
             </div>
             <div className="flex items-center gap-2">
               <span
-                style={activeSlot.is_legume ? { backgroundColor: '#1e583d', color: '#ffffff' } : { backgroundColor: '#fff5df', color: '#805600', borderColor: '#d6ba78' }}
+                style={activeSlot.crop_id === 'fallow'
+                  ? { backgroundColor: '#fff5df', color: '#805600', borderColor: '#d6ba78' }
+                  : activeSlot.is_legume
+                    ? { backgroundColor: '#1e583d', color: '#ffffff' }
+                    : { backgroundColor: '#fff5df', color: '#805600', borderColor: '#d6ba78' }}
                 className="px-2.5 py-1 rounded-full text-xs font-bold border"
               >
-                {getLegumeBadgeLabel(Boolean(activeSlot.is_legume), isEs)}
+                {getLegumeBadgeLabel(activeSlot.crop_id, Boolean(activeSlot.is_legume), isEs)}
               </span>
               <span className="text-xs font-mono font-bold text-[#173d30] bg-white px-2.5 py-1 rounded-lg border border-[#cbd8cf]">
-                ${Math.round(activeSlot.profit_mxn_ha).toLocaleString()} MXN/ha
+                {activeSlot.crop_id === 'fallow' ? (isEs ? '$0 MXN/ha (Regeneración)' : '$0 /ha (Recharge)') : `$${Math.round(activeSlot.profit_mxn_ha).toLocaleString()} MXN/ha`}
               </span>
             </div>
           </div>
@@ -534,29 +560,43 @@ export const SmartCalendar: React.FC<SmartCalendarProps> = ({ data, lang }) => {
                   </div>
                 )}
 
-                <div className="p-3.5 rounded-xl border border-[#d6ba78] bg-[#fff9eb] mb-3">
-                  <div className="flex items-center gap-2 text-[#805600] font-bold text-xs mb-1">
-                    <span className="w-2 h-2 rounded-full bg-[#805600] animate-ping"></span>
-                    {t.recommendedIrrigation} ({getCropLabel(activeSlot.crop_id)})
-                  </div>
-                  <p className="text-[11px] text-[#55451f] mb-3 leading-relaxed">
-                    {t.irrigationDetail}
-                  </p>
-                  <div className="grid grid-cols-2 gap-2.5 text-xs">
-                    <div className="bg-white p-2.5 rounded-lg border border-[#e8dcb8]">
-                      <span className="text-[#55451f] text-[10px] block font-medium">{t.dayLabel}</span>
-                      <span className="text-base font-bold text-[#805600] font-mono">
-                        {trigger?.t_star_days ? Math.round(trigger.t_star_days) : recommendedDays} {lang === 'es' ? 'días' : 'days'}
-                      </span>
+                {activeSlot.crop_id === 'fallow' ? (
+                  <div className="p-3.5 rounded-xl border border-[#a8c5ab] bg-[#eef5f0] mb-3">
+                    <div className="flex items-center gap-2 text-[#1e583d] font-bold text-xs mb-1">
+                      <span className="w-2 h-2 rounded-full bg-[#1e583d]"></span>
+                      {isEs ? 'Periodo de Barbecho y Descanso Edáfico' : 'Fallow Period & Soil Rest'}
                     </div>
-                    <div className="bg-white p-2.5 rounded-lg border border-[#e8dcb8]">
-                      <span className="text-[#55451f] text-[10px] block font-medium">{t.depthMm}</span>
-                      <span className="text-base font-bold text-[#087777] font-mono">
-                        {trigger?.delta_i_mm?.toFixed(1) || recommendedDepthMm.toFixed(1)} mm
-                      </span>
+                    <p className="text-[11px] text-[#244438] leading-relaxed">
+                      {isEs
+                        ? 'Durante este ciclo el suelo descansa para recuperar estructura, descompactar el perfil radicular y almacenar agua profunda de lluvia. No se requiere aplicar lámina de riego programada.'
+                        : 'During this cycle the soil rests to restore structure, decompact root depth, and bank deep rainfall moisture. No scheduled irrigation is required.'}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="p-3.5 rounded-xl border border-[#d6ba78] bg-[#fff9eb] mb-3">
+                    <div className="flex items-center gap-2 text-[#805600] font-bold text-xs mb-1">
+                      <span className="w-2 h-2 rounded-full bg-[#805600] animate-ping"></span>
+                      {t.recommendedIrrigation} ({getCropLabel(activeSlot.crop_id)})
+                    </div>
+                    <p className="text-[11px] text-[#55451f] mb-3 leading-relaxed">
+                      {t.irrigationDetail}
+                    </p>
+                    <div className="grid grid-cols-2 gap-2.5 text-xs">
+                      <div className="bg-white p-2.5 rounded-lg border border-[#e8dcb8]">
+                        <span className="text-[#55451f] text-[10px] block font-medium">{t.dayLabel}</span>
+                        <span className="text-base font-bold text-[#805600] font-mono">
+                          {trigger?.t_star_days ? Math.round(trigger.t_star_days) : recommendedDays} {lang === 'es' ? 'días' : 'days'}
+                        </span>
+                      </div>
+                      <div className="bg-white p-2.5 rounded-lg border border-[#e8dcb8]">
+                        <span className="text-[#55451f] text-[10px] block font-medium">{t.depthMm}</span>
+                        <span className="text-base font-bold text-[#087777] font-mono">
+                          {trigger?.delta_i_mm?.toFixed(1) || recommendedDepthMm.toFixed(1)} mm
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
               </div>
 
               {/* Nitrogen and Economics */}
@@ -638,13 +678,17 @@ export const SmartCalendar: React.FC<SmartCalendarProps> = ({ data, lang }) => {
                         {getCropLabel(slot.crop_id)}
                       </td>
                       <td className="py-2.5 px-3 text-right font-mono text-[#1d577a]">
-                        {Math.round(slot.water_need_mm)} mm
+                        {slot.crop_id === 'fallow' ? (isEs ? '0 mm (Descanso)' : '0 mm (Rest)') : `${Math.round(slot.water_need_mm)} mm`}
                       </td>
                       <td className="py-2.5 px-3 text-right font-mono text-[#173d30]">
-                        ${Math.round(slot.profit_mxn_ha).toLocaleString()} MXN
+                        {slot.crop_id === 'fallow' ? (isEs ? '$0 MXN' : '$0') : `$${Math.round(slot.profit_mxn_ha).toLocaleString()} MXN`}
                       </td>
                       <td className="py-2.5 px-3 text-center">
-                        {slot.is_legume ? (
+                        {slot.crop_id === 'fallow' ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] bg-[#fff5df] text-[#805600] font-bold border border-[#d6ba78]">
+                            {isEs ? '🛑 Barbecho · Descanso' : '🛑 Fallow · Rest'}
+                          </span>
+                        ) : slot.is_legume ? (
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] bg-[#e7f0ea] text-[#1e583d] font-bold border border-[#a8c5ab]">
                             {t.legumeTag}
                           </span>

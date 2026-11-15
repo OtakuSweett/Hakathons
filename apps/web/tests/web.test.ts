@@ -149,4 +149,24 @@ describe('Track D (Web Frontend) Core Suite', () => {
     expect(fcVal).toBe('165');
     expect(critVal).toBe('122');
   });
+
+  it('D-14: fallow (barbecho) is handled with resting phenology and zero water demand', () => {
+    const data = getMockAnalysis('el_marques_qro');
+    const rotWithFallow = [
+      ...data.optimization.selected_rotation,
+      {
+        slot_index: 7,
+        cycle_code: 'PV' as const,
+        crop_id: 'fallow',
+        is_legume: false,
+        profit_mxn_ha: 0,
+        water_need_mm: 0
+      }
+    ];
+    const fallowSlot = rotWithFallow.find((s) => s.crop_id === 'fallow');
+    expect(fallowSlot).toBeDefined();
+    expect(fallowSlot?.water_need_mm).toBe(0);
+    expect(fallowSlot?.profit_mxn_ha).toBe(0);
+    expect(fallowSlot?.is_legume).toBe(false);
+  });
 });

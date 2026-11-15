@@ -27,18 +27,20 @@ const cropNames: Record<Language, Record<string, string>> = {
     maize: 'Maíz', sorghum: 'Sorgo', wheat: 'Trigo', barley: 'Cebada', beans: 'Frijol', chickpea: 'Garbanzo',
     alfalfa: 'Alfalfa', broccoli: 'Brócoli', tomato: 'Jitomate', onion: 'Cebolla', garlic: 'Ajo', strawberry: 'Fresa',
     oats: 'Avena', vetch: 'Veza común', chili_pepper: 'Chile verde', asparagus: 'Espárrago', soybean: 'Soya',
-    sunflower: 'Girasol', potato: 'Papa', canola: 'Canola'
+    sunflower: 'Girasol', potato: 'Papa', canola: 'Canola',
+    fallow: 'Barbecho'
   },
   en: {
     maize: 'Maize', sorghum: 'Sorghum', wheat: 'Wheat', barley: 'Barley', beans: 'Dry beans', chickpea: 'Chickpea',
     alfalfa: 'Alfalfa', broccoli: 'Broccoli', tomato: 'Tomato', onion: 'Onion', garlic: 'Garlic', strawberry: 'Strawberry',
     oats: 'Oats', vetch: 'Common vetch', chili_pepper: 'Green chili', asparagus: 'Asparagus', soybean: 'Soybean',
-    sunflower: 'Sunflower', potato: 'Potato', canola: 'Canola'
+    sunflower: 'Sunflower', potato: 'Potato', canola: 'Canola',
+    fallow: 'Fallow'
   }
 };
 
 const cropLabel = (cropId: string, language: Language) => cropNames[language][cropId] || cropId.replaceAll('_', ' ');
-const cropCatalogIds = Object.keys(cropNames.es);
+const cropCatalogIds = Object.keys(cropNames.es).filter((id) => id !== 'fallow');
 const provenanceMessages = (data: AnalysisResponse, lang: Language) => {
   const provenance = data.data_provenance;
   if (!provenance) return [];
@@ -69,6 +71,9 @@ const presetCropSelection = (presetId: string, analysis: AnalysisResponse) => {
 };
 
 const cropGlyph = (cropId: string) => {
+  if (cropId === 'fallow') {
+    return <svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M5 22h22M7 16h18M10 10h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><circle cx="16" cy="5" r="2" fill="currentColor"/></svg>;
+  }
   if (['maize', 'sorghum', 'wheat', 'barley', 'oats', 'canola', 'sunflower'].includes(cropId)) {
     return <svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M16 27V7m0 7c-4-1-6-4-6-7 4 0 6 3 6 7Zm0 5c4-1 6-4 6-7-4 0-6 3-6 7Zm-6 8h12M12 11l-2-2m10 8 2-2" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/><path d="M16 4c-2 2-2 4 0 6 2-2 2-4 0-6Z" fill="currentColor"/></svg>;
   }
