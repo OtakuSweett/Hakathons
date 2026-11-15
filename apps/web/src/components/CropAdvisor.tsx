@@ -29,46 +29,26 @@ export const CropAdvisor: React.FC<CropAdvisorProps> = ({
   };
   const cropLabel = (id: string) => cropNames[id]?.[lang === 'es' ? 0 : 1] || id.replaceAll('_', ' ');
 
+  const isEs = lang === 'es';
   const t = {
-    es: {
-      title: 'Viabilidad Agronómica (Pre-Solver M5)',
-      subtitle: 'Filtro biofísico de especies según umbral térmico GDD, pH edáfico y alertas de tormenta EONET.',
-      sectionLabel: 'FILTRO BIOFÍSICO · FAO-56',
-      tabCards: 'Vista Rápida',
-      tabTable: 'Tabla Diagnóstica',
-      feasibleTitle: 'Cultivos Viables',
-      feasibleDesc: 'Cumplen requerimiento de GDD y tolerancia a pH',
-      discardedTitle: 'Cultivos Descartados',
-      discardedDesc: 'Restricción agronómica activa',
-      colCrop: 'Cultivo',
-      colStatus: 'Estado',
-      colCriterion: 'Criterio Limitante',
-      colReason: 'Diagnóstico Agronómico',
-      statusViable: 'Viable',
-      statusDiscarded: 'Descartado',
-      reasonViable: 'Requerimiento térmico y pH compatibles con la parcela',
-      phLevel: 'pH del Suelo'
-    },
-    en: {
-      title: 'Agronomic Feasibility Advisor (M5)',
-      subtitle: 'Biophysical species filter based on GDD thermal sum, edaphic pH, and EONET storm alerts.',
-      sectionLabel: 'BIOPHYSICAL FILTER · FAO-56',
-      tabCards: 'Quick View',
-      tabTable: 'Diagnostic Table',
-      feasibleTitle: 'Feasible Crops',
-      feasibleDesc: 'Satisfy GDD thermal sum and pH tolerance',
-      discardedTitle: 'Discarded Crops',
-      discardedDesc: 'Active agronomic restriction',
-      colCrop: 'Crop',
-      colStatus: 'Status',
-      colCriterion: 'Binding Criterion',
-      colReason: 'Agronomic Diagnosis',
-      statusViable: 'Feasible',
-      statusDiscarded: 'Discarded',
-      reasonViable: 'Thermal requirement and soil pH are fully compatible',
-      phLevel: 'Soil pH'
-    }
-  }[lang];
+    title: isEs ? 'Viabilidad Agronómica (Pre-Solver M5)' : 'Agronomic Feasibility Advisor (M5)',
+    subtitle: isEs ? 'Filtro biofísico de especies según umbral térmico GDD, pH edáfico y alertas de tormenta EONET.' : 'Biophysical species filter based on GDD thermal sum, edaphic pH, and EONET storm alerts.',
+    sectionLabel: isEs ? 'FILTRO BIOFÍSICO · FAO-56' : 'BIOPHYSICAL FILTER · FAO-56',
+    tabCards: isEs ? 'Vista Rápida' : 'Quick View',
+    tabTable: isEs ? 'Tabla Diagnóstica' : 'Diagnostic Table',
+    feasibleTitle: isEs ? 'Cultivos Viables' : 'Feasible Crops',
+    feasibleDesc: isEs ? 'Cumplen requerimiento de GDD y tolerancia a pH' : 'Satisfy GDD thermal sum and pH tolerance',
+    discardedTitle: isEs ? 'Cultivos Descartados' : 'Discarded Crops',
+    discardedDesc: isEs ? 'Restricción agronómica activa' : 'Active agronomic restriction',
+    colCrop: isEs ? 'Cultivo' : 'Crop',
+    colStatus: isEs ? 'Estado' : 'Status',
+    colCriterion: isEs ? 'Criterio Limitante' : 'Binding Criterion',
+    colReason: isEs ? 'Diagnóstico Agronómico' : 'Agronomic Diagnosis',
+    statusViable: isEs ? 'Viable' : 'Feasible',
+    statusDiscarded: isEs ? 'Descartado' : 'Discarded',
+    reasonViable: isEs ? 'Requerimiento térmico y pH compatibles con la parcela' : 'Thermal requirement and soil pH are fully compatible',
+    phLevel: isEs ? 'pH del Suelo' : 'Soil pH'
+  };
 
   return (
     <div className="bento-card p-5 h-full flex flex-col justify-between">

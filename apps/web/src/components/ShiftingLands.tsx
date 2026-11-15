@@ -14,50 +14,28 @@ export const ShiftingLands: React.FC<ShiftingLandsProps> = ({
   waterRegime,
   lang
 }) => {
+  const isEs = lang === 'es';
   const t = {
-    es: {
-      badge: 'Desafío NASA Space Apps: Shifting Lands',
-      title: 'Desplazamiento Agroclimático y Adaptación de Granjas',
-      subtitle: 'Diagnóstico de desplazamiento de fronteras agrícolas y reconfiguración de cultivos guiada por datos de la NASA.',
-      historicalShiftTitle: 'Evidencia del Desplazamiento Climático Local (NASA POWER)',
-      historicalShiftDesc: 'Comparativa de las últimas tres décadas frente al año en curso en las coordenadas seleccionadas.',
-      metricTempShift: 'Desplazamiento Térmico',
-      metricTempDetail: '+1.8 °C en temperatura media estival',
-      metricRainShift: 'Retraso de Temporal',
-      metricRainDetail: '+22 días de retraso en inicio de lluvias',
-      metricExtremeShift: 'Eventos Extremos',
-      metricExtremeDetail: 'Mayor frecuencia de olas de calor en floración',
-      vulnerabilityTitle: 'Vulnerabilidad del Monocultivo Tradicional (Sin Adaptación)',
-      vulnerabilityText: 'Sembrar monocultivo tradicional (maíz/trigo continuo) bajo las nuevas condiciones climáticas genera un riesgo de pérdida de rendimiento del 45% y acelera el abatimiento del acuífero.',
-      adaptationTitle: 'Estrategia de Adaptación Recomendada (Con Agro-DSS)',
-      adaptationText: 'Desplazar la planificación hacia una rotación polianual resiliente (granos rústicos + leguminosas fijadoras de N + cultivos de cobertura) que reduce la evaporación y asegura el ciclo térmico.',
-      impactAhorroAgua: 'Agua Subterránea Ahorrada',
-      impactNitrogeno: 'Nitrógeno Biológico Reincorporado',
-      impactRiesgo: 'Reducción de Riesgo de Pérdida',
-      impactMargen: 'Estabilidad Financiera'
-    },
-    en: {
-      badge: 'NASA Space Apps Challenge: Shifting Lands',
-      title: 'Agroclimatic Shift & Farm Adaptation Engine',
-      subtitle: 'Diagnostics of shifting bioclimatic envelopes and farm reconfiguration driven by NASA Earth observations.',
-      historicalShiftTitle: 'Evidence of Local Climatic Shift (NASA POWER)',
-      historicalShiftDesc: 'Comparison of past three decades against current year at the selected parcel coordinates.',
-      metricTempShift: 'Thermal Shift',
-      metricTempDetail: '+1.8 °C in summer mean temperature',
-      metricRainShift: 'Rain Season Delay',
-      metricRainDetail: '+22 days delay in rainy season onset',
-      metricExtremeShift: 'Extreme Weather',
-      metricExtremeDetail: 'Higher frequency of heatwaves during flowering',
-      vulnerabilityTitle: 'Traditional Monoculture Vulnerability (Unadapted)',
-      vulnerabilityText: 'Maintaining legacy monoculture (continuous maize/wheat) under shifting climate creates a 45% yield collapse risk and accelerates aquifer depletion.',
-      adaptationTitle: 'Recommended Adaptation Strategy (With Agro-DSS)',
-      adaptationText: 'Shift farm planning toward a resilient multi-year rotation (hardy grains + nitrogen-fixing legumes + cover crops) reducing evaporation and fitting thermal GDD.',
-      impactAhorroAgua: 'Groundwater Saved',
-      impactNitrogeno: 'Biological Nitrogen Fixed',
-      impactRiesgo: 'Risk Reduction',
-      impactMargen: 'Financial Stability'
-    }
-  }[lang];
+    badge: isEs ? 'Desafío NASA Space Apps: Shifting Lands' : 'NASA Space Apps Challenge: Shifting Lands',
+    title: isEs ? 'Desplazamiento Agroclimático y Adaptación de Granjas' : 'Agroclimatic Shift & Farm Adaptation Engine',
+    subtitle: isEs ? 'Diagnóstico de desplazamiento de fronteras agrícolas y reconfiguración de cultivos guiada por datos de la NASA.' : 'Diagnostics of shifting bioclimatic envelopes and farm reconfiguration driven by NASA Earth observations.',
+    historicalShiftTitle: isEs ? 'Evidencia del Desplazamiento Climático Local (NASA POWER)' : 'Evidence of Local Climatic Shift (NASA POWER)',
+    historicalShiftDesc: isEs ? 'Comparativa de las últimas tres décadas frente al año en curso en las coordenadas seleccionadas.' : 'Comparison of past three decades against current year at the selected parcel coordinates.',
+    metricTempShift: isEs ? 'Desplazamiento Térmico' : 'Thermal Shift',
+    metricTempDetail: isEs ? '+1.8 °C en temperatura media estival' : '+1.8 °C in summer mean temperature',
+    metricRainShift: isEs ? 'Retraso de Temporal' : 'Rain Season Delay',
+    metricRainDetail: isEs ? '+22 días de retraso en inicio de lluvias' : '+22 days delay in rainy season onset',
+    metricExtremeShift: isEs ? 'Eventos Extremos' : 'Extreme Weather',
+    metricExtremeDetail: isEs ? 'Mayor frecuencia de olas de calor en floración' : 'Higher frequency of heatwaves during flowering',
+    vulnerabilityTitle: isEs ? 'Vulnerabilidad del Monocultivo Tradicional (Sin Adaptación)' : 'Traditional Monoculture Vulnerability (Unadapted)',
+    vulnerabilityText: isEs ? 'Sembrar monocultivo tradicional (maíz/trigo continuo) bajo las nuevas condiciones climáticas genera un riesgo de pérdida de rendimiento del 45% y acelera el abatimiento del acuífero.' : 'Maintaining legacy monoculture (continuous maize/wheat) under shifting climate creates a 45% yield collapse risk and accelerates aquifer depletion.',
+    adaptationTitle: isEs ? 'Estrategia de Adaptación Recomendada (Con Agro-DSS)' : 'Recommended Adaptation Strategy (With Agro-DSS)',
+    adaptationText: isEs ? 'Desplazar la planificación hacia una rotación polianual resiliente (granos rústicos + leguminosas fijadoras de N + cultivos de cobertura) que reduce la evaporación y asegura el ciclo térmico.' : 'Shift farm planning toward a resilient multi-year rotation (hardy grains + nitrogen-fixing legumes + cover crops) reducing evaporation and fitting thermal GDD.',
+    impactAhorroAgua: isEs ? 'Agua Subterránea Ahorrada' : 'Groundwater Saved',
+    impactNitrogeno: isEs ? 'Nitrógeno Biológico Reincorporado' : 'Biological Nitrogen Fixed',
+    impactRiesgo: isEs ? 'Reducción de Riesgo de Pérdida' : 'Risk Reduction',
+    impactMargen: isEs ? 'Estabilidad Financiera' : 'Financial Stability'
+  };
 
   // Dynamic calculations based on area and regime
   const waterSavedPerHaMm = waterRegime === 'goteo' ? 180 : (waterRegime === 'temporal' ? 95 : 140);

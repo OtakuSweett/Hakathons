@@ -28,41 +28,37 @@ export const ErrorDialogModal: React.FC<ErrorDialogModalProps> = ({
 
   const isNonArable = errorCode === 'NON_ARABLE_LAND';
   const isSoilUnavailable = errorCode === 'SOILGRIDS_UNAVAILABLE';
+  const isEs = lang === 'es';
+
+  const getModalTitle = (spanish: boolean) => {
+    if (isNonArable) {
+      return spanish ? 'El punto seleccionado no tiene cobertura de suelo agrícola' : 'The selected location lacks agricultural soil coverage';
+    }
+    if (isSoilUnavailable) {
+      return spanish ? 'Servicio de suelo temporalmente no disponible' : 'Soil service temporarily unavailable';
+    }
+    return spanish ? 'No pudimos completar la consulta en vivo' : 'Could not complete the live satellite query';
+  };
+
+  const getModalDesc = (spanish: boolean) => {
+    if (isNonArable) {
+      return spanish
+        ? 'ISRIC SoilGrids v2.0 clasifica estas coordenadas como cuerpo de agua, área urbana o roca expuesta. Puedes mover el marcador a una parcela de cultivo cercana o capturar los datos de un análisis de suelo de laboratorio.'
+        : 'ISRIC SoilGrids v2.0 classifies this location as water, urban concrete, or bare rock. Move the marker to a nearby agricultural field or provide lab test results.';
+    }
+    return errorMessage || (spanish ? 'Ocurrió un inconveniente al consultar las fuentes de datos satelitales en vivo.' : 'An issue occurred while querying live satellite services.');
+  };
 
   const t = {
-    es: {
-      tag: isNonArable ? 'ZONA NO ARABLE DETECTADA' : 'AVISO DE CONSULTA SATELITAL',
-      title: isNonArable
-        ? 'El punto seleccionado no tiene cobertura de suelo agrícola'
-        : isSoilUnavailable
-        ? 'Servicio de suelo temporalmente no disponible'
-        : 'No pudimos completar la consulta en vivo',
-      desc: isNonArable
-        ? 'ISRIC SoilGrids v2.0 clasifica estas coordenadas como cuerpo de agua, área urbana o roca expuesta. Puedes mover el marcador a una parcela de cultivo cercana o capturar los datos de un análisis de suelo de laboratorio.'
-        : errorMessage || 'Ocurrió un inconveniente al consultar las fuentes de datos satelitales en vivo.',
-      btnMove: 'Mover marcador al campo',
-      btnManual: 'Ingresar análisis de suelo',
-      btnRetry: 'Reintentar consulta',
-      btnBenchmark: 'Usar benchmark calibrado (Offline)',
-      btnClose: 'Cerrar'
-    },
-    en: {
-      tag: isNonArable ? 'NON-ARABLE LAND DETECTED' : 'SATELLITE QUERY NOTICE',
-      title: isNonArable
-        ? 'The selected location lacks agricultural soil coverage'
-        : isSoilUnavailable
-        ? 'Soil service temporarily unavailable'
-        : 'Could not complete the live satellite query',
-      desc: isNonArable
-        ? 'ISRIC SoilGrids v2.0 classifies this location as water, urban concrete, or bare rock. Move the marker to a nearby agricultural field or provide lab test results.'
-        : errorMessage || 'An issue occurred while querying live satellite services.',
-      btnMove: 'Move marker to field',
-      btnManual: 'Enter soil test',
-      btnRetry: 'Retry query',
-      btnBenchmark: 'Use calibrated benchmark (Offline)',
-      btnClose: 'Dismiss'
-    }
-  }[lang];
+    tag: isNonArable ? (isEs ? 'ZONA NO ARABLE DETECTADA' : 'NON-ARABLE LAND DETECTED') : (isEs ? 'AVISO DE CONSULTA SATELITAL' : 'SATELLITE QUERY NOTICE'),
+    title: getModalTitle(isEs),
+    desc: getModalDesc(isEs),
+    btnMove: isEs ? 'Mover marcador al campo' : 'Move marker to field',
+    btnManual: isEs ? 'Ingresar análisis de suelo' : 'Enter soil test',
+    btnRetry: isEs ? 'Reintentar consulta' : 'Retry query',
+    btnBenchmark: isEs ? 'Usar benchmark calibrado (Offline)' : 'Use calibrated benchmark (Offline)',
+    btnClose: isEs ? 'Cerrar' : 'Dismiss'
+  };
 
   return (
     <div

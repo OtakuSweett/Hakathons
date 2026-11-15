@@ -7,54 +7,38 @@ interface PestDetectorProps {
 }
 
 export const PestDetector: React.FC<PestDetectorProps> = ({ data, lang }) => {
+  const isEs = lang === 'es';
   const t = {
-    es: {
-      title: 'Detector Preventivo de Plagas y Enfermedades',
-      subtitle: 'Semáforo bio-climático en tiempo real basado en temperatura T2M, humedad relativa RH2M y lluvia de NASA POWER.',
-      fungalRisk: 'Riesgo de Patógenos Fúngicos',
-      fungalDesc: 'Hongos foliares (Roya, Tizón tardío, Mildiu). Favorecidos por humedad relativa > 80% y condensación.',
-      insectRisk: 'Riesgo de Plagas de Insectos',
-      insectDesc: 'Insectos chupadores y barrenadores (Pulgón, Gusano cogollero). Acelerados por estrés térmico y sequedad.',
-      semaphoreLow: 'Bajo Riesgo',
-      semaphoreMedium: 'Riesgo Moderado',
-      semaphoreHigh: 'Alerta Alta',
-      preventiveActions: 'Manejo Preventivo Agroecológico',
-      fungalActions: [
-        'Evitar riegos vespertinos para minimizar horas con hoja mojada.',
-        'Favorecer la ventilación del dosel mediante espaciamiento adecuado.',
-        'Aplicación preventiva de caldos minerales o Bacillus subtilis.'
-      ],
-      insectActions: [
-        'Instalar trampas de feromonas o cromáticas amarillas perimetrales.',
-        'Fomentar corredores florales para atraer fauna benéfica (crisopas).',
-        'Monitorear el envés de hojas cada 3 días en busca de posturas.'
-      ],
-      metricsTitle: 'Condiciones Meteorológicas Conductoras'
-    },
-    en: {
-      title: 'Preventive Pest & Disease Detector',
-      subtitle: 'Real-time bioclimatic semaphore driven by NASA POWER temperature T2M, relative humidity RH2M, and rain.',
-      fungalRisk: 'Fungal Disease Risk',
-      fungalDesc: 'Foliar pathogens (Rust, Blight, Powdery Mildew). Promoted by RH > 80% and leaf wetness.',
-      insectRisk: 'Insect Pest Pressure',
-      insectDesc: 'Chewing and sucking insects (Fall armyworm, Aphids, Borers). Accelerated by thermal heat and dry spells.',
-      semaphoreLow: 'Low Risk',
-      semaphoreMedium: 'Moderate Risk',
-      semaphoreHigh: 'High Risk Alert',
-      preventiveActions: 'Agro-ecological IPM Actions',
-      fungalActions: [
-        'Avoid evening irrigation to minimize continuous leaf wetness duration.',
-        'Improve canopy aeration by maintaining optimal row spacing.',
-        'Apply preventive bio-fungicides (Bacillus subtilis or copper broth).'
-      ],
-      insectActions: [
-        'Deploy yellow sticky or pheromone monitoring traps along perimeter.',
-        'Maintain floral buffer strips to foster beneficial predators.',
-        'Inspect the underside of leaves every 3 days for egg masses.'
-      ],
-      metricsTitle: 'Driving Atmospheric Conditions'
-    }
-  }[lang];
+    title: isEs ? 'Detector Preventivo de Plagas y Enfermedades' : 'Preventive Pest & Disease Detector',
+    subtitle: isEs ? 'Semáforo bio-climático en tiempo real basado en temperatura T2M, humedad relativa RH2M y lluvia de NASA POWER.' : 'Real-time bioclimatic semaphore driven by NASA POWER temperature T2M, relative humidity RH2M, and rain.',
+    fungalRisk: isEs ? 'Riesgo de Patógenos Fúngicos' : 'Fungal Disease Risk',
+    fungalDesc: isEs ? 'Hongos foliares (Roya, Tizón tardío, Mildiu). Favorecidos por humedad relativa > 80% y condensación.' : 'Foliar pathogens (Rust, Blight, Powdery Mildew). Promoted by RH > 80% and leaf wetness.',
+    insectRisk: isEs ? 'Riesgo de Plagas de Insectos' : 'Insect Pest Pressure',
+    insectDesc: isEs ? 'Insectos chupadores y barrenadores (Pulgón, Gusano cogollero). Acelerados por estrés térmico y sequedad.' : 'Chewing and sucking insects (Fall armyworm, Aphids, Borers). Accelerated by thermal heat and dry spells.',
+    semaphoreLow: isEs ? 'Bajo Riesgo' : 'Low Risk',
+    semaphoreMedium: isEs ? 'Riesgo Moderado' : 'Moderate Risk',
+    semaphoreHigh: isEs ? 'Alerta Alta' : 'High Risk Alert',
+    preventiveActions: isEs ? 'Manejo Preventivo Agroecológico' : 'Agro-ecological IPM Actions',
+    fungalActions: isEs ? [
+      'Evitar riegos vespertinos para minimizar horas con hoja mojada.',
+      'Favorecer la ventilación del dosel mediante espaciamiento adecuado.',
+      'Aplicación preventiva de caldos minerales o Bacillus subtilis.'
+    ] : [
+      'Avoid evening irrigation to minimize continuous leaf wetness duration.',
+      'Improve canopy aeration by maintaining optimal row spacing.',
+      'Apply preventive bio-fungicides (Bacillus subtilis or copper broth).'
+    ],
+    insectActions: isEs ? [
+      'Instalar trampas de feromonas o cromáticas amarillas perimetrales.',
+      'Fomentar corredores florales para atraer fauna benéfica (crisopas).',
+      'Monitorear el envés de hojas cada 3 días en busca de posturas.'
+    ] : [
+      'Deploy yellow sticky or pheromone monitoring traps along perimeter.',
+      'Maintain floral buffer strips to foster beneficial predators.',
+      'Inspect the underside of leaves every 3 days for egg masses.'
+    ],
+    metricsTitle: isEs ? 'Condiciones Meteorológicas Conductoras' : 'Driving Atmospheric Conditions'
+  };
 
   const meanTemp = data.climate_summary?.mean_temperature_c || 21.5;
   const totalRain = data.climate_summary?.total_precip_mm || 65;

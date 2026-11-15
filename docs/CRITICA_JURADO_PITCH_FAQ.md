@@ -1,5 +1,5 @@
 # 🔴 AUDITORÍA CRÍTICA DESTRUYE-ILUSIONES, SPEECH DE COMBATE Y MANUAL DE DEFENSA (FAQ)
-## NASA Space Apps Challenge Querétaro 2026 — Desafío: *Shifting Lands*
+## NASA Space Apps Challenge Querétaro 2026 — Desafío: *Shifting Lands: Adapting Farms with NASA Data*
 **Proyecto:** Global Crop Rotation & Water Resilience DSS  
 **Rol del Documento:** Manual confidencial de preparación para defensa ante jurado hostil, de élite académica y técnica.
 
@@ -85,7 +85,319 @@ Aquí está la evaluación despiadada de tus 4 criterios de rúbrica:
 
 ---
 
-# PARTE II: EL SPEECH MAESTRO (DESTRUCCIÓN EN 3 MINUTOS)
+# PARTE II: CATÁLOGO RIGUROSO DE MODELOS CIENTÍFICOS Y FUNDAMENTACIÓN
+
+Para pulverizar cualquier objeción matemática o agronómica, aquí está el inventario formal de los modelos implementados en el código fuente:
+
+```
+┌───────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                               PIPELINE MATEMÁTICO INTEGRAL (SSOT)                                │
+└───────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+ [1. Ingestión Global]        [2. Reconstitución]           [3. Ecuaciones Físicas]
+  • NASA POWER (AG/RE)   -->   • TDMA Thomas Splines   -->   • Van Bemmelen & Saxton-Rawls
+  • ISRIC SoilGrids v2.0       (Gap-fill < 1e-9)             • FAO-56 Penman-Monteith (ET0)
+  • NASA EONET v3                                            • Simpson 1/3 (GDD Fenológico)
+  • Open-Meteo & GIBS                                        • RK4 ODE (Balance Hídrico dW/dt)
+                                                             • Newton-Raphson (t* Estrés)
+                                                                           │
+                                                                           ▼
+ [5. Decisión de Campo]       [4. Optimización Dual]
+  • Semáforo de Plagas   <--   • Pre-solver Agronómico (pH, GDD, EONET)
+  • Calendario Dinámico        • MILP HiGHS (Rotación 4 años anti-monocultivo)
+  • Crowdsource Ground-Truth   • Análisis Dual & Pareto (Precio Sombra y λ-Slider)
+```
+
+### 1. Modelo de Pedotransferencia de Saxton-Rawls (2006)
+- **Función:** Convierte textura de suelo (% Arcilla, % Arena) y Materia Orgánica en constantes hidráulicas de suelo.
+- **Ecuaciones de Regresión:**
+  $$\theta_{1500} = \theta_{1500t} + (0.14 \cdot \theta_{1500t} - 0.02)$$
+  $$\theta_{33} = \theta_{33t} + (1.283 \cdot \theta_{33t}^2 - 0.374 \cdot \theta_{33t} - 0.015)$$
+- **Parámetros derivados:** Capacidad de Campo ($W_{\text{CC}}$), Punto de Marchitez Permanente ($W_{\text{PMP}}$) y Agua Disponible ($AD = W_{\text{CC}} - W_{\text{PMP}}$) sobre profundidad radicular $Z_r = 600\text{ mm}$.
+
+### 2. Factor Biogeoquímico de Van Bemmelen (1.724)
+- **Función:** Estima Materia Orgánica a partir del Carbono Orgánico del Suelo (`soc_g_kg` de SoilGrids).
+- **Ecuación:** $\text{MO}\% = \left(\frac{\text{soc\_g\_kg}}{10}\right) \times 1.724$.
+- **Fundamento:** Se asume que el humus promedio contiene un $58\%$ de carbono orgánico elemental ($1 / 0.58 = 1.724$).
+
+### 3. Modelo FAO-56 Penman-Monteith Dinámico
+- **Función:** Evapotranspiración de referencia ($ET_0$) sin latitudes fijas.
+- **Geometría Solar Dinámica:**
+  - Declinación solar: $\delta = 0.409 \sin\left(\frac{2\pi}{365} J - 1.39\right)$
+  - Ángulo horario de puesta de sol: $\omega_s = \arccos\left(-\tan\phi \tan\delta\right)$
+  - Distancia relativa Tierra-Sol: $d_r = 1 + 0.033 \cos\left(\frac{2\pi}{365} J\right)$
+  - Radiación extraterrestre $R_a$: función analítica de $(\phi, \delta, \omega_s, d_r)$.
+- **Ecuación de Flujo:**
+  $$ET_0 = \frac{0.408 \Delta (R_n - G) + \gamma \frac{900}{T + 273} u_2 (e_s - e_a)}{\Delta + \gamma (1 + 0.34 u_2)}$$
+
+### 4. Módulo 1: Reconstitución de Series Temporales (`mod1_splines.py`)
+- **Modelo:** Splines Cúbicos Naturales ($S_i''(x_0) = S_i''(x_n) = 0$).
+- **Algoritmo:** Thomas Algorithm (TDMA) para sistemas tridiagonales estrictamente diagonales dominantes:
+  $$h_{i-1} c_{i-1} + 2(h_{i-1} + h_i) c_i + h_i c_{i+1} = 3\left(\frac{a_{i+1}-a_i}{h_i} - \frac{a_i-a_{i-1}}{h_{i-1}}\right)$$
+- **Desempeño:** $\mathcal{O}(N)$ tiempo y memoria. Discrepancia con SciPy $< 10^{-9}$.
+
+### 5. Módulo 2: Integral Térmica de Grados Día Desarrollo (`mod2_simpson.py`)
+- **Modelo:** Tiempo térmico fenológico de cultivos.
+- **Ecuación Integral:**
+  $$\text{GDD} = \int_{t_0}^{t_f} \max\left(0, \frac{T_{\max}(t) + T_{\min}(t)}{2} - T_{\text{base}}\right) dt$$
+- **Solución Numérica:** Regla compuesta de Simpson 1/3 sobre intervalos de 24 horas en Tiempo Solar Local (LST).
+
+### 6. Módulo 3: Balance Hídrico Dinámico en el Perfil de Suelo (`mod3_rk4.py`)
+- **Modelo:** Ecuación Diferencial Ordinaria (EDO) de conservación de masa:
+  $$\frac{dW}{dt} = P(t) + I(t) - ET_c(W, t) - D(W)$$
+  Donde:
+  $$ET_c(W, t) = K_c \cdot ET_0(t) \cdot \text{clip}\left(\frac{W - W_{\text{PMP}}}{W_{\text{crítico}} - W_{\text{PMP}}}, 0, 1\right)$$
+  $$D(W) = \max\left(0, 0.25 (W - W_{\text{CC}})\right)$$
+  - **Inyección de Pulso Extremo EONET:** Eventos de tormenta/ciclón con radio $\le 150\text{ km}$ inyectan pulsos estocásticos de anegamiento directo en $P(t)$.
+- **Integración:** Runge-Kutta de 4to Orden ($h = 1\text{ día}$).
+
+### 7. Módulo 4: Detección Predictiva de Estrés Hídrico (`mod4_newton.py`)
+- **Modelo:** Búsqueda de raíces sobre función de estrés: $g(t) = W(t) - W_{\text{crítico}} = 0$.
+- **Solución Numérica:** Newton-Raphson acoplado:
+  $$t_{k+1} = t_k - \frac{g(t_k)}{g'(t_k)} = t_k - \frac{W(t_k) - W_{\text{crítico}}}{\left.\frac{dW}{dt}\right|_{t_k}}$$
+  Donde $g'(t_k)$ se evalúa exactamente con el lado derecho de la EDO de RK4.
+- **Salida:** Día crítico $t^*$ y lámina neta de restitución hídrica: $\Delta I = W_{\text{CC}} - W_{\text{crítico}}$.
+
+### 8. Módulo 5: Pre-Solver Agronómico Vectorizado (`mod5_presolver.py`)
+- **Filtros Deterministas:**
+  1. Si $\text{GDD}_{\text{sitio}} < \text{GDD}_{\text{cultivo}} \implies x_{i,t} = 0$.
+  2. Si $\text{pH}_{\text{suelo}} \notin [\text{pH}_{\min}, \text{pH}_{\max}] \implies x_{i,t} = 0$.
+  3. Si alerta de huracán/inundación activa en EONET $\implies x_{i,1} = 0$ para especies con alta vulnerabilidad a viento o asfixia radicular.
+
+### 9. Módulo 6: Optimizador de Rotación Multianual MILP (`mod6_milp.py`)
+- **Modelo:** Programación Lineal Entera Mixta resuelta mediante **HiGHS (`highspy`)**:
+  $$\max Z = \sum_{t=1}^T \sum_i \text{Ganancia}_{i,t} x_{i,t} - \sum_{t=1}^T \left[ \alpha \cdot \text{DemandaAgua}_t + \beta \cdot s_t^+ \right]$$
+  Sujeto a:
+  - $\sum_i x_{i,t} \le 1, \quad \forall t$ (No superposición espacial).
+  - $x_{i,t} + x_{i,t+1} \le 1, \quad \forall i, t$ (Ruptura obligatoria de monocultivo).
+  - $\sum_{k \in \text{Año}} \sum_{i \in \text{Leguminosas}} x_{i,k} \ge 1$ (Regeneración de nitrógeno orgánico).
+  - $x_{i,t} \in \{0, 1\}, \quad s_t^+ \ge 0$.
+
+### 10. Módulo 7: Análisis Dual de Sensibilidad y Frontera de Pareto (`mod7_pareto.py`)
+- **Modelo:**
+  - **Precio Sombra:** Multiplicador dual $\pi_k = \frac{\partial Z^*}{\partial \text{AguaDisponible}_k}$ obtenido de la relajación lineal continua.
+  - **Frontera de Pareto:** Escalarización de objetivos $F(\lambda) = \lambda f_1(\text{Ganancia}) + (1-\lambda) f_2(\text{AhorroAgua})$ para $\lambda \in [0, 1]$.
+
+---
+
+# PARTE III: RECORRIDO EN PANTALLA: LOS 9 PASOS VISUALES DE LA APLICACIÓN
+
+A continuación se detalla la maqueta visual y el flujo operativo exacto de cada pantalla de la suite para guiar al jurado paso a paso durante el demo en vivo:
+
+---
+
+### PASO 1: Delimitación de Parcela y Mapa de Riesgos
+> **Componente:** `RiskMap.tsx` | **Modelos Activos:** Ingestión NASA POWER, ISRIC SoilGrids v2.0, NASA EONET v3, NASA GIBS WMTS.
+
+```
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│ 🛰️ [1/9] MAPA DE RIESGOS SATELITAL Y SELECCIÓN DE PARCELA                             │
+├────────────────────────────────────────────────────────────────────────────────────────┤
+│  [ Buscar Municipio / Coordenada ] [ Presets: Querétaro (El Bajío) ▼ ] [ Fuente: LIVE ]│
+├────────────────────────────────────────────────────────┬───────────────────────────────┤
+│                                                        │ 📐 PARÁMETROS DE PARCELA      │
+│     [CAPA: ESRI Satelital HD / NASA GIBS NDVI]         ├───────────────────────────────┤
+│                                                        │ Lat: 20.5888°N  Lon: -100.39°W │
+│               🔴 Alerta EONET (Tormenta Severa 42km)   │ Superficie: [====●====] 12 ha │
+│                       \                                │ Suelo: Franco Arcilloso (USDA)│
+│                        \                               │ Arcilla: 37.8% | Arena: 38.7% │
+│                     ┌──────┐                           │ M.O. (Van Bemmelen): 1.62%    │
+│                     │PARCEL│ <-- Polígono interactivo  │ pH: 7.2 | N: 1.4 g/kg         │
+│                     └──────┘     escalable en ha       ├───────────────────────────────┤
+│                                                        │ Capacidad de Campo: 182 mm    │
+│                                                        │ Marchitez Permanente: 94 mm   │
+│                                                        │ [ EJECUTAR ANÁLISIS BIOFÍSICO]│
+└────────────────────────────────────────────────────────┴───────────────────────────────┘
+```
+- **Lo que explicas:** *"El usuario hace clic en cualquier punto del planeta. Inmediatamente el orquestador consulta en milisegundos las APIs de la NASA y SoilGrids, resuelve el triángulo textural USDA y calcula la capacidad de retención hídrica con Saxton-Rawls."*
+
+---
+
+### PASO 2: Banner de Alertas Anticipadas de Estrés
+> **Componente:** `EarlyWarningBanner.tsx` | **Modelos Activos:** Módulo 4 (`mod4_newton.py`), NASA EONET v3.
+
+```
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│ ⚠️ [2/9] SISTEMA DE ALERTA TEMPRANA Y FECHA CRÍTICA DE AGOTAMIENTO                     │
+├────────────────────────────────────────────────────────────────────────────────────────┤
+│  🔴 ALERTA DE ESTRÉS HÍDRICO SEVERO                                                    │
+│  El agotamiento de agua disponible cruzará el umbral crítico W_crit el DÍA 34 (28-Mar) │
+│  Riego preventivo recomendado: lámina de ΔI = 42 mm antes de floración (Día 31).       │
+│                                                                                        │
+│  🟡 PULSO METEOROLÓGICO EXTREMO (NASA EONET)                                           │
+│  Disturbio atmosférico detectado a 85 km. Probabilidad de precipitación torrencial     │
+│  (+35 mm en 6h). Riesgo temporal de asfixia radicular en suelos arcillosos.            │
+└────────────────────────────────────────────────────────────────────────────────────────┘
+```
+- **Lo que explicas:** *"Esto no es una alarma genérica de clima. Es el resultado del Newton-Raphson encontrando el cruce exacto de la curva de humedad con el umbral de estrés fisiológico de la planta."*
+
+---
+
+### PASO 3: Recomendaciones Agrícolas (Pre-Solver)
+> **Componente:** `CropAdvisor.tsx` | **Modelos Activos:** Módulo 5 (`mod5_presolver.py`).
+
+```
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│ 🌾 [3/9] FILTRO PRE-SOLVER AGRONÓMICO DETERMINISTA (CANDIDATOS VIABLES VS DESCARTADOS) │
+├────────────────────────────────────────────────────────────────────────────────────────┤
+│  CULTIVOS VIABLES (Pasan Filtro):                                                      │
+│  [✓] Maíz de Ciclo Corto  (GDD disp: 1480 > req: 1350 | pH 7.2 dentro de [5.8, 7.8])   │
+│  [✓] Garbanzo Blanco      (GDD disp: 1250 > req: 1100 | Tolerancia moderada a sequía)  │
+│  [✓] Cebada Maltera       (GDD disp: 1300 > req: 1150 | pH óptimo y bajo uso hídrico) │
+├────────────────────────────────────────────────────────────────────────────────────────┤
+│  CULTIVOS DESCARTADOS (Incompatibilidad Biofísica Demostrada):                         │
+│  [✕] Fresa / Berries: DESCARTADO -> Salinidad y arcilla superan límite de drenaje.    │
+│  [✕] Tomate a Campo Abierto: DESCARTADO -> Bloqueado por alerta de tormenta EONET.    │
+│  [✕] Maíz Tardío (160 días): DESCARTADO -> GDD insuficiente antes de heladas otoñales. │
+└────────────────────────────────────────────────────────────────────────────────────────┘
+```
+- **Lo que explicas:** *"El optimizador no pierde tiempo computando especies inviables. Nuestro pre-solver agronómico descarta con fundamento biológico riguroso."*
+
+---
+
+### PASO 4: Simulador Climático "What-If"
+> **Componente:** `ClimateSimulator.tsx` | **Modelos Activos:** Módulo 3 (`mod3_rk4.py`), EDO Water Balance + Inyección EONET.
+
+```
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│ 🎛️ [4/9] LABORATORIO CLIMÁTICO "WHAT-IF" (SIMULACIÓN DE RESILIENCIA EN VIVO)          │
+├────────────────────────────────────────────────────────────────────────────────────────┤
+│  Ajuste de Forzamiento Climático:                                                      │
+│  Variación Precipitación (ΔP%): [-50% ──●────── 0% ──────── +50%]  (-20% Sequía)       │
+│  Calentamiento Global (ΔT °C):  [0.0°C ──────●── +3.0°C]           (+1.8°C Shifting)   │
+│  Pulso Tormenta EONET:          [ ACTIVADO: Inyección de +50 mm en Día 15 ]            │
+├────────────────────────────────────────────────────────────────────────────────────────┤
+│  Respuesta del Sistema en Tiempo Real:                                                 │
+│  • Evapotranspiración ET0 aumenta: +14.2% (Mayor demanda atmosférica)                  │
+│  • Nueva fecha crítica de riego t*: Se adelanta 9 días (del Día 34 al Día 25)          │
+│  • Drenaje profundo D(W) tras tormenta: 18 mm lixiviados al acuífero                   │
+└────────────────────────────────────────────────────────────────────────────────────────┘
+```
+- **Lo que explicas:** *"Permite al agricultor o a los técnicos de la CONAGUA 'jugar' con el futuro: ¿qué pasa si este año llueve 20% menos? La gráfica recalcula al soltar el slider."*
+
+---
+
+### PASO 5: Monitoreo de Cultivos y Curvas de Humedad
+> **Componente:** `CropMonitor.tsx` | **Modelos Activos:** Módulo 1 (`mod1_splines.py` TDMA) y Módulo 3 (`mod3_rk4.py`).
+
+```
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│ 📈 [5/9] TRAYECTORIA DINÁMICA DE HUMEDAD W(t) Y RECONSTRUCCIÓN CONTINUA NDVI           │
+├────────────────────────────────────────────────────────────────────────────────────────┤
+│  Humedad (mm)                                                                          │
+│  182 mm ┬────────────────────────────────────────── Capacidad de Campo (CC)            │
+│         │     ╭──────╮    / \  (Pulso Tormenta EONET)                                  │
+│  138 mm ┼────/────────\──/───\───────────────────── Umbral Crítico W_crit              │
+│         │   /          \/     \    \  (Punto de estrés t*)                             │
+│         │  /                    \───★────────────── RIEGO RECOMENDADO (ΔI = 42 mm)     │
+│   94 mm ┴─/──────────────────────────\───────────── Punto de Marchitez Permanente (PMP)│
+│          Día 1      Día 10     Día 20     Día 30     Día 40     Día 50                 │
+├────────────────────────────────────────────────────────────────────────────────────────┤
+│  Reconstrucción NDVI Spline TDMA:                                                      │
+│  [Puntos dispersos MODIS (nubes)] ──> [Curva continua Thomas Spline con error < 1e-9] │
+└────────────────────────────────────────────────────────────────────────────────────────┘
+```
+- **Lo que explicas:** *"Aquí se ve la matemática en acción: los huecos de nubes de MODIS se unen con splines cúbicos y la trayectoria de humedad calculada con RK4 muestra exactamente cómo la raíz consume el agua."*
+
+---
+
+### PASO 6: Calendario Inteligente de Rotación Multianual
+> **Componente:** `SmartCalendar.tsx` | **Modelos Activos:** Módulo 2 (`mod2_simpson.py`), Módulo 6 (`mod6_milp.py`).
+
+```
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│ 📅 [6/9] CALENDARIO AGRONÓMICO MULTIANUAL Y FENOLOGÍA GDD (3-4 AÑOS)                  │
+├────────────────────────────────────────────────────────────────────────────────────────┤
+│  AÑO 1 (Ciclo Primavera-Verano): MAÍZ DE CICLO CORTO                                   │
+│  [Siembra: 15-May] ──> [Floración R1: 18-Jul (GDD: 850)] ──> [Cosecha: 20-Sep]        │
+│  💧 Riegos programados: 2 Riegos de auxilio (Día 34 y Día 62)                          │
+├────────────────────────────────────────────────────────────────────────────────────────┤
+│  AÑO 1 (Ciclo Otoño-Invierno): GARBANZO BLANCO (LEGUMINOSA REGENERATIVA)               │
+│  [Siembra: 15-Nov] ──> [Fijación N2 Nódulos Activos] ──> [Cosecha en Secano: 28-Feb]  │
+│  🌱 Aporte al suelo: +38 kg N/ha fijado | Ahorro en agua: 62% vs Trigo continuo        │
+├────────────────────────────────────────────────────────────────────────────────────────┤
+│  AÑO 2 (Ciclo Primavera-Verano): GIRASOL / CEBADA (Alternancia obligada anti-plagas)  │
+└────────────────────────────────────────────────────────────────────────────────────────┘
+```
+- **Lo que explicas:** *"El calendario no solo dice qué sembrar; divide el ciclo en sus 4 etapas fenológicas exactas según los grados día acumulados con Simpson 1/3."*
+
+---
+
+### PASO 7: Detector Preventivo de Plagas y Enfermedades
+> **Componente:** `PestDetector.tsx` | **Modelos Activos:** Microclima NASA POWER (`T2M`, `RH2M`, `PRECTOTCORR`).
+
+```
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│ 🐛 [7/9] SEMÁFORO BIO-CLIMÁTICO PREVENTIVO DE PLAGAS Y HONGOS PATÓGENOS                │
+├────────────────────────────────────────────────────────────────────────────────────────┤
+│  [🔴 ALTO RIESGO] ROYA AMARILLA Y TIZÓN FOLIAR (Puccinia striiformis)                 │
+│  • Condición detonante: Humedad relativa > 78% por 48h continuas con T entre 12-18°C.  │
+│  • Acción agroecológica: Aplicar biofungicida a base de Trichoderma harzianum;         │
+│    evitar fertilización nitrogenada foliar en exceso.                                  │
+├────────────────────────────────────────────────────────────────────────────────────────┤
+│  [🟡 RIESGO MEDIO] GUSANO COGOLLERO (Spodoptera frugiperda)                           │
+│  • Condición: Temperatura nocturna acumulada > 20°C acelera ciclo larval.               │
+│  • Acción: Instalar trampas de feromonas y monitorear envés de hojas en V4.           │
+├────────────────────────────────────────────────────────────────────────────────────────┤
+│  [🟢 RIESGO BAJO] FUSARIUM EN RAÍZ: Suelo con buen drenaje tras pulso de lluvia.       │
+└────────────────────────────────────────────────────────────────────────────────────────┘
+```
+- **Lo que explicas:** *"Predecimos la biología a partir de la física atmosférica. Si la humedad y temperatura coinciden con la curva de esporulación, alertamos antes de que la plaga sea visible."*
+
+---
+
+### PASO 8: Evaluación Económica, Precio Sombra y Pareto
+> **Componente:** `EconomicEvaluation.tsx` | **Modelos Activos:** Módulo 6 (`mod6_milp.py`), Módulo 7 (`mod7_pareto.py`).
+
+```
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│ 💰 [8/9] EVALUACIÓN ECONÓMICA, FRONTERA DE PARETO Y PRECIO SOMBRA DUAL DEL AGUA        │
+├────────────────────────────────────────────────────────────────────────────────────────┤
+│  SLIDER DE PRIORIDAD AGRÍCOLA (Lambda λ): [ Máx Ganancia ────●──── Máx Conservación ]  │
+│  λ = 0.50 -> EQUILIBRIO SOSTENIBLE                                                     │
+├────────────────────────────────────────────────────────────────────────────────────────┤
+│  CURVA DE PARETO (HiGHS):                                                              │
+│  Ganancia Neta ($/ha)                                                                  │
+│  $3,800 ┬                  (λ=1.0: Máxima Ganancia, Consumo Severo)                    │
+│  $3,200 ┼─────────●                                                                    │
+│  $2,950 ┼──────────────────● (λ=0.50: Nuestro Plan Seleccionado)                       │
+│  $2,100 ┼─────────────────────────────● (λ=0.0: Mínimo Consumo de Agua)                │
+│         ┴──────────────────────────────────────── Agua Ahorrada vs Tradicional         │
+│                     120 mm          240 mm        380 mm                               │
+├────────────────────────────────────────────────────────────────────────────────────────┤
+│  💧 PRECIO SOMBRA DUAL DEL AGUA (y_agua = ∂Z*/∂Agua): $0.48 USD / mm                   │
+│  "Cada mm adicional de agua incrementa la ganancia en $0.48 USD. Dado que el costo de   │
+│   extracción del pozo es de $0.14 USD/mm, la tecnificación con goteo es ALTAMENTE      │
+│   RENTABLE con un tiempo de retorno estimado de 1.4 ciclos."                           │
+└────────────────────────────────────────────────────────────────────────────────────────┘
+```
+- **Lo que explicas:** *"Este es el análisis que ninguna otra app de hackathon tiene: la variable dual del agua que le dice con precisión financiera al productor si le conviene o no prender la bomba."*
+
+---
+
+### PASO 9: Reportes de Campo (Crowdsourced Ground-Truth)
+> **Componente:** `FarmerReportsModal.tsx` | **Modelos Activos:** Ground-Truthing empírico, georreferenciación GPS, carga de fotos y calibración de satélites.
+
+```
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│ 📱 [9/9] REPORTE DE CAMPO: GROUND-TRUTHING COLABORATIVO                                │
+├────────────────────────────────────────────────────────────────────────────────────────┤
+│  Parcela: El Bajío Sector 4 | Coordenadas: 20.5888°N, -100.3899°W                     │
+│                                                                                        │
+│  Etapa Fenológica Observada: [ Floración (R1) ▼ ]                                      │
+│  Condición de Humedad en Suelo: [ Estrés Leve / Tierra Seca al tacto a 15 cm ▼ ]       │
+│  Presencia de Plaga: [ Manchas de Roya Foliar en 5% de plantas ]                       │
+│  Evidencia Fotográfica: [ 📷 Foto_surco_15nov.jpg adjunta ]                            │
+│                                                                                        │
+│  [ ENVIAR REPORTE AL ORQUESTADOR ]                                                     │
+│  ✓ El reporte calibra el modelo biofísico local y ajusta la serie satelital MODIS.    │
+└────────────────────────────────────────────────────────────────────────────────────────┘
+```
+- **Lo que explicas:** *"La NASA monitorea desde el espacio; el agricultor valida desde el surco. Con este módulo cerramos el circuito con datos de campo reales."*
+
+---
+
+# PARTE IV: EL SPEECH MAESTRO (DESTRUCCIÓN EN 3 MINUTOS)
 
 > **Instrucciones para el orador:**
 > - NO leas diapositivas.
@@ -129,7 +441,7 @@ Muchas gracias. Estamos listos para sus preguntas."
 
 ---
 
-# PARTE III: EL ARSENAL DE RESPUESTAS A PREGUNTAS TRAMPA (FAQ COMPLETA)
+# PARTE V: EL ARSENAL DE RESPUESTAS A PREGUNTAS TRAMPA (FAQ COMPLETA)
 
 ### 🔬 BLOQUE A: MODELOS MATEMÁTICOS Y FÍSICA
 
@@ -201,11 +513,11 @@ Muchas gracias. Estamos listos para sus preguntas."
 
 ---
 
-# PARTE IV: GUÍA DE CONTROL DE DAÑOS EN LA PRESENTACIÓN
+# PARTE VI: GUÍA DE CONTROL DE DAÑOS EN LA PRESENTACIÓN
 
 | Situación de Emergencia | Lo que NUNCA debes decir | La Respuesta Ganadora |
 | :--- | :--- | :--- |
-| **Se cae el internet en el escenario** | *"Perdón, es que el WiFi del hackathon está fallando..."* | *"Como la conectividad en el campo rural mexicano suele ser nula, diseñamos el sistema con arquitectura offline-first. Observen cómo activamos el Benchmark Regional del Bajío y el motor corre al 100% en local."* |
+| **Se cae el internet en el escenario** | *"Perdón, es que el WiFi del hackathon está fallando..."* | *"Como la conectividad en el campo rural suele ser nula, diseñamos el sistema con arquitectura offline-first. Observen cómo activamos el Benchmark Regional del Bajío y el motor corre al 100% en local."* |
 | **Un juez dice que la UI tiene demasiados datos** | *"Es que no nos dio tiempo de simplificarla..."* | *"La plataforma cuenta con dos perfiles de usuario: el modo 'Productor' con tarjetas de semáforo accionables simples, y el modo 'Consultor Agrícola/Distrito de Riego' que exhibe las curvas de validación física completas."* |
 | **Un juez pregunta si validaron esto con un agricultor real** | *"No, solo estuvimos programando en el hackathon..."* | *"Diseñamos el Módulo 9 específicamente como un canal bidireccional de crowdsourcing para validación ground-truth. Los parámetros agronómicos de cultivo fueron calibrados con el catálogo oficial del INIFAP y los manuales de riego de la FAO."* |
 EOF

@@ -80,84 +80,45 @@ export const FarmerReportsModal: React.FC<FarmerReportsModalProps> = ({
 
   if (!isOpen) return null;
 
+  const isEs = lang === 'es';
   const t = {
-    es: {
-      title: 'Reporte de Observación en Campo (Ground Truthing)',
-      subtitle: 'Tus observaciones georreferenciadas calibran y validan las predicciones satelitales (NASA POWER, MODIS NDVI e ISRIC SoilGrids).',
-      farmerLabel: 'Nombre del Productor / Observador (Opcional):',
-      cropLabel: 'Cultivo observado:',
-      coordsLabel: 'Coordenadas Geográficas:',
-      stageLabel: 'Etapa Fenológica Observada:',
-      stageOpts: {
-        emergencia: '1. Emergencia / Germinación',
-        vegetativo: '2. Desarrollo Vegetativo Pleno',
-        floracion: '3. Floración / Llenado de Grano',
-        madurez: '4. Madurez Fisiológica / Cosecha'
-      },
-      moistureLabel: 'Sensación de Humedad en Suelo:',
-      moistureOpts: {
-        seco: 'Seco / Grietas visibles',
-        adecuado: 'Húmedo / Adecuado',
-        encharcado: 'Saturado / Encharcado'
-      },
-      pestLabel: 'Signos de Plagas o Enfermedades:',
-      pestPlaceholder: 'Ej. Manchas foliares color café o larvas en cogollo...',
-      notesLabel: 'Comentarios Adicionales:',
-      notesPlaceholder: 'Anotaciones sobre riego reciente, laboreo o fertilización aplicada...',
-      photoLabel: 'Evidencia Fotográfica de Parcela:',
-      photoButton: 'Adjuntar Fotografía de Campo',
-      submitButton: 'Enviar Reporte al Sistema DSS',
-      submitting: 'Enviando...',
-      success: '¡Reporte recibido exitosamente! Gracias por contribuir a la calibración del modelo.',
-      successLocal: 'Observación guardada en este dispositivo. Conserva este navegador para consultarla después.',
-      localPhotoNote: 'La foto requiere conexión; vuelve a adjuntarla para enviarla.',
-      pendingLabel: 'Observaciones guardadas en este dispositivo',
-      syncPending: 'Enviar ahora',
-      syncing: 'Enviando…',
-      synced: 'Observaciones pendientes enviadas.',
-      syncFailed: 'Algunas observaciones siguen pendientes. Conservamos una copia en este dispositivo.',
-      error: 'No se pudo guardar el reporte. Intenta nuevamente.',
-      close: 'Cerrar'
+    title: isEs ? 'Reporte de Observación en Campo (Ground Truthing)' : 'Field Observation Report (Ground Truthing)',
+    subtitle: isEs ? 'Tus observaciones georreferenciadas calibran y validan las predicciones satelitales (NASA POWER, MODIS NDVI e ISRIC SoilGrids).' : 'Your georeferenced observations calibrate and validate satellite models (NASA POWER, MODIS NDVI, and ISRIC SoilGrids).',
+    farmerLabel: isEs ? 'Nombre del Productor / Observador (Opcional):' : 'Farmer / Observer Name (Optional):',
+    cropLabel: isEs ? 'Cultivo observado:' : 'Observed crop:',
+    coordsLabel: isEs ? 'Coordenadas Geográficas:' : 'Geographic Coordinates:',
+    stageLabel: isEs ? 'Etapa Fenológica Observada:' : 'Observed Phenological Stage:',
+    stageOpts: {
+      emergencia: isEs ? '1. Emergencia / Germinación' : '1. Emergence / Germination',
+      vegetativo: isEs ? '2. Desarrollo Vegetativo Pleno' : '2. Peak Vegetative Growth',
+      floracion: isEs ? '3. Floración / Llenado de Grano' : '3. Flowering / Grain Filling',
+      madurez: isEs ? '4. Madurez Fisiológica / Cosecha' : '4. Physiological Maturity / Harvest'
     },
-    en: {
-      title: 'Field Observation Report (Ground Truthing)',
-      subtitle: 'Your georeferenced observations calibrate and validate satellite models (NASA POWER, MODIS NDVI, and ISRIC SoilGrids).',
-      farmerLabel: 'Farmer / Observer Name (Optional):',
-      cropLabel: 'Observed crop:',
-      coordsLabel: 'Geographic Coordinates:',
-      stageLabel: 'Observed Phenological Stage:',
-      stageOpts: {
-        emergencia: '1. Emergence / Germination',
-        vegetativo: '2. Peak Vegetative Growth',
-        floracion: '3. Flowering / Grain Filling',
-        madurez: '4. Physiological Maturity / Harvest'
-      },
-      moistureLabel: 'Field Soil Moisture Feeling:',
-      moistureOpts: {
-        seco: 'Dry / Cracking evident',
-        adecuado: 'Moist / Adequate',
-        encharcado: 'Saturated / Waterlogged'
-      },
-      pestLabel: 'Signs of Pests or Diseases:',
-      pestPlaceholder: 'E.g. Brown foliar spots or whorl caterpillar presence...',
-      notesLabel: 'Additional Observations:',
-      notesPlaceholder: 'Notes on recent irrigation, tillage or applied fertilizer...',
-      photoLabel: 'Field Photographic Evidence:',
-      photoButton: 'Attach Field Photo',
-      submitButton: 'Submit Report to DSS System',
-      submitting: 'Submitting...',
-      success: 'Report received successfully! Thank you for improving satellite ground truth calibration.',
-      successLocal: 'Observation saved on this device. Keep this browser to access it later.',
-      localPhotoNote: 'The photo needs a connection; attach it again when submitting.',
-      pendingLabel: 'Observations saved on this device',
-      syncPending: 'Send now',
-      syncing: 'Sending…',
-      synced: 'Pending observations sent.',
-      syncFailed: 'Some observations are still pending. A copy remains on this device.',
-      error: 'The report could not be saved. Please try again.',
-      close: 'Close'
-    }
-  }[lang];
+    moistureLabel: isEs ? 'Sensación de Humedad en Suelo:' : 'Field Soil Moisture Feeling:',
+    moistureOpts: {
+      seco: isEs ? 'Seco / Grietas visibles' : 'Dry / Cracking evident',
+      adecuado: isEs ? 'Húmedo / Adecuado' : 'Moist / Adequate',
+      encharcado: isEs ? 'Saturado / Encharcado' : 'Saturated / Waterlogged'
+    },
+    pestLabel: isEs ? 'Signos de Plagas o Enfermedades:' : 'Signs of Pests or Diseases:',
+    pestPlaceholder: isEs ? 'Ej. Manchas foliares color café o larvas en cogollo...' : 'E.g. Brown foliar spots or whorl caterpillar presence...',
+    notesLabel: isEs ? 'Comentarios Adicionales:' : 'Additional Observations:',
+    notesPlaceholder: isEs ? 'Anotaciones sobre riego reciente, laboreo o fertilización aplicada...' : 'Notes on recent irrigation, tillage or applied fertilizer...',
+    photoLabel: isEs ? 'Evidencia Fotográfica de Parcela:' : 'Field Photographic Evidence:',
+    photoButton: isEs ? 'Adjuntar Fotografía de Campo' : 'Attach Field Photo',
+    submitButton: isEs ? 'Enviar Reporte al Sistema DSS' : 'Submit Report to DSS System',
+    submitting: isEs ? 'Enviando...' : 'Submitting...',
+    success: isEs ? '¡Reporte recibido exitosamente! Gracias por contribuir a la calibración del modelo.' : 'Report received successfully! Thank you for improving satellite ground truth calibration.',
+    successLocal: isEs ? 'Observación guardada en este dispositivo. Conserva este navegador para consultarla después.' : 'Observation saved on this device. Keep this browser to access it later.',
+    localPhotoNote: isEs ? 'La foto requiere conexión; vuelve a adjuntarla para enviarla.' : 'The photo needs a connection; attach it again when submitting.',
+    pendingLabel: isEs ? 'Observaciones guardadas en este dispositivo' : 'Observations saved on this device',
+    syncPending: isEs ? 'Enviar ahora' : 'Send now',
+    syncing: isEs ? 'Enviando…' : 'Sending…',
+    synced: isEs ? 'Observaciones pendientes enviadas.' : 'Pending observations sent.',
+    syncFailed: isEs ? 'Algunas observaciones siguen pendientes. Conservamos una copia en este dispositivo.' : 'Some observations are still pending. A copy remains on this device.',
+    error: isEs ? 'No se pudo guardar el reporte. Intenta nuevamente.' : 'The report could not be saved. Please try again.',
+    close: isEs ? 'Cerrar' : 'Close'
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
