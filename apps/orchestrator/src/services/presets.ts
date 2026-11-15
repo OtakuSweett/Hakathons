@@ -126,7 +126,11 @@ export function getNearestPreset(lat: number, lon: number): Record<string, unkno
     }
   }
 
-  return loadPresetById(nearestId)!;
+  const preset = loadPresetById(nearestId);
+  if (!preset) {
+    throw new Error(`Failed to load preset '${nearestId}' from disk.`);
+  }
+  return preset;
 }
 
 export function readCache(key: string): Record<string, unknown> | null {

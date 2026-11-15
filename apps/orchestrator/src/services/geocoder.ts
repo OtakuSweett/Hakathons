@@ -93,7 +93,10 @@ export async function searchPlaces(query: string, language: string): Promise<Pla
     return [{ lat, lon, name: row.display_name || row.name || `${lat}, ${lon}`, type: row.addresstype || row.type || 'place', bounds }];
   });
   resultsCache.set(cacheKey, { expiresAt: Date.now() + 86_400_000, results });
-  if (resultsCache.size > 500) resultsCache.delete(resultsCache.keys().next().value!);
+  if (resultsCache.size > 500) {
+    const firstKey = resultsCache.keys().next().value;
+    if (firstKey !== undefined) resultsCache.delete(firstKey);
+  }
   return results;
 }
 

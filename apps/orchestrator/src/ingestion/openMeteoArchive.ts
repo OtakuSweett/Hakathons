@@ -67,12 +67,12 @@ export async function fetchOpenMeteoArchive(
     const usable = indices.filter((i) => [hourly.temperature_2m?.[i], hourly.relative_humidity_2m?.[i], hourly.wind_speed_10m?.[i], hourly.shortwave_radiation?.[i], hourly.surface_pressure?.[i], hourly.precipitation?.[i]].every(Number.isFinite));
     if (usable.length < 20) throw new Error(`Open-Meteo Archive has only ${usable.length} valid hourly observations for ${date}`);
 
-    const temperatures = usable.map((i) => hourly.temperature_2m![i] as number);
-    const humidity = usable.map((i) => hourly.relative_humidity_2m![i] as number);
-    const wind10KmH = usable.map((i) => hourly.wind_speed_10m![i] as number);
-    const radiationWM2 = usable.map((i) => hourly.shortwave_radiation![i] as number);
-    const pressureHPa = usable.map((i) => hourly.surface_pressure![i] as number);
-    const precipitation = usable.map((i) => hourly.precipitation![i] as number);
+    const temperatures = usable.map((i) => Number(hourly.temperature_2m?.[i] ?? 0));
+    const humidity = usable.map((i) => Number(hourly.relative_humidity_2m?.[i] ?? 0));
+    const wind10KmH = usable.map((i) => Number(hourly.wind_speed_10m?.[i] ?? 0));
+    const radiationWM2 = usable.map((i) => Number(hourly.shortwave_radiation?.[i] ?? 0));
+    const pressureHPa = usable.map((i) => Number(hourly.surface_pressure?.[i] ?? 0));
+    const precipitation = usable.map((i) => Number(hourly.precipitation?.[i] ?? 0));
     const tMean = mean(temperatures);
     const tMax = Math.max(...temperatures);
     const tMin = Math.min(...temperatures);
