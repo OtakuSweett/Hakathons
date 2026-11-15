@@ -14,7 +14,6 @@ import { FarmerReportsModal } from './components/FarmerReportsModal.js';
 import { PrivacyPage } from './components/PrivacyPage.js';
 import { ModernLoadingModal } from './components/ModernLoadingModal.js';
 import { ErrorDialogModal } from './components/ErrorDialogModal.js';
-import { AgroLayers3D } from './components/AgroLayers3D.js';
 import { apiFetch } from './services/api.js';
 
 type WaterRegime = 'temporal' | 'goteo' | 'gravedad';
@@ -572,7 +571,6 @@ export const App: React.FC = () => {
           {provenanceMessages(data, lang).length > 0 && <aside className="data-quality-notice" role="status"><b>{text('Origen y disponibilidad de los datos', 'Data source and availability')}</b>{provenanceMessages(data, lang).map((message) => <p key={message}>{message}</p>)}</aside>}
           <EarlyWarningBanner trigger={data.physics?.irrigation_trigger || { t_star_days: null, delta_i_mm: null, reason: null }} eonetCount={data.eonet_hazard_alerts?.length || 0} meanTempC={data.climate_summary?.mean_temperature_c || 21} lang={lang} />
           <ShiftingLands data={data} areaHa={areaHa} waterRegime={waterRegime} lang={lang} />
-          <AgroLayers3D data={data} lang={lang} areaHa={areaHa} />
           <section className="analysis-grid main-analysis-grid">
             <div className="span-7"><RiskMap lat={data.coordinates.lat} lon={data.coordinates.lon} regionLat={mapRegionCenter.lat} regionLon={mapRegionCenter.lon} selectionBounds={mapSelectionBounds} parcelName={currentPresetName} eonetAlerts={data.eonet_hazard_alerts || []} areaHa={areaHa} selectedCropIds={selectedCrops} onAreaChange={setAreaHa} waterRegime={waterRegime} onWaterRegimeChange={setWaterRegime} lang={lang} onMapClick={(lat, lon) => { handleMapCoordinateSelect(lat, lon); setStep(0); }} onLocationSearch={(lat, lon, bounds) => { handleLocationSearch(lat, lon, bounds); setStep(0); }} /></div>
             <div className="span-5"><CropAdvisor viableCropIds={data.optimization?.presolver_summary?.feasible_crop_ids || []} discarded={data.optimization?.presolver_summary?.discarded || []} soilPh={data.soil_hydraulics?.soil_ph || 6.8} lang={lang} /></div>

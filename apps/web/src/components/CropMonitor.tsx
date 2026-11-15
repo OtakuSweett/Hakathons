@@ -204,54 +204,54 @@ export const CropMonitor: React.FC<CropMonitorProps> = ({ data, lang }) => {
         {activeTab === 'water' ? (
           isSingleWaterPoint ? (
             /* Visual Gauge / Stratigraphic Tank Card when 1 point exists */
-            <div className="p-6 bg-zinc-950/60 rounded-2xl border border-white/[0.08]">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-                <h4 className="text-sm font-bold text-white">{t.singlePointWater}</h4>
+            <div className="p-6 bg-[#f8faf8] rounded-xl border border-[#cbd8cf] text-left">
+              <div className="flex items-center gap-2 mb-1.5">
+                <span className="w-2 h-2 rounded-full bg-[#2f6b4f]" />
+                <h4 className="text-sm font-bold text-[#1b362b]">{t.singlePointWater}</h4>
               </div>
-              <p className="text-xs text-zinc-400 mb-6">{t.singlePointWaterDesc}</p>
+              <p className="text-xs text-[#556b5e] mb-5 leading-relaxed">{t.singlePointWaterDesc}</p>
 
-              <div className="space-y-4 max-w-md mx-auto">
-                <div>
+              <div className="space-y-3.5 max-w-md mx-auto">
+                <div className="bg-white p-2.5 rounded-lg border border-[#e2eae5]">
                   <div className="flex justify-between text-xs mb-1">
-                    <span className="text-emerald-400 font-bold">{t.fcLabel}</span>
-                    <span className="font-mono text-white">{sh?.field_capacity_mm.toFixed(0) || 165} mm</span>
+                    <span className="text-[#236040] font-bold">{t.fcLabel}</span>
+                    <span className="font-mono text-[#1b362b] font-semibold">{sh?.field_capacity_mm.toFixed(0) || 165} mm</span>
                   </div>
-                  <div className="w-full bg-zinc-800 rounded-full h-2">
-                    <div className="bg-emerald-500 h-2 rounded-full" style={{ width: '100%' }} />
+                  <div className="w-full bg-[#e3eae5] rounded-full h-2">
+                    <div className="bg-[#2f6b4f] h-2 rounded-full" style={{ width: '100%' }} />
                   </div>
                 </div>
 
-                <div>
+                <div className="bg-white p-2.5 rounded-lg border border-[#cbe0d4]">
                   <div className="flex justify-between text-xs mb-1">
-                    <span className="text-cyan-300 font-bold">{t.wLabel}</span>
-                    <span className="font-mono text-cyan-300 font-bold">{latestW.toFixed(1)} mm</span>
+                    <span className="text-[#1a5b6c] font-bold">{t.wLabel}</span>
+                    <span className="font-mono text-[#1a5b6c] font-bold">{latestW.toFixed(1)} mm</span>
                   </div>
-                  <div className="w-full bg-zinc-800 rounded-full h-3 overflow-hidden">
+                  <div className="w-full bg-[#e3eae5] rounded-full h-2.5 overflow-hidden">
                     <div
-                      className="bg-cyan-400 h-3 rounded-full transition-all duration-700"
+                      className="bg-[#1a5b6c] h-2.5 rounded-full transition-all duration-700"
                       style={{ width: `${Math.min(100, (latestW / (sh?.field_capacity_mm || 180)) * 100)}%` }}
                     />
                   </div>
                 </div>
 
-                <div>
+                <div className="bg-white p-2.5 rounded-lg border border-[#e2eae5]">
                   <div className="flex justify-between text-xs mb-1">
-                    <span className="text-amber-400 font-bold">{t.critLabel}</span>
-                    <span className="font-mono text-white">{sh?.critical_water_mm.toFixed(0) || 122} mm</span>
+                    <span className="text-[#925f19] font-bold">{t.critLabel}</span>
+                    <span className="font-mono text-[#1b362b] font-semibold">{sh?.critical_water_mm.toFixed(0) || 122} mm</span>
                   </div>
-                  <div className="w-full bg-zinc-800 rounded-full h-2">
-                    <div className="bg-amber-500 h-2 rounded-full" style={{ width: `${((sh?.critical_water_mm || 122) / (sh?.field_capacity_mm || 180)) * 100}%` }} />
+                  <div className="w-full bg-[#e3eae5] rounded-full h-2">
+                    <div className="bg-[#b47a24] h-2 rounded-full" style={{ width: `${((sh?.critical_water_mm || 122) / (sh?.field_capacity_mm || 180)) * 100}%` }} />
                   </div>
                 </div>
 
-                <div>
+                <div className="bg-white p-2.5 rounded-lg border border-[#e2eae5]">
                   <div className="flex justify-between text-xs mb-1">
-                    <span className="text-rose-400 font-bold">{t.wpLabel}</span>
-                    <span className="font-mono text-white">{sh?.wilting_point_mm.toFixed(0) || 80} mm</span>
+                    <span className="text-[#a43b29] font-bold">{t.wpLabel}</span>
+                    <span className="font-mono text-[#1b362b] font-semibold">{sh?.wilting_point_mm.toFixed(0) || 80} mm</span>
                   </div>
-                  <div className="w-full bg-zinc-800 rounded-full h-2">
-                    <div className="bg-rose-500 h-2 rounded-full" style={{ width: `${((sh?.wilting_point_mm || 80) / (sh?.field_capacity_mm || 180)) * 100}%` }} />
+                  <div className="w-full bg-[#e3eae5] rounded-full h-2">
+                    <div className="bg-[#c2412b] h-2 rounded-full" style={{ width: `${((sh?.wilting_point_mm || 80) / (sh?.field_capacity_mm || 180)) * 100}%` }} />
                   </div>
                 </div>
               </div>
@@ -320,14 +320,19 @@ export const CropMonitor: React.FC<CropMonitorProps> = ({ data, lang }) => {
           )
         ) : (
           isSingleNdviPoint ? (
-            <div className="p-6 bg-zinc-950/60 rounded-2xl border border-white/[0.08] text-center">
-              <span className="text-3xl mb-2 inline-block">🌿</span>
-              <h4 className="text-sm font-bold text-white mb-1">{t.singlePointNdvi}</h4>
-              <p className="text-xs text-zinc-400 max-w-sm mx-auto mb-4">{t.singlePointNdviDesc}</p>
-              <div className="inline-flex items-baseline gap-2 bg-zinc-900 px-4 py-2 rounded-xl border border-emerald-500/30">
-                <span className="text-xs text-zinc-400">NDVI:</span>
-                <span className="text-2xl font-black text-emerald-400 font-mono">{maxNdvi.toFixed(2)}</span>
-                <span className="text-xs text-emerald-500 font-semibold">Vigor Fuerte</span>
+            <div className="p-6 bg-[#f8faf8] rounded-xl border border-[#cbd8cf] text-center">
+              <div className="w-10 h-10 rounded-full bg-[#e7f0ea] border border-[#a8c5ab] flex items-center justify-center mx-auto mb-2.5 text-[#1e583d]">
+                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 2a10 10 0 0 1 10 10c0 5.52-4.48 10-10 10S2 17.52 2 12A10 10 0 0 1 12 2z"/>
+                  <path d="M12 6v6l4 2"/>
+                </svg>
+              </div>
+              <h4 className="text-sm font-bold text-[#1b362b] mb-1">{t.singlePointNdvi}</h4>
+              <p className="text-xs text-[#556b5e] max-w-sm mx-auto mb-4">{t.singlePointNdviDesc}</p>
+              <div className="inline-flex items-baseline gap-2 bg-white px-4 py-2 rounded-xl border border-[#cbd8cf] shadow-xs">
+                <span className="text-xs text-[#556b5e]">NDVI:</span>
+                <span className="text-2xl font-black text-[#1e583d] font-mono">{maxNdvi.toFixed(2)}</span>
+                <span className="text-xs text-[#2f6b4f] font-semibold">{lang === 'es' ? 'Vigor Estable' : 'Stable Vigor'}</span>
               </div>
             </div>
           ) : (

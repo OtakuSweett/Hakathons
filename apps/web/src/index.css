@@ -444,24 +444,6 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
 .pending-report-list button:disabled { cursor: not-allowed; opacity: .55; }
 .pending-report-list > small { display: block; margin-top: 8px; color: #ccd8ca; }
 
-/* 3D Isometric Digital Twin Styles */
-.agro-3d-viewport {
-  perspective: 1200px;
-}
-.agro-3d-stage {
-  transform-style: preserve-3d;
-  transition: transform 0.65s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.agro-3d-stage.isometric {
-  transform: rotateX(46deg) rotateZ(-22deg) scale(0.96);
-}
-.agro-3d-stage.flat {
-  transform: none;
-}
-.agro-3d-stage.isometric:hover {
-  transform: rotateX(43deg) rotateZ(-20deg) scale(0.99);
-}
-
 @keyframes orbitScan {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }

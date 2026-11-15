@@ -68,7 +68,7 @@ export const RiskMap: React.FC<RiskMapProps> = ({
   const selectionBoundsRef = useRef<L.Rectangle | null>(null);
   const alertLayersRef = useRef<L.Circle[]>([]);
 
-  const [baseMapType, setBaseMapType] = useState<'satellite' | 'streets'>('satellite');
+  const [baseMapType, setBaseMapType] = useState<'satellite' | 'relief' | 'streets'>('satellite');
   const [showGibs, setShowGibs] = useState<boolean>(false);
   const [locationQuery, setLocationQuery] = useState('');
   const [searchError, setSearchError] = useState('');
@@ -85,7 +85,7 @@ export const RiskMap: React.FC<RiskMapProps> = ({
   const t = {
     es: {
       title: 'Delimitación de Parcela y Mapa de Riesgos',
-      subtitle: 'Exploración geográfica con imágenes satelitales Esri/NASA, alertas EONET v3 y dimensionamiento en hectáreas.',
+      subtitle: 'Exploración geográfica con imágenes satelitales Esri/NASA, relieve topográfico, alertas EONET v3 y dimensionamiento en hectáreas.',
       searchLabel: 'Busca ciudad, dirección o coordenadas',
       areaLabel: 'Tamaño de Parcela:',
       regimeLabel: 'Régimen Hídrico:',
@@ -96,7 +96,8 @@ export const RiskMap: React.FC<RiskMapProps> = ({
       volLabel: 'Demanda de Agua Estimada:',
       coordsLabel: 'Coordenadas:',
       satellite: 'Satelital HD',
-      streets: 'Calles / Relieve',
+      relief: 'Relieve 3D / Topografía',
+      streets: 'Calles / Base',
       clickHint: 'Toca el mapa para marcar tu parcela o usa el buscador de localidades.',
       searchPlaceholder: 'Ej. El Marqués, Querétaro',
       searchButton: 'Buscar',
@@ -104,15 +105,15 @@ export const RiskMap: React.FC<RiskMapProps> = ({
       noResults: 'No encontramos ese lugar. Prueba con ciudad y país o marca el mapa.',
       searchHelp: 'La búsqueda se envía solo al pulsar Buscar. También acepta latitud, longitud.',
       alertLegend: 'Círculo rojo: radio de referencia de 60 km alrededor de una alerta EONET activa.',
-      mapTileError: 'No se pudieron cargar algunas imágenes del mapa. Prueba Calles / Relieve o revisa tu conexión.',
-      btnFocusField: '🎯 Enfocar Parcela (Zoom 16)',
-      btnRegionView: '🗺️ Visión Regional (Zoom 11)',
-      btnCenter: '↺ Centrar',
+      mapTileError: 'No se pudieron cargar algunas imágenes del mapa. Prueba otro tipo de mapa o revisa tu conexión.',
+      btnFocusField: 'Enfocar Parcela',
+      btnRegionView: 'Visión Regional',
+      btnCenter: 'Centrar',
       dimensionsLabel: 'Dimensiones estimadas:'
     },
     en: {
       title: 'Parcel Delimitation & Multi-Hazard Map',
-      subtitle: 'Geographic exploration with Esri/NASA satellite imagery, EONET v3 hazards, and dynamic hectare sizing.',
+      subtitle: 'Geographic exploration with Esri/NASA satellite imagery, 3D topographic relief, EONET v3 hazards, and dynamic hectare sizing.',
       searchLabel: 'Search a city, address, or coordinates',
       areaLabel: 'Parcel Area:',
       regimeLabel: 'Water Regime:',
@@ -123,7 +124,8 @@ export const RiskMap: React.FC<RiskMapProps> = ({
       volLabel: 'Estimated Water Demand:',
       coordsLabel: 'Coordinates:',
       satellite: 'Satellite HD',
-      streets: 'Streets / Terrain',
+      relief: '3D Relief / Topography',
+      streets: 'Streets / Base',
       clickHint: 'Tap anywhere on the map to place your field or use the location search.',
       searchPlaceholder: 'e.g. Ames, Iowa',
       searchButton: 'Search',
@@ -131,10 +133,10 @@ export const RiskMap: React.FC<RiskMapProps> = ({
       noResults: 'We could not find that place. Try city and country or select the map.',
       searchHelp: 'Your search is sent only when you press Search. Coordinates are accepted too.',
       alertLegend: 'Red circle: 60 km reference radius around an active EONET alert.',
-      mapTileError: 'Some map imagery could not load. Try Streets / Terrain or check your connection.',
-      btnFocusField: '🎯 Focus Field (Zoom 16)',
-      btnRegionView: '🗺️ Regional View (Zoom 11)',
-      btnCenter: '↺ Center',
+      mapTileError: 'Some map imagery could not load. Try another map view or check your connection.',
+      btnFocusField: 'Focus Field',
+      btnRegionView: 'Regional View',
+      btnCenter: 'Center',
       dimensionsLabel: 'Estimated dimensions:'
     }
   }[lang];
@@ -212,9 +214,9 @@ export const RiskMap: React.FC<RiskMapProps> = ({
 
       if (selectionBounds) {
         selectionBoundsRef.current = L.rectangle(selectionBounds, {
-          color: '#d4ec79',
+          color: '#2f6b4f',
           weight: 1.5,
-          opacity: 0.7,
+          opacity: 0.6,
           fillColor: '#d4ec79',
           fillOpacity: 0.03,
           dashArray: '5 5',
@@ -265,7 +267,7 @@ export const RiskMap: React.FC<RiskMapProps> = ({
     return () => { map.off('click', handleClick); };
   }, [onMapClick]);
 
-  // Handle Base Map Type Switch (Esri Satellite vs OpenStreetMap)
+  // Handle Base Map Type Switch (Satellite vs 3D Relief/Topography vs OpenStreetMap)
   useEffect(() => {
     const map = mapInstanceRef.current;
     if (!map) return;
@@ -286,6 +288,17 @@ export const RiskMap: React.FC<RiskMapProps> = ({
       sat.on('tileerror', () => setMapTileError(true));
       sat.addTo(map);
       baseLayerRef.current = sat;
+    } else if (baseMapType === 'relief') {
+      const relief = L.tileLayer(
+        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',
+        {
+          attribution: 'Tiles &copy; Esri, DeLorme, USGS, NPS',
+          maxZoom: 18
+        }
+      );
+      relief.on('tileerror', () => setMapTileError(true));
+      relief.addTo(map);
+      baseLayerRef.current = relief;
     } else {
       const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenStreetMap contributors',
@@ -330,20 +343,20 @@ export const RiskMap: React.FC<RiskMapProps> = ({
     }
 
     const selectionHalo = L.circleMarker([lat, lon], {
-      radius: 22,
-      color: '#10b981',
+      radius: 18,
+      color: '#2f6b4f',
       weight: 2,
-      fillColor: '#34d399',
-      fillOpacity: 0.25,
+      fillColor: '#d4ec79',
+      fillOpacity: 0.22,
       interactive: false
     }).addTo(map);
     haloRef.current = selectionHalo;
 
     const parcelIcon = L.divIcon({
       className: 'field-marker-icon',
-      html: '<svg class="field-marker-svg" viewBox="0 0 40 48" aria-hidden="true"><path d="M20 2.5C10.6 2.5 3 10 3 19.2c0 12.1 17 26.3 17 26.3s17-14.2 17-26.3C37 10 29.4 2.5 20 2.5Z" fill="#059669" stroke="#ffffff" stroke-width="3"/><circle cx="20" cy="19" r="5.5" fill="#ffffff"/></svg>',
-      iconSize: [44, 52],
-      iconAnchor: [22, 47]
+      html: '<svg class="field-marker-svg" viewBox="0 0 40 48" aria-hidden="true"><path d="M20 2.5C10.6 2.5 3 10 3 19.2c0 12.1 17 26.3 17 26.3s17-14.2 17-26.3C37 10 29.4 2.5 20 2.5Z" fill="#1e583d" stroke="#ffffff" stroke-width="2.5"/><circle cx="20" cy="19" r="5" fill="#d4ec79"/></svg>',
+      iconSize: [40, 48],
+      iconAnchor: [20, 44]
     });
 
     const marker = L.marker([lat, lon], { icon: parcelIcon }).addTo(map);
@@ -351,7 +364,7 @@ export const RiskMap: React.FC<RiskMapProps> = ({
     marker.bindTooltip(`${parcelName} · ${areaHa} ha`, {
       permanent: true,
       direction: 'top',
-      offset: [0, -48],
+      offset: [0, -44],
       className: 'field-tooltip'
     });
     marker.getElement()?.setAttribute('aria-label', `${lang === 'es' ? 'Centro de parcela' : 'Field center'}: ${lat.toFixed(4)}, ${lon.toFixed(4)}`);
@@ -370,11 +383,11 @@ export const RiskMap: React.FC<RiskMapProps> = ({
     ];
 
     const poly = L.polygon(polygonCoords, {
-      color: '#10b981',
-      fillColor: '#34d399',
-      fillOpacity: 0.18,
-      weight: 2.5,
-      dashArray: '5 5'
+      color: '#2f6b4f',
+      fillColor: '#d4ec79',
+      fillOpacity: 0.16,
+      weight: 2,
+      dashArray: '5 4'
     }).addTo(map);
     polygonRef.current = poly;
     poly.bringToFront();
@@ -387,9 +400,9 @@ export const RiskMap: React.FC<RiskMapProps> = ({
     eonetAlerts.forEach((alert) => {
       const [stormLon, stormLat] = alert.nearestCoordinates;
       const stormCircle = L.circle([stormLat, stormLon], {
-        color: '#ef4444',
-        fillColor: '#f87171',
-        fillOpacity: 0.2,
+        color: '#b91c1c',
+        fillColor: '#ef4444',
+        fillOpacity: 0.15,
         radius: 60000
       })
         .addTo(map)
@@ -407,56 +420,77 @@ export const RiskMap: React.FC<RiskMapProps> = ({
     : (cropWaterEstimates[0]?.m3 ?? 0).toLocaleString();
 
   return (
-    <div className="map-card overflow-hidden flex flex-col">
+    <div className="map-card overflow-hidden flex flex-col bg-[#fffef8] border border-[#d2dbcc] rounded-xl">
       {/* Top Controls Bar */}
-      <div className="p-4 bg-slate-900/90 border-b border-slate-800 space-y-3 text-xs">
+      <div className="p-4 bg-[#f8faf8] border-b border-[#e1e9e3] space-y-3 text-xs">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h3 className="font-bold text-slate-100 text-sm flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+            <h3 className="font-bold text-[#1b362b] text-sm flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-[#2f6b4f]"></span>
               {t.title}
             </h3>
-            <p className="text-slate-400 text-[11px]">{t.subtitle}</p>
+            <p className="text-[#596e62] text-[11px]">{t.subtitle}</p>
           </div>
 
           {/* Perspective & Layer Switcher Controls */}
           <div className="flex flex-wrap items-center gap-2">
-            {/* Quick Zoom Actions */}
-            <div className="flex bg-slate-800 p-0.5 rounded-lg border border-slate-700">
+            {/* Quick Zoom Actions with clean SVG icons */}
+            <div className="flex bg-[#eaf0eb] p-0.5 rounded-lg border border-[#cbd8cf]">
               <button
                 type="button"
                 onClick={zoomToParcel}
-                className="px-2 py-1 rounded text-[11px] font-semibold text-emerald-300 hover:text-white hover:bg-slate-700 transition-colors"
+                className="px-2.5 py-1 rounded text-[11px] font-semibold text-[#1f4a35] hover:text-[#0f2c1f] hover:bg-[#dbe7df] transition-colors flex items-center gap-1.5"
                 title={t.btnFocusField}
               >
-                {t.btnFocusField}
+                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10"/>
+                  <line x1="22" y1="12" x2="18" y2="12"/>
+                  <line x1="6" y1="12" x2="2" y2="12"/>
+                  <line x1="12" y1="6" x2="12" y2="2"/>
+                  <line x1="12" y1="22" x2="12" y2="18"/>
+                </svg>
+                <span>{t.btnFocusField}</span>
               </button>
               <button
                 type="button"
                 onClick={zoomToRegion}
-                className="px-2 py-1 rounded text-[11px] font-semibold text-slate-300 hover:text-white hover:bg-slate-700 transition-colors"
+                className="px-2.5 py-1 rounded text-[11px] font-semibold text-[#486354] hover:text-[#1f4a35] hover:bg-[#dbe7df] transition-colors flex items-center gap-1.5"
                 title={t.btnRegionView}
               >
-                {t.btnRegionView}
+                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/>
+                  <line x1="8" y1="2" x2="8" y2="18"/>
+                  <line x1="16" y1="6" x2="16" y2="22"/>
+                </svg>
+                <span>{t.btnRegionView}</span>
               </button>
             </div>
 
             {/* Base map layer switcher */}
-            <div className="map-toggle-group flex bg-slate-800 p-0.5 rounded-lg border border-slate-700">
+            <div className="map-toggle-group flex bg-[#eaf0eb] p-0.5 rounded-lg border border-[#cbd8cf]">
               <button
                 type="button"
                 onClick={() => setBaseMapType('satellite')}
                 className={`px-2 py-1 rounded text-[11px] font-semibold transition-all ${
-                  baseMapType === 'satellite' ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:text-white'
+                  baseMapType === 'satellite' ? 'bg-[#2f6b4f] text-white shadow-xs' : 'text-[#486354] hover:text-[#1b362b]'
                 }`}
               >
                 {t.satellite}
               </button>
               <button
                 type="button"
+                onClick={() => setBaseMapType('relief')}
+                className={`px-2 py-1 rounded text-[11px] font-semibold transition-all ${
+                  baseMapType === 'relief' ? 'bg-[#2f6b4f] text-white shadow-xs' : 'text-[#486354] hover:text-[#1b362b]'
+                }`}
+              >
+                {t.relief}
+              </button>
+              <button
+                type="button"
                 onClick={() => setBaseMapType('streets')}
                 className={`px-2 py-1 rounded text-[11px] font-semibold transition-all ${
-                  baseMapType === 'streets' ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:text-white'
+                  baseMapType === 'streets' ? 'bg-[#2f6b4f] text-white shadow-xs' : 'text-[#486354] hover:text-[#1b362b]'
                 }`}
               >
                 {t.streets}
@@ -482,12 +516,12 @@ export const RiskMap: React.FC<RiskMapProps> = ({
         </form>
 
         {/* Dynamic Parcel Size Slider & Water Regime Config */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-slate-800/80">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-[#e1e9e3]">
           {/* Hectares Slider */}
-          <div className="bg-slate-800/50 p-2.5 rounded-xl border border-slate-700/60">
+          <div className="bg-[#f2f6f3] p-2.5 rounded-xl border border-[#d6e2d9]">
             <div className="flex justify-between items-center mb-1">
-              <span className="text-slate-400 font-semibold">{t.areaLabel}</span>
-              <span className="font-bold text-emerald-400 bg-slate-900 px-2 py-0.5 rounded border border-slate-700">
+              <span className="text-[#4b6053] font-semibold">{t.areaLabel}</span>
+              <span className="font-bold text-[#1b4330] bg-white px-2 py-0.5 rounded border border-[#c8d8cd]">
                 {areaHa.toFixed(1)} ha
               </span>
             </div>
@@ -498,17 +532,17 @@ export const RiskMap: React.FC<RiskMapProps> = ({
               step="1"
               value={areaHa}
               onChange={(e) => onAreaChange(parseFloat(e.target.value))}
-              className="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+              className="w-full h-1.5 bg-[#ccdcd0] rounded-lg appearance-none cursor-pointer accent-[#2f6b4f]"
             />
           </div>
 
           {/* Water Regime */}
-          <div className="bg-slate-800/50 p-2.5 rounded-xl border border-slate-700/60">
-            <span className="text-slate-400 font-semibold block mb-1">{t.regimeLabel}</span>
+          <div className="bg-[#f2f6f3] p-2.5 rounded-xl border border-[#d6e2d9]">
+            <span className="text-[#4b6053] font-semibold block mb-1">{t.regimeLabel}</span>
             <select
               value={waterRegime}
               onChange={(e) => onWaterRegimeChange(e.target.value as any)}
-              className="w-full bg-slate-900 text-slate-200 border border-slate-700 rounded-lg px-2 py-1 text-xs focus:outline-hidden"
+              className="w-full bg-white text-[#1b362b] border border-[#c8d8cd] rounded-lg px-2 py-1 text-xs focus:outline-hidden"
             >
               <option value="temporal">{t.temporal}</option>
               <option value="goteo">{t.goteo}</option>
@@ -517,19 +551,19 @@ export const RiskMap: React.FC<RiskMapProps> = ({
           </div>
 
           {/* Volume Metric & Layer Toggle */}
-          <div className="bg-slate-800/50 p-2.5 rounded-xl border border-slate-700/60 flex flex-col justify-between">
+          <div className="bg-[#f2f6f3] p-2.5 rounded-xl border border-[#d6e2d9] flex flex-col justify-between">
             <div className="flex items-center justify-between">
-              <span className="text-slate-400">{t.volLabel}</span>
-              <span className="font-bold text-cyan-300">{cropWaterEstimates.length ? `~${estimateRange}` : '—'} m³</span>
+              <span className="text-[#4b6053]">{t.volLabel}</span>
+              <span className="font-bold text-[#1a5b6c] font-mono">{cropWaterEstimates.length ? `~${estimateRange}` : '—'} m³</span>
             </div>
-            <small className="water-estimate-note">{lang === 'es' ? 'Por ciclo y cultivo si ocupa toda el área; catálogo, sin descontar lluvia.' : 'Per cycle and crop if it covers the full area; catalog value, rainfall not deducted.'}</small>
+            <small className="water-estimate-note text-[#6a7c71]">{lang === 'es' ? 'Por ciclo y cultivo si ocupa toda el área; catálogo, sin descontar lluvia.' : 'Per cycle and crop if it covers the full area; catalog value, rainfall not deducted.'}</small>
             {cropWaterEstimates.length > 0 && <div className="crop-water-hints">{cropWaterEstimates.map(({ id, m3 }) => <span key={id}>{cropNames[id]?.[lang === 'es' ? 0 : 1] || id.replaceAll('_', ' ')} · {m3.toLocaleString()} m³</span>)}</div>}
-            <label className="flex items-center gap-2 cursor-pointer mt-1 text-slate-300 select-none">
+            <label className="flex items-center gap-2 cursor-pointer mt-1 text-[#334c3e] select-none font-medium">
               <input
                 type="checkbox"
                 checked={showGibs}
                 onChange={(e) => setShowGibs(e.target.checked)}
-                className="rounded text-emerald-500 focus:ring-0 accent-emerald-500"
+                className="rounded text-[#2f6b4f] focus:ring-0 accent-[#2f6b4f]"
               />
               <span>{t.gibsToggle}</span>
             </label>
@@ -542,30 +576,34 @@ export const RiskMap: React.FC<RiskMapProps> = ({
         <div ref={mapContainerRef} className="h-full w-full z-10" />
 
         {/* Clean HUD Status Overlay in bottom-left */}
-        <div className="map-selection-readout absolute bottom-3 left-3 z-20 bg-slate-900/90 backdrop-blur-md p-3 rounded-xl border border-slate-800 text-[11px] text-slate-300 shadow-xl space-y-1.5 max-w-xs">
-          <div className="flex items-center justify-between gap-2 font-bold text-white">
+        <div className="map-selection-readout absolute bottom-3 left-3 z-20 bg-[#fffef8]/95 backdrop-blur-xs p-3 rounded-xl border border-[#cbd8cf] text-[11px] text-[#2c4739] shadow-md space-y-1.5 max-w-xs">
+          <div className="flex items-center justify-between gap-2 font-bold text-[#173d30]">
             <div className="flex items-center gap-2 truncate">
-              <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+              <span className="w-2 h-2 rounded-full bg-[#2f6b4f]"></span>
               <span className="truncate">{parcelName}</span>
             </div>
             <button
               type="button"
               onClick={recenterMap}
-              className="text-[10px] text-emerald-400 hover:text-white px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 cursor-pointer"
+              className="text-[10px] text-[#2f6b4f] hover:text-[#173d30] px-2 py-0.5 rounded bg-[#edf4ef] border border-[#cbd8cf] cursor-pointer flex items-center gap-1 font-semibold"
             >
-              {t.btnCenter}
+              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="1 4 1 10 7 10"/>
+                <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+              </svg>
+              <span>{t.btnCenter}</span>
             </button>
           </div>
-          <div className="text-[10px] text-slate-400 flex items-center justify-between">
+          <div className="text-[10px] text-[#556b5e] flex items-center justify-between">
             <span>{t.coordsLabel} {lat.toFixed(4)}°, {lon.toFixed(4)}°</span>
-            <span className="text-emerald-400 font-bold">{areaHa} ha</span>
+            <span className="text-[#236040] font-bold">{areaHa} ha</span>
           </div>
-          <div className="text-[10px] text-emerald-300 font-mono">
+          <div className="text-[10px] text-[#2f6b4f] font-mono">
             {t.dimensionsLabel} ~{sideMeters} m × {sideMeters} m
           </div>
           {eonetAlerts.length > 0 && (
-            <div className="flex items-center gap-1.5 text-rose-400 font-semibold text-[10px] pt-1 border-t border-slate-800">
-              <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span>
+            <div className="flex items-center gap-1.5 text-[#a8332a] font-semibold text-[10px] pt-1 border-t border-[#e2eae5]">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#dc2626] animate-pulse"></span>
               <span>{eonetAlerts.length} {lang === 'es' ? 'alertas activas de EONET' : 'active EONET alerts'}</span>
             </div>
           )}
@@ -574,7 +612,7 @@ export const RiskMap: React.FC<RiskMapProps> = ({
         </div>
 
         {/* Non-intrusive Hint Bar at top right */}
-        <div className="absolute top-3 right-3 z-20 bg-slate-900/85 backdrop-blur-md px-3 py-1 rounded-lg border border-slate-800 text-[10px] text-emerald-300 shadow">
+        <div className="absolute top-3 right-3 z-20 bg-[#fffef8]/90 backdrop-blur-xs px-3 py-1.5 rounded-lg border border-[#cbd8cf] text-[10px] text-[#2f6b4f] shadow-xs font-medium">
           {t.clickHint}
         </div>
       </div>
