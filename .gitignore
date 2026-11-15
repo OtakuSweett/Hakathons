@@ -53,5 +53,12 @@ Thumbs.db
 *.tmp
 *.temp
 
+# Presentations, Demo Assets & Offline Scripts
+*.pptx
+docs/*.pptx
+docs/demo_assets/
+docs/demo_slides.html
+scripts/
+
 # Lockfiles ARE committed (pnpm-lock.yaml, uv.lock)
 # node_modules and .venv are NOT
