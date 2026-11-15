@@ -150,13 +150,17 @@ pnpm test:py
 
 ## 🗺️ 7. Casos de Estudio y Demostración
 
-La plataforma incluye 6 presets calibrados como benchmarks de verdad de terreno (`data/presets/`):
-1. **El Marqués, Querétaro (México):** Parcela de 15 ha con acuífero sobreexplotado, rotación maíz $\rightarrow$ garbanzo $\rightarrow$ frijol.
-2. **San Juan del Río, Querétaro (México):** Valle intensivo bajo déficit de temporal.
-3. **Celaya, Guanajuato (México):** Suelos vertisoles de alta productividad agrícola bajo riego.
-4. **Colón Semidesierto, Querétaro (México):** Zona semiárida con cultivos de alta tolerancia a sequía (nopal, sorgo).
-5. **Prairie View, Iowa (Corn Belt, EE. UU.):** Parcela de 65 ha demostrando adaptación global en el hemisferio norte.
-6. **Pergamino, Pampa Húmeda (Argentina):** Parcela de 120 ha con desfase estacional de 6 meses (Hemisferio Sur / Austral).
+La plataforma incluye 10 presets calibrados como benchmarks de verdad de terreno (`data/presets/`) que cubren los principales graneros del mundo afectados por estrés hídrico:
+1. **El Marqués, Querétaro (México):** Parcela de 12.5 ha con acuífero sobreexplotado, rotación maíz $\rightarrow$ garbanzo $\rightarrow$ frijol.
+2. **San Juan del Río, Querétaro (México):** Parcela de 25 ha en valle intensivo bajo déficit de temporal.
+3. **Celaya, Guanajuato (México):** Parcela de 20 ha en suelos vertisoles de alta productividad agrícola bajo riego.
+4. **Colón Semidesierto, Querétaro (México):** Parcela de 15 ha semiárida con cultivos de alta tolerancia a sequía (nopal, sorgo).
+5. **Valle del Yaqui, Sonora (México):** Parcela de 45 ha en el desierto sonorense con riego por gravedad (canales).
+6. **Prairie View, Iowa (Corn Belt, EE. UU.):** Parcela de 65 ha demostrando adaptación en el hemisferio norte (maíz-soya).
+7. **Pergamino, Pampa Húmeda (Argentina):** Parcela de 120 ha con desfase estacional de 6 meses (Hemisferio Sur / Austral).
+8. **Sorriso, Mato Grosso (Brasil):** Parcela de 120 ha en sabana tropical (Cerrado) con suelos oxisoles y doble zafra.
+9. **Valle del Guadalquivir, Andalucía (España):** Parcela de 35 ha en cuenca mediterránea europea con sequía severa prolongada.
+10. **Ludhiana, Punjab (India):** Parcela de 18 ha en la llanura indogangética con agotamiento crítico por bombeo de pozos profundos.
 
 ---
 

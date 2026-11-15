@@ -28,7 +28,7 @@ El reto exige crear una herramienta que utilice observaciones terrestres de la N
    - *Módulo 6:* Optimizador MILP multianual resuelto con HiGHS que enforce anti-monocultivo y presencia obligatoria de leguminosas.
    - *Módulo 7:* Análisis de sensibilidad dual con precios sombra del agua ($y_{\text{agua}} = \frac{\partial Z^*}{\partial b_k}$) y slider continuo de Pareto $\lambda \in [0, 1]$.
 3. **El Agricultor en el Centro (UX Diseñada para el Productor):** Delimitación interactiva de hectáreas reales sobre mapas satelitales Esri HD, configuración del régimen de agua (temporal vs goteo vs gravedad), semáforo preventivo de plagas y reporte participativo en campo (*ground truthing*).
-4. **Resiliencia de Demostración (Modo Offline con Cero Fallas):** Si el internet del evento falla, el sistema conmuta suavemente a 6 benchmarks calibrados en México, Estados Unidos y Argentina sin mostrar pantallas de error.
+4. **Resiliencia de Demostración (Modo Offline con Cero Fallas):** Si el internet del evento falla, el sistema conmuta suavemente a 10 benchmarks calibrados en México, Estados Unidos, Argentina, Brasil, España e India sin mostrar pantallas de error.
 
 ---
 

@@ -150,13 +150,17 @@ pnpm test:py
 
 ## 🗺️ 7. Calibration Benchmarks & Ground-Truth Presets
 
-The repository ships with 6 offline demonstration presets calibrated with ground truth (`data/presets/`):
-1. **El Marqués, Querétaro (Mexico):** 15-ha parcel over an over-exploited aquifer; maize $\rightarrow$ chickpea $\rightarrow$ common bean rotation.
-2. **San Juan del Río, Querétaro (Mexico):** Intensive agricultural valley under severe rainfed deficit.
-3. **Celaya, Guanajuato (Mexico):** Highly productive vertisol soils under gravity irrigation.
-4. **Colón Semidesert, Querétaro (Mexico):** Semiarid parcel with drought-tolerant crops (nopal, sorghum).
-5. **Prairie View, Iowa (Corn Belt, USA):** 65-ha extensive field demonstrating Northern Hemisphere adaptation.
-6. **Pergamino, Pampa Húmeda (Argentina):** 120-ha Southern Hemisphere parcel with a 6-month seasonal shift (Austral seasons).
+The repository ships with 10 offline demonstration presets calibrated with ground truth (`data/presets/`) representing major global breadbaskets facing water stress:
+1. **El Marqués, Querétaro (Mexico):** 12.5-ha parcel over an over-exploited aquifer; maize $\rightarrow$ chickpea $\rightarrow$ common bean rotation.
+2. **San Juan del Río, Querétaro (Mexico):** 25-ha intensive agricultural valley under severe rainfed deficit.
+3. **Celaya, Guanajuato (Mexico):** 20-ha highly productive vertisol soils under gravity irrigation.
+4. **Colón Semidesert, Querétaro (Mexico):** 15-ha semiarid parcel with drought-tolerant crops (nopal, sorghum).
+5. **Valle del Yaqui, Sonora (Mexico):** 45-ha Sonoran Desert breadbasket with canal gravity irrigation.
+6. **Prairie View, Iowa (Corn Belt, USA):** 65-ha extensive field demonstrating Northern Hemisphere corn-soybean rotation.
+7. **Pergamino, Pampa Húmeda (Argentina):** 120-ha Southern Hemisphere parcel with a 6-month seasonal shift (Austral seasons).
+8. **Sorriso, Mato Grosso (Brazil):** 120-ha tropical savanna (Cerrado) parcel with oxisol soils and double-cropping.
+9. **Valle del Guadalquivir, Andalucía (Spain):** 35-ha European Mediterranean basin under severe multi-year drought.
+10. **Ludhiana, Punjab Plains (India):** 18-ha Indo-Gangetic basin parcel facing critical groundwater tubewell depletion.
 
 ---
 

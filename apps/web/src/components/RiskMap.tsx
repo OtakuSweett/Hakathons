@@ -41,7 +41,30 @@ interface RiskMapProps {
   lang: Language;
   onMapClick: (lat: number, lon: number) => void;
   onLocationSearch: (lat: number, lon: number, bounds?: GeoBounds | null) => void;
+  onSelectPreset?: (presetId: string) => void;
 }
+
+interface GlobalBreadbasket {
+  id: string;
+  flag: string;
+  label: { es: string; en: string };
+  region: { es: string; en: string };
+  lat: number;
+  lon: number;
+  presetId?: string;
+}
+
+const GLOBAL_BREADBASKETS: GlobalBreadbasket[] = [
+  { id: 'bajio', flag: '🇲🇽', label: { es: 'El Bajío (Qro)', en: 'El Bajio (Qro)' }, region: { es: 'Acuífero sobreexplotado', en: 'Depleted aquifer' }, lat: 20.5922, lon: -100.1972, presetId: 'el_marques_qro' },
+  { id: 'yaqui', flag: '🇲🇽', label: { es: 'Valle del Yaqui (Son)', en: 'Yaqui Valley (Son)' }, region: { es: 'Riego gravedad en desierto', en: 'Desert gravity irrigation' }, lat: 27.4864, lon: -109.9408, presetId: 'valle_yaqui_sonora_mx' },
+  { id: 'andalucia', flag: '🇪🇸', label: { es: 'Andalucía (España)', en: 'Andalusia (Spain)' }, region: { es: 'Cuenca del Guadalquivir', en: 'Guadalquivir basin' }, lat: 37.3891, lon: -5.9845, presetId: 'andalucia_guadalquivir_es' },
+  { id: 'corn_belt', flag: '🇺🇸', label: { es: 'Corn Belt (Iowa)', en: 'Corn Belt (Iowa)' }, region: { es: 'Maíz y soya intensivos', en: 'Intensive corn-soy' }, lat: 42.0308, lon: -93.6319, presetId: 'iowa_corn_belt_us' },
+  { id: 'pampa', flag: '🇦🇷', label: { es: 'Pampa Húmeda (Arg)', en: 'Pampa (Argentina)' }, region: { es: 'Hemisferio Sur austral', en: 'Southern Hemisphere austral' }, lat: -33.8911, lon: -60.5736, presetId: 'pampa_pergamino_ar' },
+  { id: 'cerrado', flag: '🇧🇷', label: { es: 'Cerrado (Brasil)', en: 'Cerrado (Brazil)' }, region: { es: 'Zafra tropical austral', en: 'Tropical austral double-crop' }, lat: -12.5425, lon: -55.7212, presetId: 'mato_grosso_cerrado_br' },
+  { id: 'punjab', flag: '🇮🇳', label: { es: 'Punjab (India)', en: 'Punjab (India)' }, region: { es: 'Estrés hídrico subterráneo', en: 'Groundwater stress crisis' }, lat: 30.9010, lon: 75.8573, presetId: 'punjab_ludhiana_in' },
+  { id: 'celaya', flag: '🇲🇽', label: { es: 'Celaya (Gto)', en: 'Celaya (Gto)' }, region: { es: 'Vertisoles arcillosos', en: 'Clay vertisols' }, lat: 20.5231, lon: -100.8138, presetId: 'celaya_gto' },
+  { id: 'semiarid', flag: '🇲🇽', label: { es: 'Semidesierto (Colón)', en: 'Semiarid (Colón)' }, region: { es: 'Secano y nopal/sorgo', en: 'Rainfed & drought-tolerant' }, lat: 20.7250, lon: -100.0450, presetId: 'colon_qro_semiarid' }
+];
 
 export const RiskMap: React.FC<RiskMapProps> = ({
   lat,
@@ -58,7 +81,8 @@ export const RiskMap: React.FC<RiskMapProps> = ({
   onWaterRegimeChange,
   lang,
   onMapClick,
-  onLocationSearch
+  onLocationSearch,
+  onSelectPreset
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
@@ -109,7 +133,9 @@ export const RiskMap: React.FC<RiskMapProps> = ({
       btnFocusField: 'Enfocar Parcela',
       btnRegionView: 'Visión Regional',
       btnCenter: 'Centrar',
-      dimensionsLabel: 'Dimensiones estimadas:'
+      dimensionsLabel: 'Dimensiones estimadas:',
+      globalBreadbasketsTitle: 'Graneros del Mundo (1-clic):',
+      globalBreadbasketsSub: 'Demostración planetaria en cuencas con estrés hídrico'
     },
     en: {
       title: 'Parcel Delimitation & Multi-Hazard Map',
@@ -137,7 +163,9 @@ export const RiskMap: React.FC<RiskMapProps> = ({
       btnFocusField: 'Focus Field',
       btnRegionView: 'Regional View',
       btnCenter: 'Center',
-      dimensionsLabel: 'Estimated dimensions:'
+      dimensionsLabel: 'Estimated dimensions:',
+      globalBreadbasketsTitle: 'Global Breadbaskets (1-click):',
+      globalBreadbasketsSub: 'Demonstrate planetary scope across water-stressed basins'
     }
   }[lang];
 
@@ -421,6 +449,14 @@ export const RiskMap: React.FC<RiskMapProps> = ({
     ? `${Math.min(...cropWaterEstimates.map((item) => item.m3)).toLocaleString()}–${Math.max(...cropWaterEstimates.map((item) => item.m3)).toLocaleString()}`
     : (cropWaterEstimates[0]?.m3 ?? 0).toLocaleString();
 
+  const handleSelectBreadbasket = (b: GlobalBreadbasket) => {
+    onLocationSearch(b.lat, b.lon, null);
+    onMapClick(b.lat, b.lon);
+    if (onSelectPreset && b.presetId) {
+      onSelectPreset(b.presetId);
+    }
+  };
+
   return (
     <div className="map-card overflow-hidden flex flex-col bg-[#fffef8] border border-[#d2dbcc] rounded-xl">
       {/* Top Controls Bar */}
@@ -516,6 +552,31 @@ export const RiskMap: React.FC<RiskMapProps> = ({
           {searchAttribution && <small className="place-attribution">{searchAttribution}</small>}
           {searchError && <p className="map-search-error" role="alert">{searchError}</p>}
         </form>
+
+        {/* Global Breadbaskets 1-Click Quick-Launch */}
+        <div className="pt-2 border-t border-[#e2eae4]">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-[11px] font-bold text-[#1b362b] flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#2f6b4f]"></span>
+              {t.globalBreadbasketsTitle}
+            </span>
+            <span className="text-[10px] text-[#596e62]">{t.globalBreadbasketsSub}</span>
+          </div>
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-thin">
+            {GLOBAL_BREADBASKETS.map((b) => (
+              <button
+                key={b.id}
+                type="button"
+                onClick={() => handleSelectBreadbasket(b)}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-[#eef4f0] text-[#1f4a35] hover:bg-[#2f6b4f] hover:text-white transition-all border border-[#cbd8cf] shrink-0 cursor-pointer"
+                title={`${b.label[lang]} - ${b.region[lang]}`}
+              >
+                <span>{b.flag}</span>
+                <span>{b.label[lang]}</span>
+              </button>
+            ))}
+          </div>
+        </div>
 
         {/* Dynamic Parcel Size Slider & Water Regime Config */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-[#e1e9e3]">

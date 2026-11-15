@@ -510,7 +510,27 @@ export const App: React.FC = () => {
           <div className="location-options"><button className="location-option" type="button" onClick={requestLocation}><span className="location-option-icon" aria-hidden="true">◎</span><span><b>{text('Usar mi ubicación actual', 'Use my current location')}</b><small>{text('El navegador pedirá permiso. Solo se comparte cuando solicitas el análisis.', 'Your browser will ask permission. The location is shared only when you request analysis.')}</small></span><span aria-hidden="true">→</span></button></div>
           {locationMessage && <p className="inline-message" role="alert">{locationMessage}</p>}
           <div className="location-map-heading"><div><b>{text('O marca el punto en el mapa', 'Or mark the point on the map')}</b><small>{text('Acerca el mapa y toca el centro aproximado de tu parcela.', 'Zoom in and tap near the center of your field.')}</small></div><span className="coordinate-readout">{selectedCoordinates.lat.toFixed(4)}°, {selectedCoordinates.lon.toFixed(4)}°</span></div>
-          <RiskMap lat={selectedCoordinates.lat} lon={selectedCoordinates.lon} regionLat={mapRegionCenter.lat} regionLon={mapRegionCenter.lon} selectionBounds={mapSelectionBounds} parcelName={text('Centro de parcela', 'Field center')} eonetAlerts={[]} areaHa={areaHa} selectedCropIds={selectedCrops} onAreaChange={setAreaHa} waterRegime={waterRegime} onWaterRegimeChange={setWaterRegime} lang={lang} onMapClick={handleMapCoordinateSelect} onLocationSearch={handleLocationSearch} />
+          <RiskMap
+            lat={selectedCoordinates.lat}
+            lon={selectedCoordinates.lon}
+            regionLat={mapRegionCenter.lat}
+            regionLon={mapRegionCenter.lon}
+            selectionBounds={mapSelectionBounds}
+            parcelName={text('Centro de parcela', 'Field center')}
+            eonetAlerts={[]}
+            areaHa={areaHa}
+            selectedCropIds={selectedCrops}
+            onAreaChange={setAreaHa}
+            waterRegime={waterRegime}
+            onWaterRegimeChange={setWaterRegime}
+            lang={lang}
+            onMapClick={handleMapCoordinateSelect}
+            onLocationSearch={handleLocationSearch}
+            onSelectPreset={(presetId) => {
+              setSelectedPresetId(presetId);
+              if (isOfflineMode) void loadAnalysis(presetId);
+            }}
+          />
           <div className="panel-actions"><span className="coordinate-readout">{text('Ubicación elegida', 'Selected location')} <b>{selectedCoordinates.lat.toFixed(4)}°, {selectedCoordinates.lon.toFixed(4)}°</b></span><button className="primary-button" type="button" onClick={() => setStep(2)}>{text('Elegir cultivos', 'Choose crops')} <span aria-hidden="true">→</span></button></div>
           <details className="demo-options"><summary>{text('Cargar benchmark regional de calibración (Modo Resiliencia)', 'Load regional calibration benchmark (Resilience Mode)')}</summary><div className="region-options" role="radiogroup" aria-label={text('Benchmarks regionales de calibración', 'Regional calibration benchmarks')}>
             {DEMO_PRESETS_LIST.map((preset) => <button key={preset.presetId} type="button" role="radio" aria-checked={selectedPresetId === preset.presetId} onClick={() => {
@@ -581,12 +601,21 @@ export const App: React.FC = () => {
         </section>}
 
         {step === 3 && <>
-          <div className="analysis-heading"><div><span className="step-kicker">{text('ANÁLISIS DE PARCELA', 'FIELD ANALYSIS')}</span><h2>{currentPresetName}</h2><p>{data.coordinates.lat.toFixed(4)}°, {data.coordinates.lon.toFixed(4)}° <span>·</span> {areaHa.toFixed(1)} ha <span>·</span> {selectedCrops.map((crop) => cropLabel(crop, lang)).join(', ') || text('sin cultivos seleccionados', 'no crops selected')}</p></div><button className="outline-button" type="button" onClick={() => setStep(0)}>{text('Editar parcela', 'Edit field')}</button></div>
+          <div className="analysis-heading">
+            <div>
+              <span className="step-kicker">{text('ANÁLISIS DE PARCELA', 'FIELD ANALYSIS')}</span>
+              <h2>{currentPresetName}</h2>
+              <p>
+                {data.coordinates.lat.toFixed(4)}°, {data.coordinates.lon.toFixed(4)}° <span>·</span> {areaHa.toFixed(1)} ha <span>·</span> {selectedCrops.map((crop) => cropLabel(crop, lang)).join(', ') || text('sin cultivos seleccionados', 'no crops selected')} <span>·</span> <span className="inline-block px-2 py-0.5 rounded text-[11px] font-semibold bg-[#e8efe9] text-[#1b362b]">{data.coordinates.lat < 0 ? (lang === 'es' ? 'Hemisferio Sur (Austral · +182d)' : 'Southern Hemisphere (Austral · +182d)') : (lang === 'es' ? 'Hemisferio Norte (Boreal)' : 'Northern Hemisphere (Boreal)')}</span>
+              </p>
+            </div>
+            <button className="outline-button" type="button" onClick={() => setStep(0)}>{text('Editar parcela', 'Edit field')}</button>
+          </div>
           {provenanceMessages(data, lang).length > 0 && <aside className="data-quality-notice" role="status"><b>{text('Origen y disponibilidad de los datos', 'Data source and availability')}</b>{provenanceMessages(data, lang).map((message) => <p key={message}>{message}</p>)}</aside>}
           <EarlyWarningBanner trigger={data.physics?.irrigation_trigger || { t_star_days: null, delta_i_mm: null, reason: null }} eonetCount={data.eonet_hazard_alerts?.length || 0} meanTempC={data.climate_summary?.mean_temperature_c || 21} lang={lang} />
           <ShiftingLands data={data} areaHa={areaHa} waterRegime={waterRegime} lang={lang} />
           <section className="analysis-grid main-analysis-grid">
-            <div className="span-7"><RiskMap lat={data.coordinates.lat} lon={data.coordinates.lon} regionLat={mapRegionCenter.lat} regionLon={mapRegionCenter.lon} selectionBounds={mapSelectionBounds} parcelName={currentPresetName} eonetAlerts={data.eonet_hazard_alerts || []} areaHa={areaHa} selectedCropIds={selectedCrops} onAreaChange={setAreaHa} waterRegime={waterRegime} onWaterRegimeChange={setWaterRegime} lang={lang} onMapClick={(lat, lon) => { handleMapCoordinateSelect(lat, lon); setStep(0); }} onLocationSearch={(lat, lon, bounds) => { handleLocationSearch(lat, lon, bounds); setStep(0); }} /></div>
+            <div className="span-7"><RiskMap lat={data.coordinates.lat} lon={data.coordinates.lon} regionLat={mapRegionCenter.lat} regionLon={mapRegionCenter.lon} selectionBounds={mapSelectionBounds} parcelName={currentPresetName} eonetAlerts={data.eonet_hazard_alerts || []} areaHa={areaHa} selectedCropIds={selectedCrops} onAreaChange={setAreaHa} waterRegime={waterRegime} onWaterRegimeChange={setWaterRegime} lang={lang} onMapClick={(lat, lon) => { handleMapCoordinateSelect(lat, lon); setStep(0); }} onLocationSearch={(lat, lon, bounds) => { handleLocationSearch(lat, lon, bounds); setStep(0); }} onSelectPreset={(presetId) => { setSelectedPresetId(presetId); if (isOfflineMode) void loadAnalysis(presetId); }} /></div>
             <div className="span-5"><CropAdvisor viableCropIds={data.optimization?.presolver_summary?.feasible_crop_ids || []} discarded={data.optimization?.presolver_summary?.discarded || []} soilPh={data.soil_hydraulics?.soil_ph || 6.8} lang={lang} /></div>
           </section>
           <section className="analysis-grid"><div className="span-7"><CropMonitor data={data} lang={lang} /></div><div className="span-5"><ClimateSimulator onSimulate={handleSimulate} isLoading={isLoading} lang={lang} /></div></section>
