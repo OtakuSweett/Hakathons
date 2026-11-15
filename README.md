@@ -96,8 +96,8 @@ Tailored specifically for the NASA Space Apps challenge requirements:
 
 ### 1. Clone & Environment Setup
 ```bash
-git clone https://github.com/OtakuSweett/Hakathons.git
-cd Hakathons
+git clone https://github.com/OtakuSweett/NASA-Agro-DSS.git
+cd NASA-Agro-DSS
 
 # Copy environment variables
 cp .env.example .env
@@ -141,9 +141,9 @@ pnpm test:py
 **Verified Test Output:**
 ```
 ✓ tests/orchestrator.test.ts (16 tests) — 100% PASS (FAO-56 Penman-Monteith, Saxton-Rawls, Van Bemmelen, Open-Meteo fallback, geocoding)
-✓ tests/web.test.ts (11 tests) — 100% PASS (Hydraulic invariant, hemispheres, UI contracts, empty-state resilience)
+✓ tests/web.test.ts (13 tests) — 100% PASS (Hydraulic invariant, hemispheres, UI contracts, empty-state resilience, single-point focus)
 ✓ test_physics.py & test_optimizer.py (10 tests) — 100% PASS (SciPy exactness < 1e-9, Runge-Kutta 4, Newton-Raphson, HiGHS solver)
-======================= 37 passed out of 37 tests in total =======================
+======================= 39 passed out of 39 tests in total =======================
 ```
 
 ---
@@ -164,5 +164,5 @@ The repository ships with 6 offline demonstration presets calibrated with ground
 - **Project:** NASA Agro-DSS
 - **Challenge:** NASA International Space Apps Challenge 2026
 - **Local Event:** Querétaro, México
-- **Open-Source Repository:** [https://github.com/OtakuSweett/Hakathons](https://github.com/OtakuSweett/Hakathons)
+- **Open-Source Repository:** [https://github.com/OtakuSweett/NASA-Agro-DSS](https://github.com/OtakuSweett/NASA-Agro-DSS)
 - **License:** MIT Open Source

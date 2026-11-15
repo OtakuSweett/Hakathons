@@ -4,7 +4,7 @@
 - **Nombre del Proyecto:** Global Crop Rotation & Water Resilience DSS (NASA Agro-DSS)
 - **Desafío:** *Desplazamiento de campo: Adaptando granjas con datos de la NASA* (*Shifting Lands: Adapting Farms with NASA Data*)
 - **Evento Local:** Querétaro, México
-- **Repositorio de Código Abierto:** [https://github.com/OtakuSweett/Hakathons](https://github.com/OtakuSweett/Hakathons)
+- **Repositorio de Código Abierto:** [https://github.com/OtakuSweett/NASA-Agro-DSS](https://github.com/OtakuSweett/NASA-Agro-DSS)
 - **Licencia:** MIT (Open Source)
 
 ---
@@ -50,13 +50,13 @@ El reto exige crear una herramienta que utilice observaciones terrestres de la N
 ---
 
 ## 6. Enlace a la Demostración y Repositorio
-- **Código Fuente en GitHub:** [https://github.com/OtakuSweett/Hakathons](https://github.com/OtakuSweett/Hakathons)
+- **Código Fuente en GitHub:** [https://github.com/OtakuSweett/NASA-Agro-DSS](https://github.com/OtakuSweett/NASA-Agro-DSS)
 - **Instrucción de Arranque Rápido:**
   ```bash
-  git clone https://github.com/OtakuSweett/Hakathons.git
-  cd Hakathons
+  git clone https://github.com/OtakuSweett/NASA-Agro-DSS.git
+  cd NASA-Agro-DSS
   cp .env.example .env
   pnpm install
   pnpm dev
   ```
-- **Pruebas Automatizadas:** `pnpm test` (19 pruebas TS) y `pnpm test:py` (10 pruebas Python) pasando al 100%.
+- **Pruebas Automatizadas:** `pnpm test` (29 pruebas TS: 16 backend Fastify + 13 frontend React) y `pnpm test:py` (10 pruebas Python) pasando al 100% (39 de 39 pruebas verdes, 0 advertencias).
