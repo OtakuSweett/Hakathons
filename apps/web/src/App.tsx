@@ -165,6 +165,11 @@ export const App: React.FC = () => {
     if (preset) {
       setMapRegionCenter({ lat: preset.lat, lon: preset.lon });
       setAreaHa(preset.areaHa);
+      if (preset.presetId.includes('yaqui') || preset.presetId.includes('celaya')) {
+        setWaterRegime('gravedad');
+      } else {
+        setWaterRegime('goteo');
+      }
     }
     setMapSelectionBounds(null);
     setIsLoading(false);

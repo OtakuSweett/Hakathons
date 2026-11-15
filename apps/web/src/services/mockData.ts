@@ -34,8 +34,8 @@ export const DEMO_PRESETS_LIST = [
     parcelName: 'Valle de Celaya - Módulo de Riego',
     country: 'Mexico',
     region: 'Guanajuato (El Bajío)',
-    lat: 20.5231,
-    lon: -100.8138,
+    lat: 20.5650,
+    lon: -100.7450,
     areaHa: 20.0,
     cropId: 'wheat'
   },
@@ -54,8 +54,8 @@ export const DEMO_PRESETS_LIST = [
     parcelName: 'Bloque 1114 - Valle del Yaqui',
     country: 'Mexico',
     region: 'Sonora (Valle del Yaqui)',
-    lat: 27.4864,
-    lon: -109.9408,
+    lat: 27.3684,
+    lon: -109.9280,
     areaHa: 45.0,
     cropId: 'wheat'
   },
@@ -64,8 +64,8 @@ export const DEMO_PRESETS_LIST = [
     parcelName: 'Prairie View Farm - Field 3',
     country: 'United States',
     region: 'Iowa (Corn Belt)',
-    lat: 42.0308,
-    lon: -93.6319,
+    lat: 42.0850,
+    lon: -93.5850,
     areaHa: 65.0,
     cropId: 'soybean'
   },
@@ -74,8 +74,8 @@ export const DEMO_PRESETS_LIST = [
     parcelName: 'Estancia La Campana - Lote 12',
     country: 'Argentina',
     region: 'Buenos Aires (Pampa Húmeda)',
-    lat: -33.8911,
-    lon: -60.5736,
+    lat: -33.9500,
+    lon: -60.5500,
     areaHa: 120.0,
     cropId: 'sunflower'
   },
@@ -94,8 +94,8 @@ export const DEMO_PRESETS_LIST = [
     parcelName: 'Finca Las Marismas - Guadalquivir',
     country: 'Spain',
     region: 'Andalucía (Cuenca del Guadalquivir)',
-    lat: 37.3891,
-    lon: -5.9845,
+    lat: 37.4520,
+    lon: -5.6120,
     areaHa: 35.0,
     cropId: 'wheat'
   },
@@ -104,8 +104,8 @@ export const DEMO_PRESETS_LIST = [
     parcelName: 'Ludhiana Fields - Indo-Gangetic Basin',
     country: 'India',
     region: 'Punjab (Indo-Gangetic Plain)',
-    lat: 30.9010,
-    lon: 75.8573,
+    lat: 30.8250,
+    lon: 75.7500,
     areaHa: 18.0,
     cropId: 'wheat'
   }
@@ -121,23 +121,23 @@ export function getMockAnalysis(presetId: string = 'el_marques_qro'): AnalysisRe
   const isCelaya = presetId.includes('celaya');
   const isColon = presetId.includes('colon');
 
-  const lat = isUS ? 42.0308
-    : isAR ? -33.8911
+  const lat = isUS ? 42.0850
+    : isAR ? -33.9500
     : isBR ? -12.5425
-    : isES ? 37.3891
-    : isIN ? 30.9010
-    : isSonora ? 27.4864
-    : isCelaya ? 20.5231
+    : isES ? 37.4520
+    : isIN ? 30.8250
+    : isSonora ? 27.3684
+    : isCelaya ? 20.5650
     : isColon ? 20.7250
     : 20.5922;
 
-  const lon = isUS ? -93.6319
-    : isAR ? -60.5736
+  const lon = isUS ? -93.5850
+    : isAR ? -60.5500
     : isBR ? -55.7212
-    : isES ? -5.9845
-    : isIN ? 75.8573
-    : isSonora ? -109.9408
-    : isCelaya ? -100.8138
+    : isES ? -5.6120
+    : isIN ? 75.7500
+    : isSonora ? -109.9280
+    : isCelaya ? -100.7450
     : isColon ? -100.0450
     : -100.1972;
 
