@@ -134,7 +134,7 @@ export const RiskMap: React.FC<RiskMapProps> = ({
     btnRegionView: isEs ? 'Visión Regional' : 'Regional View',
     btnCenter: isEs ? 'Centrar' : 'Center',
     dimensionsLabel: isEs ? 'Dimensiones estimadas:' : 'Estimated dimensions:',
-    globalBreadbasketsTitle: isEs ? 'Graneros del Mundo (1-clic):' : 'Global Breadbaskets (1-click):',
+    globalBreadbasketsTitle: isEs ? 'Graneros del Mundo:' : 'Global Breadbaskets:',
     globalBreadbasketsSub: isEs ? 'Demostración planetaria en cuencas con estrés hídrico' : 'Demonstrate planetary scope across water-stressed basins'
   };
 
@@ -329,6 +329,14 @@ export const RiskMap: React.FC<RiskMapProps> = ({
     const map = mapInstanceRef.current;
     if (!map) return;
 
+    // Pan map to new parcel center if coordinates shifted
+    const center = map.getCenter();
+    const distanceMoved = Math.hypot(center.lat - lat, center.lng - lon);
+    if (distanceMoved > 0.005) {
+      map.setView([lat, lon], map.getZoom() < 12 ? 14 : map.getZoom(), { animate: true });
+      map.invalidateSize();
+    }
+
     if (markerRef.current) {
       markerRef.current.remove();
     }
@@ -419,6 +427,14 @@ export const RiskMap: React.FC<RiskMapProps> = ({
     : (cropWaterEstimates[0]?.m3 ?? 0).toLocaleString();
 
   const handleSelectBreadbasket = (b: GlobalBreadbasket) => {
+    setLocationQuery(`${b.lat.toFixed(4)}, ${b.lon.toFixed(4)}`);
+    setSearchResults([]);
+    setSearchError('');
+    const map = mapInstanceRef.current;
+    if (map) {
+      map.setView([b.lat, b.lon], 14, { animate: true });
+      map.invalidateSize();
+    }
     onLocationSearch(b.lat, b.lon, null);
     onMapClick(b.lat, b.lon);
     if (onSelectPreset && b.presetId) {
@@ -522,7 +538,7 @@ export const RiskMap: React.FC<RiskMapProps> = ({
           {searchError && <p className="map-search-error" role="alert">{searchError}</p>}
         </form>
 
-        {/* Global Breadbaskets 1-Click Quick-Launch */}
+        {/* Global Breadbaskets Quick-Launch */}
         <div className="pt-2 border-t border-[#e2eae4]">
           <div className="flex items-center justify-between mb-1.5">
             <span className="text-[11px] font-bold text-[#1b362b] flex items-center gap-1.5">
@@ -532,18 +548,26 @@ export const RiskMap: React.FC<RiskMapProps> = ({
             <span className="text-[10px] text-[#596e62]">{t.globalBreadbasketsSub}</span>
           </div>
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-thin">
-            {GLOBAL_BREADBASKETS.map((b) => (
-              <button
-                key={b.id}
-                type="button"
-                onClick={() => handleSelectBreadbasket(b)}
-                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-[#eef4f0] text-[#1f4a35] hover:bg-[#2f6b4f] hover:text-white transition-all border border-[#cbd8cf] shrink-0 cursor-pointer"
-                title={`${b.label[lang]} - ${b.region[lang]}`}
-              >
-                <span>{b.flag}</span>
-                <span>{b.label[lang]}</span>
-              </button>
-            ))}
+            {GLOBAL_BREADBASKETS.map((b) => {
+              const isActive = Math.abs(lat - b.lat) < 0.02 && Math.abs(lon - b.lon) < 0.02;
+              return (
+                <button
+                  key={b.id}
+                  type="button"
+                  onClick={() => handleSelectBreadbasket(b)}
+                  className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold transition-all border shrink-0 cursor-pointer ${
+                    isActive
+                      ? 'bg-[#1e583d] text-white border-[#1e583d] shadow-xs'
+                      : 'bg-[#eef4f0] text-[#1f4a35] hover:bg-[#2f6b4f] hover:text-white border-[#cbd8cf]'
+                  }`}
+                  title={`${b.label[lang]} - ${b.region[lang]}`}
+                >
+                  <span>{b.flag}</span>
+                  <span>{b.label[lang]}</span>
+                  {isActive && <span className="ml-0.5 text-[9px]">✓</span>}
+                </button>
+              );
+            })}
           </div>
         </div>
 

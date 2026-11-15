@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Language, AnalysisResponse } from '../types/index.js';
 
 interface PestDetectorProps {
@@ -7,6 +7,7 @@ interface PestDetectorProps {
 }
 
 export const PestDetector: React.FC<PestDetectorProps> = ({ data, lang }) => {
+  const [showInfo, setShowInfo] = useState<boolean>(false);
   const isEs = lang === 'es';
   const t = {
     title: isEs ? 'Detector Preventivo de Plagas y Enfermedades' : 'Preventive Pest & Disease Detector',
@@ -85,11 +86,35 @@ export const PestDetector: React.FC<PestDetectorProps> = ({ data, lang }) => {
           <div className="flex items-center space-x-2.5">
             <div className="w-2 h-2 rounded-full bg-amber-400"></div>
             <h2 className="text-sm font-bold text-white tracking-tight">{t.title}</h2>
+            <button
+              type="button"
+              onClick={() => setShowInfo(!showInfo)}
+              className="w-4 h-4 rounded-full bg-[#dbe7df] text-[#1e583d] text-[10px] font-bold flex items-center justify-center hover:bg-[#1e583d] hover:text-white transition-colors cursor-pointer"
+              title={isEs ? '¿Cómo se predice el riesgo de plagas?' : 'How is pest risk predicted?'}
+              aria-label="Info Pest"
+            >
+              ?
+            </button>
           </div>
           <span className="text-[10px] uppercase font-bold text-zinc-400 bg-zinc-900 px-2 py-0.5 rounded-lg border border-white/[0.08]">
             NASA POWER
           </span>
         </div>
+
+        {/* Informative Explanation Accordion for Pest Detector */}
+        {showInfo && (
+          <div className="p-3 my-3 bg-[#eef5f0] border border-[#1e583d] rounded-xl text-xs text-[#244438] space-y-1">
+            <div className="flex justify-between items-center font-bold text-[#173d30]">
+              <span>{isEs ? '¿Cómo se calcula el semáforo preventivo de plagas?' : 'How is pest risk calculated?'}</span>
+              <button type="button" onClick={() => setShowInfo(false)} className="text-[#526a5c] hover:text-[#173d30] cursor-pointer">✕</button>
+            </div>
+            <p className="text-[11px] leading-relaxed">
+              {isEs
+                ? 'El modelo bioclimático correlaciona temperatura superficial (T2M), humedad relativa (RH2M) y precipitación de NASA POWER. Combinaciones de alta humedad y temperaturas templadas (16–26°C) activan alertas fúngicas (roya, tizón), mientras que calor seco (> 24°C) favorece la eclosión rápida de insectos plaga (trips, gusano cogollero), sugiriendo medidas preventivas antes de que se requieran pesticidas.'
+                : 'Correlates NASA POWER temperature, humidity, and rainfall. Sustained dampness and mild temperatures trigger fungal alerts (rust, blight), while dry warmth accelerates insect hatching (thrips, fall armyworm), guiding biological IPM interventions before chemical intervention becomes necessary.'}
+            </p>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
           {/* Fungal Card */}

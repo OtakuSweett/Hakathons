@@ -162,7 +162,11 @@ export const App: React.FC = () => {
     setDataSource('benchmark');
     setSelectedCrops(presetCropSelection(presetId, mock));
     const preset = DEMO_PRESETS_LIST.find((item) => item.presetId === presetId);
-    if (preset) setMapRegionCenter({ lat: preset.lat, lon: preset.lon });
+    if (preset) {
+      setMapRegionCenter({ lat: preset.lat, lon: preset.lon });
+      setAreaHa(preset.areaHa);
+    }
+    setMapSelectionBounds(null);
     setIsLoading(false);
   }, []);
 
@@ -528,7 +532,7 @@ export const App: React.FC = () => {
             onLocationSearch={handleLocationSearch}
             onSelectPreset={(presetId) => {
               setSelectedPresetId(presetId);
-              if (isOfflineMode) void loadAnalysis(presetId);
+              void loadAnalysis(presetId);
             }}
           />
           <div className="panel-actions"><span className="coordinate-readout">{text('Ubicación elegida', 'Selected location')} <b>{selectedCoordinates.lat.toFixed(4)}°, {selectedCoordinates.lon.toFixed(4)}°</b></span><button className="primary-button" type="button" onClick={() => setStep(2)}>{text('Elegir cultivos', 'Choose crops')} <span aria-hidden="true">→</span></button></div>
@@ -615,7 +619,7 @@ export const App: React.FC = () => {
           <EarlyWarningBanner trigger={data.physics?.irrigation_trigger || { t_star_days: null, delta_i_mm: null, reason: null }} eonetCount={data.eonet_hazard_alerts?.length || 0} meanTempC={data.climate_summary?.mean_temperature_c || 21} lang={lang} />
           <ShiftingLands data={data} areaHa={areaHa} waterRegime={waterRegime} lang={lang} />
           <section className="analysis-grid main-analysis-grid">
-            <div className="span-7"><RiskMap lat={data.coordinates.lat} lon={data.coordinates.lon} regionLat={mapRegionCenter.lat} regionLon={mapRegionCenter.lon} selectionBounds={mapSelectionBounds} parcelName={currentPresetName} eonetAlerts={data.eonet_hazard_alerts || []} areaHa={areaHa} selectedCropIds={selectedCrops} onAreaChange={setAreaHa} waterRegime={waterRegime} onWaterRegimeChange={setWaterRegime} lang={lang} onMapClick={(lat, lon) => { handleMapCoordinateSelect(lat, lon); setStep(0); }} onLocationSearch={(lat, lon, bounds) => { handleLocationSearch(lat, lon, bounds); setStep(0); }} onSelectPreset={(presetId) => { setSelectedPresetId(presetId); if (isOfflineMode) void loadAnalysis(presetId); }} /></div>
+            <div className="span-7"><RiskMap lat={data.coordinates.lat} lon={data.coordinates.lon} regionLat={mapRegionCenter.lat} regionLon={mapRegionCenter.lon} selectionBounds={mapSelectionBounds} parcelName={currentPresetName} eonetAlerts={data.eonet_hazard_alerts || []} areaHa={areaHa} selectedCropIds={selectedCrops} onAreaChange={setAreaHa} waterRegime={waterRegime} onWaterRegimeChange={setWaterRegime} lang={lang} onMapClick={(lat, lon) => { handleMapCoordinateSelect(lat, lon); setStep(0); }} onLocationSearch={(lat, lon, bounds) => { handleLocationSearch(lat, lon, bounds); setStep(0); }} onSelectPreset={(presetId) => { setSelectedPresetId(presetId); void loadAnalysis(presetId); }} /></div>
             <div className="span-5"><CropAdvisor viableCropIds={data.optimization?.presolver_summary?.feasible_crop_ids || []} discarded={data.optimization?.presolver_summary?.discarded || []} soilPh={data.soil_hydraulics?.soil_ph || 6.8} lang={lang} /></div>
           </section>
           <section className="analysis-grid"><div className="span-7"><CropMonitor data={data} lang={lang} /></div><div className="span-5"><ClimateSimulator onSimulate={handleSimulate} isLoading={isLoading} lang={lang} /></div></section>

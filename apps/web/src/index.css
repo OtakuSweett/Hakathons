@@ -204,6 +204,10 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
 .app-shell .bento-card [class*="text-blue-300"], .app-shell .bento-card [class*="text-blue-400"] { color: #245d91 !important; }
 .rotation-slot[aria-pressed="true"] { color: #204c38 !important; background: #e8f3eb !important; border-color: #4b8866 !important; box-shadow: inset 0 0 0 1px #4b8866 !important; }
 .rotation-slot[aria-pressed="false"] { color: #294739 !important; background: #f6f9f7 !important; border-color: #cbd8ce !important; }
+.rotation-slot[aria-pressed="true"] .slot-cycle-badge { background-color: #1e583d !important; color: #ffffff !important; }
+.rotation-slot[aria-pressed="false"] .slot-cycle-badge { background-color: #eef2ef !important; color: #526a5c !important; }
+.rotation-slot[aria-pressed="true"] .slot-legume-badge { background-color: #1e583d !important; color: #ffffff !important; border-color: #1e583d !important; }
+.rotation-slot[aria-pressed="false"] .slot-legume-badge { background-color: #e7f0ea !important; color: #1e583d !important; border-color: #a8c5ab !important; }
 .irrigation-recommendation { color: #4b3914; background: #fff5df !important; border-color: #c79b3b !important; }
 .irrigation-recommendation p { color: #594d35 !important; }
 .economics-chart-note { margin: -5px 0 10px; color: #52675d; font-size: 11px; line-height: 1.5; }

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Language, AnalysisResponse, RotationSlot } from '../types/index.js';
 
 interface SmartCalendarProps {
@@ -189,6 +189,14 @@ const getCycleActionLabel = (selected: boolean, spanish: boolean) => {
 export const SmartCalendar: React.FC<SmartCalendarProps> = ({ data, lang }) => {
   const [selectedSlotIndex, setSelectedSlotIndex] = useState<number>(0);
   const [activeInfoTopic, setActiveInfoTopic] = useState<'gdd' | 'irrigation' | 'rotation' | null>(null);
+  const detailPaneRef = useRef<HTMLDivElement>(null);
+
+  const handleSelectSlot = (idx: number, scrollIntoDetail = false) => {
+    setSelectedSlotIndex(idx);
+    if (scrollIntoDetail && detailPaneRef.current) {
+      detailPaneRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  };
 
   const cropNames: Record<string, [string, string]> = {
     maize: ['Maíz', 'Maize'], sorghum: ['Sorgo', 'Sorghum'], wheat: ['Trigo', 'Wheat'], barley: ['Cebada', 'Barley'], beans: ['Frijol', 'Beans'], chickpea: ['Garbanzo', 'Chickpea'],
@@ -324,7 +332,7 @@ export const SmartCalendar: React.FC<SmartCalendarProps> = ({ data, lang }) => {
             return (
               <button
                 key={slot.slot_index || index}
-                onClick={() => setSelectedSlotIndex(index)}
+                onClick={() => handleSelectSlot(index, false)}
                 aria-pressed={isSelected}
                 className={`rotation-slot p-3 rounded-xl text-left border transition-all cursor-pointer ${
                   isSelected
@@ -336,7 +344,7 @@ export const SmartCalendar: React.FC<SmartCalendarProps> = ({ data, lang }) => {
                   <span className="font-semibold text-[#173d30]">{lang === 'es' ? `Año ${yearNum}` : `Year ${yearNum}`}</span>
                   <span
                     style={isSelected ? { backgroundColor: '#1e583d', color: '#ffffff' } : { backgroundColor: '#eef2ef', color: '#526a5c' }}
-                    className="px-1.5 py-0.5 rounded font-bold font-mono text-[9px]"
+                    className="px-1.5 py-0.5 rounded font-bold font-mono text-[9px] slot-cycle-badge"
                   >
                     {cycleCode === 'PV' ? (lang === 'es' ? 'PV' : 'SS') : cycleCode === 'OI' ? (lang === 'es' ? 'OI' : 'FW') : cycleCode}
                   </span>
@@ -350,7 +358,7 @@ export const SmartCalendar: React.FC<SmartCalendarProps> = ({ data, lang }) => {
                 {slot.is_legume && (
                   <span
                     style={isSelected ? { backgroundColor: '#1e583d', color: '#ffffff', borderColor: '#1e583d' } : { backgroundColor: '#e7f0ea', color: '#1e583d', borderColor: '#a8c5ab' }}
-                    className="inline-block mt-1 text-[9px] px-1.5 py-0.5 rounded font-bold border"
+                    className="inline-block mt-1 text-[9px] px-1.5 py-0.5 rounded font-bold border slot-legume-badge"
                   >
                     {t.legumeTag}
                   </span>
@@ -363,7 +371,7 @@ export const SmartCalendar: React.FC<SmartCalendarProps> = ({ data, lang }) => {
 
       {/* Detail Pane for Selected Slot */}
       {activeSlot && (
-        <div className="p-5 space-y-4 bg-white">
+        <div ref={detailPaneRef} className="p-5 space-y-4 bg-white transition-all duration-300">
           {/* Active Selected Crop Banner */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl bg-[#eef5f0] border border-[#1e583d]">
             <div className="flex items-center gap-3">
@@ -574,11 +582,19 @@ export const SmartCalendar: React.FC<SmartCalendarProps> = ({ data, lang }) => {
       {/* Clear Summary Table of All Cycles */}
       {rotation.length > 0 && (
         <div className="p-5 border-t border-[#cbd9ce] bg-[#f8faf8]">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="font-bold text-[#173d30] text-sm">{t.tableTitle}</h3>
-            <span className="text-[11px] text-[#526a5c]">
-              {lang === 'es' ? 'Haz clic en cualquier fila para actualizar las etapas GDD y manejo' : 'Click any row to inspect GDD stages and irrigation'}
-            </span>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+            <div>
+              <h3 className="font-bold text-[#173d30] text-sm">{t.tableTitle}</h3>
+              <p className="text-[11px] text-[#526a5c]">
+                {lang === 'es'
+                  ? 'Haz clic en cualquier fila o en "Ver Fases GDD" para sincronizar la fenología térmica y recomendaciones de riego.'
+                  : 'Click any row or "View GDD Stages" to synchronize thermal phenology and irrigation recommendations.'}
+              </p>
+            </div>
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#eef5f0] border border-[#1e583d] text-xs font-semibold text-[#173d30]">
+              <span className="w-2 h-2 rounded-full bg-[#1e583d] animate-pulse"></span>
+              <span>{lang === 'es' ? 'Viendo ahora:' : 'Viewing:'} <b>{lang === 'es' ? `Año ${selectedYear}` : `Year ${selectedYear}`} ({selectedCycleName}) · {getCropLabel(activeSlot.crop_id)}</b></span>
+            </div>
           </div>
           <div className="overflow-x-auto rounded-xl border border-[#cbd8cf]">
             <table className="w-full text-left text-xs border-collapse">
@@ -604,7 +620,7 @@ export const SmartCalendar: React.FC<SmartCalendarProps> = ({ data, lang }) => {
                   return (
                     <tr
                       key={`smart-cal-slot-${slot.slot_index ?? idx}`}
-                      onClick={() => setSelectedSlotIndex(idx)}
+                      onClick={() => handleSelectSlot(idx, true)}
                       className={`transition-colors cursor-pointer ${
                         isSelected ? 'bg-[#eef5f0] font-semibold' : 'hover:bg-[#f9fbf9]'
                       }`}
@@ -643,13 +659,13 @@ export const SmartCalendar: React.FC<SmartCalendarProps> = ({ data, lang }) => {
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
-                            setSelectedSlotIndex(idx);
+                            handleSelectSlot(idx, true);
                           }}
                           style={isSelected ? { backgroundColor: '#1e583d', color: '#ffffff', borderColor: '#1e583d' } : { backgroundColor: '#ffffff', color: '#1e583d', borderColor: '#cbd8cf' }}
                           className="px-2.5 py-1 rounded text-[10px] font-bold border cursor-pointer inline-flex items-center gap-1 shadow-2xs"
                         >
                           {isSelected && <span>✓</span>}
-                          <span>{getCycleActionLabel(isSelected, isEs)}</span>
+                          <span>{isSelected ? (isEs ? 'En Pantalla' : 'Active View') : (isEs ? 'Ver Fases GDD' : 'View GDD Stages')}</span>
                         </button>
                       </td>
                     </tr>

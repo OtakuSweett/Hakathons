@@ -20,6 +20,7 @@ export const CropAdvisor: React.FC<CropAdvisorProps> = ({
   lang
 }) => {
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
+  const [showInfo, setShowInfo] = useState<boolean>(false);
 
   const cropNames: Record<string, [string, string]> = {
     maize: ['Maíz', 'Maize'], sorghum: ['Sorgo', 'Sorghum'], wheat: ['Trigo', 'Wheat'], barley: ['Cebada', 'Barley'], beans: ['Frijol', 'Beans'], chickpea: ['Garbanzo', 'Chickpea'],
@@ -60,9 +61,20 @@ export const CropAdvisor: React.FC<CropAdvisorProps> = ({
               <span className="text-[10px] uppercase font-bold text-[#1e583d] tracking-wider block">
                 {t.sectionLabel}
               </span>
-              <h2 className="text-sm font-bold text-[#173d30] tracking-tight">
-                {t.title}
-              </h2>
+              <div className="flex items-center gap-1.5">
+                <h2 className="text-sm font-bold text-[#173d30] tracking-tight">
+                  {t.title}
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => setShowInfo(!showInfo)}
+                  className="w-4 h-4 rounded-full bg-[#dbe7df] text-[#1e583d] text-[10px] font-bold flex items-center justify-center hover:bg-[#1e583d] hover:text-white transition-colors cursor-pointer"
+                  title={isEs ? '¿Cómo funciona el pre-solver agronómico?' : 'How does the agronomic pre-solver work?'}
+                  aria-label="Info Pre-solver"
+                >
+                  ?
+                </button>
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -87,6 +99,21 @@ export const CropAdvisor: React.FC<CropAdvisorProps> = ({
             </span>
           </div>
         </div>
+
+        {/* Informative Explanation Accordion for Pre-solver */}
+        {showInfo && (
+          <div className="p-3 my-3 bg-[#eef5f0] border border-[#1e583d] rounded-xl text-xs text-[#244438] space-y-1">
+            <div className="flex justify-between items-center font-bold text-[#173d30]">
+              <span>{isEs ? '¿Qué evalúa el pre-solver agronómico?' : 'What does the agronomic pre-solver evaluate?'}</span>
+              <button type="button" onClick={() => setShowInfo(false)} className="text-[#526a5c] hover:text-[#173d30] cursor-pointer">✕</button>
+            </div>
+            <p className="text-[11px] leading-relaxed">
+              {isEs
+                ? 'El Módulo 5 filtra todas las especies del catálogo antes de la optimización económica. Si el calor acumulado (GDD) no alcanza la madurez de la especie, si el pH del suelo de SoilGrids está fuera de su rango de tolerancia o si hay una alerta de tormenta extrema de NASA EONET activa en la zona, el cultivo se descarta automáticamente con su motivo agronómico explicado.'
+                : 'Module 5 filters candidate crops before economic rotation optimization. Crops are rejected if available GDD thermal sum is insufficient, if SoilGrids soil pH exceeds their tolerance interval, or if an active NASA EONET severe cyclone/storm is tracked nearby, ensuring all recommendations are biologically realistic.'}
+            </p>
+          </div>
+        )}
 
         {viewMode === 'cards' ? (
           <div className="space-y-4 mt-4">

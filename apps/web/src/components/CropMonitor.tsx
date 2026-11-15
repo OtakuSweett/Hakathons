@@ -19,6 +19,7 @@ interface CropMonitorProps {
 
 export const CropMonitor: React.FC<CropMonitorProps> = ({ data, lang }) => {
   const [activeTab, setActiveTab] = useState<'water' | 'ndvi'>('water');
+  const [showInfo, setShowInfo] = useState(false);
   const isEs = lang === 'es';
   const t = {
     title: isEs ? 'Monitoreo Dinámico de Cultivos y Suelo' : 'Dynamic Crop & Soil Moisture Monitoring',
@@ -92,6 +93,15 @@ export const CropMonitor: React.FC<CropMonitorProps> = ({ data, lang }) => {
             <span className="text-[11px] uppercase tracking-wider text-emerald-400 font-semibold">
               {t.sectionLabel}
             </span>
+            <button
+              type="button"
+              onClick={() => setShowInfo(!showInfo)}
+              className="w-4 h-4 rounded-full bg-[#dbe7df] text-[#1e583d] text-[10px] font-bold flex items-center justify-center hover:bg-[#1e583d] hover:text-white transition-colors cursor-pointer"
+              title={isEs ? '¿Cómo se reconstruyen los datos de vegetación y agua?' : 'How is vegetation & water data reconstructed?'}
+              aria-label="Info Monitor"
+            >
+              ?
+            </button>
           </div>
           <h2 className="text-base sm:text-lg font-bold text-white mt-1">{t.title}</h2>
           <p className="text-xs text-zinc-400 mt-0.5">{t.subtitle}</p>
@@ -121,6 +131,21 @@ export const CropMonitor: React.FC<CropMonitorProps> = ({ data, lang }) => {
           </button>
         </div>
       </div>
+
+      {/* Informative Explanation Accordion for Crop Monitor */}
+      {showInfo && (
+        <div className="p-4 mx-5 mt-4 bg-[#eef5f0] border border-[#1e583d] rounded-xl text-xs text-[#244438] space-y-1.5">
+          <div className="flex justify-between items-center font-bold text-[#173d30]">
+            <span>{isEs ? '¿Cómo se reconstruyen los datos de vegetación y suelo?' : 'How is vegetation & soil data reconstructed?'}</span>
+            <button type="button" onClick={() => setShowInfo(false)} className="text-[#526a5c] hover:text-[#173d30] cursor-pointer">✕</button>
+          </div>
+          <p className="text-[11px] leading-relaxed">
+            {isEs
+              ? '1) Reconstrucción NDVI (Módulo 1): Las imágenes satelitales ópticas sufren huecos por nubes y niebla. Nuestro algoritmo TDMA (Thomas) resuelve splines cúbicos naturales continuos para interpolar una trayectoria de verdor biológicamente realista sin saltos bruscos. 2) Balance Hídrico RK4 (Módulo 3): Integra la ecuación diferencial dW/dt = Precipitación + Riego - Evapotranspiración - Drenaje usando Runge-Kutta orden 4 sobre 600 mm de profundidad radicular, alertando antes de caer al punto de marchitez.'
+              : '1) NDVI Reconstruction (Module 1): Optical satellites suffer gaps due to clouds and aerosols. Our TDMA algorithm solves natural cubic splines to interpolate a continuous vegetation trajectory without artificial discontinuities. 2) RK4 Water Balance (Module 3): Solves dW/dt = P + I - ETc - D via 4th-order Runge-Kutta over 600 mm root depth, detecting depletion before permanent wilting occurs.'}
+          </p>
+        </div>
+      )}
 
       {/* KPI Highlights Bar */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 bg-zinc-950/40 border-b border-white/[0.05] text-xs">

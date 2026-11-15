@@ -15,6 +15,8 @@ export const ClimateSimulator: React.FC<ClimateSimulatorProps> = ({
   const [deltaP, setDeltaP] = useState<number>(0);
   const [deltaT, setDeltaT] = useState<number>(0);
   const [injectStorm, setInjectStorm] = useState<boolean>(false);
+  const [showInfo, setShowInfo] = useState<boolean>(false);
+  const isEs = lang === 'es';
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,11 +32,35 @@ export const ClimateSimulator: React.FC<ClimateSimulatorProps> = ({
             <h2 className="text-sm font-bold text-white tracking-tight">
               {lang === 'es' ? 'Simulador Climático "What-If"' : '"What-If" Climate Simulator'}
             </h2>
+            <button
+              type="button"
+              onClick={() => setShowInfo(!showInfo)}
+              className="w-4 h-4 rounded-full bg-[#dbe7df] text-[#1e583d] text-[10px] font-bold flex items-center justify-center hover:bg-[#1e583d] hover:text-white transition-colors cursor-pointer"
+              title={isEs ? '¿Cómo funciona la simulación What-If?' : 'How does What-If simulation work?'}
+              aria-label="Info Simulator"
+            >
+              ?
+            </button>
           </div>
           <span className="text-[10px] uppercase font-bold text-zinc-400 bg-zinc-900 px-2 py-0.5 rounded-lg border border-white/[0.08]">
             {lang === 'es' ? 'Escenarios' : 'Scenarios'}
           </span>
         </div>
+
+        {/* Informative Explanation Accordion for Climate Simulator */}
+        {showInfo && (
+          <div className="p-3 my-3 bg-[#eef5f0] border border-[#1e583d] rounded-xl text-xs text-[#244438] space-y-1">
+            <div className="flex justify-between items-center font-bold text-[#173d30]">
+              <span>{isEs ? '¿Cómo proyecta el simulador los escenarios?' : 'How does the simulator project scenarios?'}</span>
+              <button type="button" onClick={() => setShowInfo(false)} className="text-[#526a5c] hover:text-[#173d30] cursor-pointer">✕</button>
+            </div>
+            <p className="text-[11px] leading-relaxed">
+              {isEs
+                ? 'Permite evaluar la resiliencia de la parcela sometiéndola a estrés hídrico (-ΔP), olas de calor (+ΔT que elevan la evapotranspiración ET0) o inundaciones súbitas (pulso EONET). El motor recalcula instantáneamente la trayectoria de humedad del suelo con RK4 y el día crítico de riego con Newton-Raphson.'
+                : 'Evaluates field resilience under simulated drought stress (-ΔP), heatwaves (+ΔT elevating ET0 demand), or sudden storm waterlogging (EONET pulse). The engine re-integrates the RK4 soil moisture balance and solves for critical stress days in real time.'}
+            </p>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="mt-4 space-y-4 text-xs">
           {/* Delta Precipitation */}

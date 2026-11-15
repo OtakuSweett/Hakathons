@@ -31,6 +31,7 @@ const cropNames: Record<string, [string, string]> = {
 
 export const EconomicEvaluation: React.FC<EconomicEvaluationProps> = ({ data, lang }) => {
   const [lambdaVal, setLambdaVal] = useState<number>(0.5);
+  const [activeInfoTopic, setActiveInfoTopic] = useState<'slider' | 'pareto' | 'shadow' | null>(null);
   const isEs = lang === 'es';
 
   const t = {
@@ -150,7 +151,18 @@ export const EconomicEvaluation: React.FC<EconomicEvaluationProps> = ({ data, la
           <div className="p-4 bg-[#f8faf8] rounded-xl border border-[#cbd8cf]">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
               <div>
-                <h3 className="font-bold text-[#173d30] text-xs">{t.sliderTitle}</h3>
+                <div className="flex items-center gap-1.5">
+                  <h3 className="font-bold text-[#173d30] text-xs">{t.sliderTitle}</h3>
+                  <button
+                    type="button"
+                    onClick={() => setActiveInfoTopic(activeInfoTopic === 'slider' ? null : 'slider')}
+                    className="w-4 h-4 rounded-full bg-[#dbe7df] text-[#1e583d] text-[10px] font-bold flex items-center justify-center hover:bg-[#1e583d] hover:text-white transition-colors cursor-pointer"
+                    title={isEs ? '¿Qué es el control lambda λ?' : 'What is the lambda slider?'}
+                    aria-label="Info Lambda"
+                  >
+                    ?
+                  </button>
+                </div>
                 <p className="text-[11px] text-[#526a5c]">{t.sliderDesc}</p>
               </div>
               <div className="flex items-center gap-2 font-mono">
@@ -160,6 +172,21 @@ export const EconomicEvaluation: React.FC<EconomicEvaluationProps> = ({ data, la
                 </span>
               </div>
             </div>
+
+            {/* Informative Explanation for Lambda Priority Slider */}
+            {activeInfoTopic === 'slider' && (
+              <div className="p-3 my-2.5 bg-[#eef5f0] border border-[#1e583d] rounded-xl text-xs text-[#244438] space-y-1">
+                <div className="flex justify-between items-center font-bold text-[#173d30]">
+                  <span>{isEs ? '¿Cómo funciona la ponderación multiobjetivo λ?' : 'How does multi-objective weighting λ work?'}</span>
+                  <button type="button" onClick={() => setActiveInfoTopic(null)} className="text-[#526a5c] hover:text-[#173d30] cursor-pointer">✕</button>
+                </div>
+                <p className="text-[11px] leading-relaxed">
+                  {isEs
+                    ? 'El optimizador HiGHS (Módulo 6 y 7) resuelve la función escalarizada max [λ · Ganancia + (1-λ) · AhorroHídrico]. Mover el control hacia 1.0 prioriza los cultivos con mayor margen neto inmediato; moverlo hacia 0.0 prioriza la preservación del acuífero y la regeneración de nitrógeno en el suelo para blindar las siguientes temporadas contra la sequía.'
+                    : 'The HiGHS optimizer (Modules 6 & 7) solves the scalarized objective max [λ · Profit + (1-λ) · WaterSaved]. Setting λ close to 1.0 maximizes immediate financial margin; setting λ towards 0.0 maximizes aquifer water conservation and soil nitrogen regeneration to buffer upcoming droughts.'}
+                </p>
+              </div>
+            )}
 
             <div className="mt-3">
               <input
@@ -218,6 +245,15 @@ export const EconomicEvaluation: React.FC<EconomicEvaluationProps> = ({ data, la
                   <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#e3efe6] text-[#1e583d] border border-[#a8c5ab] font-bold">
                     ∂Z*/∂b_agua
                   </span>
+                  <button
+                    type="button"
+                    onClick={() => setActiveInfoTopic(activeInfoTopic === 'shadow' ? null : 'shadow')}
+                    className="w-4 h-4 rounded-full bg-[#dbe7df] text-[#1e583d] text-[10px] font-bold flex items-center justify-center hover:bg-[#1e583d] hover:text-white transition-colors cursor-pointer"
+                    title={isEs ? '¿Qué es el precio sombra?' : 'What is the shadow price?'}
+                    aria-label="Info Shadow Price"
+                  >
+                    ?
+                  </button>
                 </div>
                 <h4 className="text-sm font-bold text-[#173d30] font-mono mt-1">
                   ${shadowPrice.toFixed(2)} {t.currencyPerWater}
@@ -229,6 +265,21 @@ export const EconomicEvaluation: React.FC<EconomicEvaluationProps> = ({ data, la
                 {isHighShadow ? t.waterConstraint : t.waterSufficient}
               </span>
             </div>
+
+            {/* Informative Explanation for Dual Shadow Price */}
+            {activeInfoTopic === 'shadow' && (
+              <div className="p-3 my-2.5 bg-[#eef5f0] border border-[#1e583d] rounded-xl text-xs text-[#244438] space-y-1">
+                <div className="flex justify-between items-center font-bold text-[#173d30]">
+                  <span>{isEs ? '¿Cómo ayuda el precio sombra a tomar decisiones de inversión?' : 'How does the shadow price guide investment decisions?'}</span>
+                  <button type="button" onClick={() => setActiveInfoTopic(null)} className="text-[#526a5c] hover:text-[#173d30] cursor-pointer">✕</button>
+                </div>
+                <p className="text-[11px] leading-relaxed">
+                  {isEs
+                    ? 'El precio sombra dual y_agua (Módulo 7) indica cuánto dinero adicional ganaría el productor por cada milímetro adicional de agua disponible en la parcela. Si el precio sombra es alto (ej. > 25 MXN/mm-ha), el agua es el factor que ahoga la rentabilidad, por lo que tecnificar el riego o construir bordos de captación se paga solo en menos de una temporada.'
+                    : 'The dual shadow price y_water (Module 7) indicates how much additional revenue the grower gains from 1 extra millimeter of available water. A high shadow price (> 25 MXN/mm-ha) means moisture is the primary bottleneck, proving that investments in drip tech or rainwater harvesting provide immediate payback within one season.'}
+                </p>
+              </div>
+            )}
             <p className="text-[11px] text-[#526a5c] mt-1 leading-relaxed">{t.shadowPriceDesc}</p>
             <div className="mt-2.5 p-2.5 bg-white rounded-lg border border-[#cbd8cf] text-[11px] text-[#244438] font-medium">
               {isHighShadow ? t.shadowAdviceHigh : t.shadowAdviceLow}
@@ -317,11 +368,38 @@ export const EconomicEvaluation: React.FC<EconomicEvaluationProps> = ({ data, la
         {hasMultipleTradeOffs ? (
           <div>
             <div className="flex items-center justify-between mb-2">
-              <h3 className="font-bold text-[#173d30] text-xs">{t.paretoChartTitle}</h3>
+              <div className="flex items-center gap-1.5">
+                <h3 className="font-bold text-[#173d30] text-xs">{t.paretoChartTitle}</h3>
+                <button
+                  type="button"
+                  onClick={() => setActiveInfoTopic(activeInfoTopic === 'pareto' ? null : 'pareto')}
+                  className="w-4 h-4 rounded-full bg-[#dbe7df] text-[#1e583d] text-[10px] font-bold flex items-center justify-center hover:bg-[#1e583d] hover:text-white transition-colors cursor-pointer"
+                  title={isEs ? '¿Qué es la frontera de Pareto?' : 'What is the Pareto frontier?'}
+                  aria-label="Info Pareto"
+                >
+                  ?
+                </button>
+              </div>
               <span className="text-[10px] text-[#526a5c] font-mono">
                 {lang === 'es' ? 'Frontera de Pareto · M7' : 'Pareto Frontier · M7'}
               </span>
             </div>
+
+            {/* Informative Explanation for Pareto Frontier */}
+            {activeInfoTopic === 'pareto' && (
+              <div className="p-3 my-2.5 bg-[#eef5f0] border border-[#1e583d] rounded-xl text-xs text-[#244438] space-y-1">
+                <div className="flex justify-between items-center font-bold text-[#173d30]">
+                  <span>{isEs ? '¿Qué significa cada punto de la Frontera de Soluciones?' : 'What does each point on the Frontier mean?'}</span>
+                  <button type="button" onClick={() => setActiveInfoTopic(null)} className="text-[#526a5c] hover:text-[#173d30] cursor-pointer">✕</button>
+                </div>
+                <p className="text-[11px] leading-relaxed">
+                  {isEs
+                    ? 'Una rotación está en la Frontera de Pareto si es imposible ganar un peso más sin gastar más agua, o ahorrar un litro más sin sacrificar dinero. La línea verde une los planes óptimos matemáticamente no dominados; la estrella dorada indica la rotación activada según tu nivel de prioridad.'
+                    : 'A crop rotation lies on the Pareto Frontier if it is impossible to increase profit without consuming more water, or conserve more water without sacrificing return. The green line connects mathematically non-dominated schedules; the gold star highlights your currently selected plan.'}
+                </p>
+              </div>
+            )}
+
             <p className="economics-chart-note">{t.chartNote}</p>
             <div className="h-60 w-full mt-2 bg-[#fbfdfb] p-3 rounded-xl border border-[#cbd8cf]">
               <ResponsiveContainer width="100%" height="100%">
@@ -331,11 +409,10 @@ export const EconomicEvaluation: React.FC<EconomicEvaluationProps> = ({ data, la
                     type="number"
                     dataKey="x"
                     name={t.waterSaved}
-                    unit=" mm"
                     domain={[Math.max(0, Math.round(minX - xPadding)), Math.round(maxX + xPadding)]}
                     tick={{ fontSize: 11, fill: '#526a5c' }}
                     stroke="#cbd8cf"
-                    tickFormatter={(val: number) => `${Math.round(val)}`}
+                    tickFormatter={(val: number) => `${Math.round(val)} mm`}
                   >
                     <Label value={t.waterSaved} position="insideBottom" offset={-10} fill="#526a5c" fontSize={11} />
                   </XAxis>
@@ -343,12 +420,11 @@ export const EconomicEvaluation: React.FC<EconomicEvaluationProps> = ({ data, la
                     type="number"
                     dataKey="y"
                     name={t.profitUsd}
-                    unit=" MXN"
                     domain={[Math.max(0, Math.round(minY - yPadding)), Math.round(maxY + yPadding)]}
                     tick={{ fontSize: 11, fill: '#526a5c' }}
                     stroke="#cbd8cf"
-                    width={80}
-                    tickFormatter={(val: number) => `$${Math.round(val).toLocaleString()}`}
+                    width={85}
+                    tickFormatter={(val: number) => `$${Math.round(val).toLocaleString()} MXN`}
                   >
                     <Label value={t.profitUsd} angle={-90} position="insideLeft" offset={8} fill="#526a5c" fontSize={11} />
                   </YAxis>
