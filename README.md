@@ -3,7 +3,7 @@
 > **NASA International Space Apps Challenge 2026** | **Local Event:** Querétaro, México  
 > **Challenge Track:** *Shifting Lands: Adapting Farms with NASA Data*  
 > **Stack:** TypeScript/Node.js (Fastify) + Python 3.12+ (FastAPI, NumPy, SciPy, PuLP, HiGHS) + React 19 / Tailwind CSS v4 + Leaflet & Recharts  
-> **Language / Idioma:** English (Default) | [🇪🇸 Leer en Español](file:///home/Sweett/hakathon/README.es.md)
+> **Language / Idioma:** English (Default) | [🇪🇸 Leer en Español](https://github.com/OtakuSweett/NASA-Agro-DSS/blob/main/README.es.md)
 
 ---
 
