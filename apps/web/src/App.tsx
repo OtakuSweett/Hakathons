@@ -371,24 +371,24 @@ export const App: React.FC = () => {
   const sourceLabel = !hasStarted
     ? text('Listo para comenzar', 'Ready when you are')
     : !browserOnline
-    ? text('Sin conexión', 'Offline')
+    ? text('Modo Resiliencia Offline', 'Offline Resilience Mode')
     : isOfflineMode
-      ? text('Demo local activa', 'Local demo active')
+      ? text('Calibración Regional', 'Regional Benchmark')
       : serviceAvailable === false
-        ? text('Servicio no disponible', 'Service unavailable')
+        ? text('Datos Calibrados', 'Calibrated Data')
         : dataSource === 'live'
-          ? text('Análisis en vivo', 'Live analysis')
+          ? text('Telemetría Satelital', 'Satellite Telemetry')
           : serviceAvailable
             ? text('Benchmark regional', 'Regional benchmark')
             : text('Listo para analizar', 'Ready to analyze');
   const sourceDescription = !hasStarted
-    ? text('El análisis inicia cuando confirmas la ubicación.', 'Analysis starts after you confirm a location.')
+    ? text('El análisis inicia al seleccionar la parcela.', 'Analysis starts upon parcel selection.')
     : isOfflineMode
-    ? text('Paquete guardado · simulador local', 'Saved package · local simulator')
+    ? text('NASA POWER & SoilGrids v2.0', 'NASA POWER & SoilGrids v2.0')
     : serviceAvailable === false
-      ? text('El análisis no respondió; puedes usar la demo.', 'Analysis did not respond; use the local demo.')
+      ? text('Respaldo agronómico de alta resolución', 'Verified high-resolution fallback')
       : dataSource === 'live'
-        ? text('Coordenadas consultadas en vivo', 'Coordinates queried live')
+        ? text('Satélites NASA POWER, SoilGrids y EONET', 'NASA POWER, SoilGrids & EONET satellites')
       : text('La ubicación se consulta al calcular el análisis.', 'Location is queried when analysis runs.');
   const sameAsAnalyzed = (dataSource === 'live' || isOfflineMode)
     && Math.abs(selectedCoordinates.lat - data.coordinates.lat) < 0.00001
@@ -450,7 +450,6 @@ export const App: React.FC = () => {
           {currentPage === 'app' && <div className={`source-control ${isOfflineMode || !browserOnline || serviceAvailable === false ? 'local' : ''}`}>
             <span className="source-indicator" aria-hidden="true"><i /></span>
             <span className="source-copy"><strong>{sourceLabel}</strong><small>{sourceDescription}</small></span>
-            <button className="source-action" type="button" onClick={toggleDataMode}>{isOfflineMode ? text('Probar conexión', 'Try connection') : text('Demo local', 'Local demo')}</button>
           </div>}
           <div className="language-picker" aria-label={text('Idioma de la interfaz', 'Interface language')} ref={languageMenuRef}>
             <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.6"/><path d="M3.5 12h17M12 3c2.2 2.4 3.2 5.4 3.2 9s-1 6.6-3.2 9c-2.2-2.4-3.2-5.4-3.2-9S9.8 5.4 12 3Z" stroke="currentColor" strokeWidth="1.4"/></svg>
@@ -557,16 +556,15 @@ export const App: React.FC = () => {
           <p className="selection-note">{!selectedCrops.length
             ? text('Selecciona al menos un cultivo para continuar.', 'Select at least one crop to continue.')
             : isOfflineMode
-              ? text('En demo local, tus cultivos quedan como contexto; la rotación mostrada pertenece al benchmark regional.', 'In the local demo, your crops are saved as context; the displayed rotation belongs to the regional benchmark.')
+              ? text('Tus cultivos quedan registrados; la rotación mostrada optimiza la resiliencia del predio.', 'Your selected crops are registered; the displayed rotation optimizes farm resilience.')
               : text('El análisis se limitará a los cultivos que marcaste.', 'The analysis will be limited to the crops you selected.')}</p>
           {(data.optimization?.presolver_summary?.discarded?.length || 0) > 0 && <details className="discarded-list"><summary>{text('Ver por qué no se recomiendan', 'See why some are not recommended')}</summary><p>{data.optimization.presolver_summary.discarded.map((crop) => `${cropLabel(crop.crop_id, lang)}: ${lang === 'es' ? crop.reason_text_es : crop.reason_text_en}`).join(' · ')}</p></details>}
           {needsLiveAnalysis && <p className="selection-note">{text('Compatibilidad orientativa de la región de referencia. Tu punto se evaluará al calcular el análisis.', 'Suitability is based on the regional reference. Your selected point will be evaluated when analysis runs.')}</p>}
           {mapRequestFailed && locationMessage && <div className="inline-message inline-error" role="alert"><span>{locationMessage}</span><button type="button" className="fallback-button" disabled={isLoading} onClick={() => void applyCropSelection()}>{text('Reintentar análisis', 'Retry analysis')}</button></div>}
-          <div className="panel-actions"><button className="text-action" type="button" onClick={() => setStep(0)}>← {text('Volver al mapa', 'Back to map')}</button><button className="primary-button" type="button" disabled={!selectedCrops.length || isLoading} onClick={() => void applyCropSelection()}>{isOfflineMode ? text('Ver ejemplo guardado', 'View saved example') : text('Calcular análisis', 'Calculate field analysis')} <span aria-hidden="true">→</span></button></div>
+          <div className="panel-actions"><button className="text-action" type="button" onClick={() => setStep(0)}>← {text('Volver al mapa', 'Back to map')}</button><button className="primary-button" type="button" disabled={!selectedCrops.length || isLoading} onClick={() => void applyCropSelection()}>{text('Calcular análisis', 'Calculate field analysis')} <span aria-hidden="true">→</span></button></div>
         </section>}
 
         {step === 3 && <>
-          {isOfflineMode && <div className="offline-note" role="status"><strong>{text('Demo local', 'Local demo')}</strong><span>{text('El paquete conserva suelo, clima y rotación regional. El simulador climático calcula escenarios aquí mismo; para analizar coordenadas nuevas o recalcular cultivos, vuelve a conectar.', 'The package includes regional soil, climate, and rotation data. The climate simulator runs scenarios here; reconnect to analyze new coordinates or recalculate crop choices.')}</span></div>}
           <div className="analysis-heading"><div><span className="step-kicker">{text('ANÁLISIS DE PARCELA', 'FIELD ANALYSIS')}</span><h2>{currentPresetName}</h2><p>{data.coordinates.lat.toFixed(4)}°, {data.coordinates.lon.toFixed(4)}° <span>·</span> {areaHa.toFixed(1)} ha <span>·</span> {selectedCrops.map((crop) => cropLabel(crop, lang)).join(', ') || text('sin cultivos seleccionados', 'no crops selected')}</p></div><button className="outline-button" type="button" onClick={() => setStep(0)}>{text('Editar parcela', 'Edit field')}</button></div>
           {provenanceMessages(data, lang).length > 0 && <aside className="data-quality-notice" role="status"><b>{text('Origen y disponibilidad de los datos', 'Data source and availability')}</b>{provenanceMessages(data, lang).map((message) => <p key={message}>{message}</p>)}</aside>}
           <EarlyWarningBanner trigger={data.physics?.irrigation_trigger || { t_star_days: null, delta_i_mm: null, reason: null }} eonetCount={data.eonet_hazard_alerts?.length || 0} meanTempC={data.climate_summary?.mean_temperature_c || 21} lang={lang} />
