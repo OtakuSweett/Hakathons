@@ -170,18 +170,11 @@ export const AgroLayers3D: React.FC<AgroLayers3DProps> = ({ data, lang, areaHa }
       </div>
 
       {/* 3D Isometric Canvas Container */}
-      <div className="p-6 relative min-h-[380px] flex items-center justify-center bg-radial from-cyan-950/20 via-zinc-950 to-zinc-950 overflow-hidden">
+      <div className="agro-3d-viewport p-6 relative min-h-[380px] flex items-center justify-center bg-radial from-cyan-950/20 via-zinc-950 to-zinc-950 overflow-hidden">
         {/* Ambient grid glow */}
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#1f293715_1px,transparent_1px),linear-gradient(to_bottom,#1f293715_1px,transparent_1px)] bg-[size:28px_28px] pointer-events-none" />
 
-        <div
-          className={`w-full max-w-xl transition-all duration-700 ease-out ${
-            viewMode === '3d'
-              ? 'transform-gpu rotate-x-[45deg] -rotate-z-[20deg] scale-95 hover:scale-100'
-              : 'transform-none'
-          }`}
-          style={{ transformStyle: 'preserve-3d' }}
-        >
+        <div className={`agro-3d-stage w-full max-w-xl ${viewMode === '3d' ? 'isometric' : 'flat'}`}>
           {/* Layer 1: Atmosphere & Satellite Orbital Data */}
           {(activeLayer === 'all' || activeLayer === 'atmosphere') && (
             <div

@@ -69,9 +69,9 @@ export const ModernLoadingModal: React.FC<ModernLoadingModalProps> = ({
 
         {/* Orbit radar animation */}
         <div className="relative w-28 h-28 mx-auto mb-6 flex items-center justify-center">
-          <div className="absolute inset-0 rounded-full border border-emerald-500/20 animate-ping" />
+          <div className="absolute inset-0 rounded-full border border-emerald-500/20 animate-radar-pulse" />
           <div className="absolute inset-2 rounded-full border border-teal-500/30 animate-pulse" />
-          <div className="absolute inset-4 rounded-full border-2 border-emerald-400 border-t-transparent animate-spin" />
+          <div className="absolute inset-4 rounded-full border-2 border-emerald-400 border-t-transparent animate-orbit-scan" />
           <div className="relative z-10 w-14 h-14 rounded-full bg-zinc-900 border border-emerald-400/50 flex items-center justify-center text-2xl shadow-lg shadow-emerald-500/20">
             {steps[currentStep].icon}
           </div>
