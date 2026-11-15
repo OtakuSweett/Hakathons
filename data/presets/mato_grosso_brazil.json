@@ -1,7 +1,7 @@
 {
   "parcel_id": "mato_grosso_cerrado_br",
-  "lon": -55.7212,
-  "lat": -12.5425,
+  "lon": -55.825,
+  "lat": -12.485,
   "source": "preset",
   "fetched_at": "2026-11-14T14:30:00Z",
   "synthetic": true,

@@ -139,3 +139,85 @@ def test_mod7_pareto_frontier_points(sample_crops):
     assert len(pareto["pareto_points"]) >= 1
     assert "dual_shadow_prices" in pareto
     assert "recommended_investment" in pareto
+
+
+def test_mod6_milp_seasonal_cycles_and_cross_year_diversity():
+    """Verify seasonal cycle matching (PV to PV, OI to OI) and cross-year diversity."""
+    seasonal_crops = [
+        {
+            "id": "maize",
+            "name": "Maíz",
+            "cycle": "PV",
+            "es_leguminosa": False,
+            "demanda_hidrica_mm": 500.0,
+            "rendimiento_ton_ha": 9.0,
+            "precio_venta_usd_ton": 240.0,
+            "costo_semilla_usd_ha": 150.0,
+            "costo_fertilizante_usd_ha": 300.0,
+            "costo_riego_usd_ha": 180.0
+        },
+        {
+            "id": "bean",
+            "name": "Frijol",
+            "cycle": "PV",
+            "es_leguminosa": True,
+            "demanda_hidrica_mm": 320.0,
+            "rendimiento_ton_ha": 2.2,
+            "precio_venta_usd_ton": 900.0,
+            "costo_semilla_usd_ha": 100.0,
+            "costo_fertilizante_usd_ha": 100.0,
+            "costo_riego_usd_ha": 100.0,
+            "fijacion_nitrogeno_kg_ha": 70.0
+        },
+        {
+            "id": "wheat",
+            "name": "Trigo",
+            "cycle": "OI",
+            "es_leguminosa": False,
+            "demanda_hidrica_mm": 420.0,
+            "rendimiento_ton_ha": 6.0,
+            "precio_venta_usd_ton": 280.0,
+            "costo_semilla_usd_ha": 120.0,
+            "costo_fertilizante_usd_ha": 250.0,
+            "costo_riego_usd_ha": 150.0
+        },
+        {
+            "id": "chickpea",
+            "name": "Garbanzo",
+            "cycle": "OI",
+            "es_leguminosa": True,
+            "demanda_hidrica_mm": 290.0,
+            "rendimiento_ton_ha": 2.5,
+            "precio_venta_usd_ton": 850.0,
+            "costo_semilla_usd_ha": 110.0,
+            "costo_fertilizante_usd_ha": 100.0,
+            "costo_riego_usd_ha": 110.0,
+            "fijacion_nitrogeno_kg_ha": 65.0
+        }
+    ]
+
+    milp = CropRotationMILPOptimizer(
+        viable_crops=seasonal_crops,
+        horizon_years=3,
+        water_quota_mm_per_year=650.0
+    )
+    sol = milp.solve(relax_continuous=False)
+
+    assert sol["status"] == "Optimal"
+    assert len(sol["schedule"]) == 6
+
+    sched = sol["schedule"]
+    # Check that PV cycles (indices 0, 2, 4) contain only PV crops
+    for t in (0, 2, 4):
+        if not sched[t]["fallow"]:
+            assert sched[t]["crop_id"] in ("maize", "bean")
+
+    # Check that OI cycles (indices 1, 3, 5) contain only OI crops
+    for t in (1, 3, 5):
+        if not sched[t]["fallow"]:
+            assert sched[t]["crop_id"] in ("wheat", "chickpea")
+
+    # Check cross-year same-season diversity: Year 1 PV != Year 2 PV
+    assert sched[0]["crop_id"] != sched[2]["crop_id"]
+    # Year 1 OI != Year 2 OI
+    assert sched[1]["crop_id"] != sched[3]["crop_id"]

@@ -124,6 +124,25 @@ class CropRotationMILPOptimizer:
                 c2 = 2 * y + 1
                 prob += pulp.lpSum([x[i, c1] + x[i, c2] for i in legume_ids]) >= 1.0, f"Legume_Rotation_Year_{y}"
 
+        # 5. Seasonal Cycle Invariant: PV crops to PV cycles, OI crops to OI cycles
+        for t in range(self.n_cycles):
+            slot_season = "PV" if (t % 2 == 0) else "OI"
+            for i in self.crop_ids:
+                crop_cycle = self.crops[i].get("cycle")
+                if crop_cycle in ("PV", "OI") and crop_cycle != slot_season:
+                    prob += x[i, t] == 0.0, f"Seasonality_{i}_{t}_{crop_cycle}_vs_{slot_season}"
+
+        # 6. Multi-year same-season diversity: avoid repeating identical crop in consecutive years if alternatives exist
+        for t in range(self.n_cycles - 2):
+            slot_season = "PV" if (t % 2 == 0) else "OI"
+            seasonal_crops = [
+                i for i in self.crop_ids
+                if self.crops[i].get("cycle") == slot_season or not self.crops[i].get("cycle")
+            ]
+            if len(seasonal_crops) >= 2:
+                for i in seasonal_crops:
+                    prob += x[i, t] + x[i, t + 2] <= 1.0, f"Diversity_Across_Years_{i}_{t}"
+
         # Solver execution with deterministic fallback
         solver = pulp.PULP_CBC_CMD(msg=False, timeLimit=20)
         try:

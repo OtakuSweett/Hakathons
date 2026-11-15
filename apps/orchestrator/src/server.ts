@@ -308,8 +308,12 @@ export function buildServer(): FastifyInstance {
           discarded: []
         },
         selected_rotation: [
-          { slot_index: 0, cycle_code: 'PV', crop_id: 'maize', water_need_mm: 480, profit_mxn_ha: 1450, is_legume: false, deficit_slack_mm: 0 },
-          { slot_index: 1, cycle_code: 'OI', crop_id: 'bean', water_need_mm: 320, profit_mxn_ha: 1100, is_legume: true, deficit_slack_mm: 0 }
+          { slot_index: 0, cycle_code: 'PV', crop_id: 'maize', water_need_mm: 480, profit_mxn_ha: 1650, is_legume: false, deficit_slack_mm: 0 },
+          { slot_index: 1, cycle_code: 'OI', crop_id: 'chickpea', water_need_mm: 290, profit_mxn_ha: 1850, is_legume: true, deficit_slack_mm: 0 },
+          { slot_index: 2, cycle_code: 'PV', crop_id: 'beans', water_need_mm: 330, profit_mxn_ha: 1550, is_legume: true, deficit_slack_mm: 0 },
+          { slot_index: 3, cycle_code: 'OI', crop_id: 'wheat', water_need_mm: 430, profit_mxn_ha: 1400, is_legume: false, deficit_slack_mm: 0 },
+          { slot_index: 4, cycle_code: 'PV', crop_id: 'sunflower', water_need_mm: 390, profit_mxn_ha: 1500, is_legume: false, deficit_slack_mm: 0 },
+          { slot_index: 5, cycle_code: 'OI', crop_id: 'barley', water_need_mm: 360, profit_mxn_ha: 1300, is_legume: false, deficit_slack_mm: 0 }
         ],
         pareto_front: [
           { lambda_weight: 0.0, profit_mxn_ha: 1800, water_saved_mm: 220, n_fixed_kg_ha: 90, water_shadow_price_mxn_mm: 0.6, n_shadow_price_mxn_kg_ha: 1.2, schedule: [] },

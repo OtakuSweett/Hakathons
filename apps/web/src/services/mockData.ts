@@ -6,7 +6,7 @@
  * Brazil (Mato Grosso Cerrado), Spain (Andalucía Guadalquivir), and India (Punjab Plains).
  */
 
-import { AnalysisResponse } from '../types/index.js';
+import { AnalysisResponse, RotationSlot } from '../types/index.js';
 
 export const DEMO_PRESETS_LIST = [
   {
@@ -24,8 +24,8 @@ export const DEMO_PRESETS_LIST = [
     parcelName: 'Parcela Ejidal San Juan',
     country: 'Mexico',
     region: 'Querétaro (San Juan del Río)',
-    lat: 20.3869,
-    lon: -99.9947,
+    lat: 20.4480,
+    lon: -99.9650,
     areaHa: 25.0,
     cropId: 'maize'
   },
@@ -84,8 +84,8 @@ export const DEMO_PRESETS_LIST = [
     parcelName: 'Fazenda Santa Helena - Sorriso',
     country: 'Brazil',
     region: 'Mato Grosso (Cerrado)',
-    lat: -12.5425,
-    lon: -55.7212,
+    lat: -12.4850,
+    lon: -55.8250,
     areaHa: 150.0,
     cropId: 'soybean'
   },
@@ -111,6 +111,87 @@ export const DEMO_PRESETS_LIST = [
   }
 ];
 
+function getRegionalRotation(presetId: string): RotationSlot[] {
+  if (presetId.includes('mato_grosso')) {
+    return [
+      { slot_index: 0, cycle_code: 'PV', crop_id: 'soybean', water_need_mm: 450, profit_mxn_ha: 2150, is_legume: true, deficit_slack_mm: 0 },
+      { slot_index: 1, cycle_code: 'OI', crop_id: 'maize', water_need_mm: 420, profit_mxn_ha: 1850, is_legume: false, deficit_slack_mm: 0 },
+      { slot_index: 2, cycle_code: 'PV', crop_id: 'soybean', water_need_mm: 450, profit_mxn_ha: 2150, is_legume: true, deficit_slack_mm: 0 },
+      { slot_index: 3, cycle_code: 'OI', crop_id: 'sorghum', water_need_mm: 370, profit_mxn_ha: 1600, is_legume: false, deficit_slack_mm: 0 },
+      { slot_index: 4, cycle_code: 'PV', crop_id: 'soybean', water_need_mm: 450, profit_mxn_ha: 2150, is_legume: true, deficit_slack_mm: 0 },
+      { slot_index: 5, cycle_code: 'OI', crop_id: 'sunflower', water_need_mm: 390, profit_mxn_ha: 1750, is_legume: false, deficit_slack_mm: 0 }
+    ];
+  }
+  if (presetId.includes('iowa')) {
+    return [
+      { slot_index: 0, cycle_code: 'PV', crop_id: 'maize', water_need_mm: 520, profit_mxn_ha: 2200, is_legume: false, deficit_slack_mm: 0 },
+      { slot_index: 1, cycle_code: 'OI', crop_id: 'oats', water_need_mm: 280, profit_mxn_ha: 1050, is_legume: false, deficit_slack_mm: 0 },
+      { slot_index: 2, cycle_code: 'PV', crop_id: 'soybean', water_need_mm: 450, profit_mxn_ha: 2100, is_legume: true, deficit_slack_mm: 0 },
+      { slot_index: 3, cycle_code: 'OI', crop_id: 'vetch', water_need_mm: 220, profit_mxn_ha: 950, is_legume: true, deficit_slack_mm: 0 },
+      { slot_index: 4, cycle_code: 'PV', crop_id: 'maize', water_need_mm: 520, profit_mxn_ha: 2200, is_legume: false, deficit_slack_mm: 0 },
+      { slot_index: 5, cycle_code: 'OI', crop_id: 'canola', water_need_mm: 320, profit_mxn_ha: 1400, is_legume: false, deficit_slack_mm: 0 }
+    ];
+  }
+  if (presetId.includes('pampa')) {
+    return [
+      { slot_index: 0, cycle_code: 'PV', crop_id: 'maize', water_need_mm: 500, profit_mxn_ha: 2100, is_legume: false, deficit_slack_mm: 0 },
+      { slot_index: 1, cycle_code: 'OI', crop_id: 'wheat', water_need_mm: 420, profit_mxn_ha: 1800, is_legume: false, deficit_slack_mm: 0 },
+      { slot_index: 2, cycle_code: 'PV', crop_id: 'soybean', water_need_mm: 440, profit_mxn_ha: 2000, is_legume: true, deficit_slack_mm: 0 },
+      { slot_index: 3, cycle_code: 'OI', crop_id: 'barley', water_need_mm: 380, profit_mxn_ha: 1550, is_legume: false, deficit_slack_mm: 0 },
+      { slot_index: 4, cycle_code: 'PV', crop_id: 'sunflower', water_need_mm: 390, profit_mxn_ha: 1700, is_legume: false, deficit_slack_mm: 0 },
+      { slot_index: 5, cycle_code: 'OI', crop_id: 'oats', water_need_mm: 320, profit_mxn_ha: 1100, is_legume: false, deficit_slack_mm: 0 }
+    ];
+  }
+  if (presetId.includes('yaqui')) {
+    return [
+      { slot_index: 0, cycle_code: 'PV', crop_id: 'soybean', water_need_mm: 420, profit_mxn_ha: 1900, is_legume: true, deficit_slack_mm: 0 },
+      { slot_index: 1, cycle_code: 'OI', crop_id: 'wheat', water_need_mm: 450, profit_mxn_ha: 2200, is_legume: false, deficit_slack_mm: 0 },
+      { slot_index: 2, cycle_code: 'PV', crop_id: 'maize', water_need_mm: 500, profit_mxn_ha: 2050, is_legume: false, deficit_slack_mm: 0 },
+      { slot_index: 3, cycle_code: 'OI', crop_id: 'chickpea', water_need_mm: 300, profit_mxn_ha: 2400, is_legume: true, deficit_slack_mm: 0 },
+      { slot_index: 4, cycle_code: 'PV', crop_id: 'sorghum', water_need_mm: 380, profit_mxn_ha: 1650, is_legume: false, deficit_slack_mm: 0 },
+      { slot_index: 5, cycle_code: 'OI', crop_id: 'wheat', water_need_mm: 450, profit_mxn_ha: 2200, is_legume: false, deficit_slack_mm: 0 }
+    ];
+  }
+  if (presetId.includes('andalucia')) {
+    return [
+      { slot_index: 0, cycle_code: 'PV', crop_id: 'sunflower', water_need_mm: 380, profit_mxn_ha: 1750, is_legume: false, deficit_slack_mm: 0 },
+      { slot_index: 1, cycle_code: 'OI', crop_id: 'wheat', water_need_mm: 430, profit_mxn_ha: 1950, is_legume: false, deficit_slack_mm: 0 },
+      { slot_index: 2, cycle_code: 'PV', crop_id: 'tomato', water_need_mm: 550, profit_mxn_ha: 2800, is_legume: false, deficit_slack_mm: 0 },
+      { slot_index: 3, cycle_code: 'OI', crop_id: 'chickpea', water_need_mm: 290, profit_mxn_ha: 2200, is_legume: true, deficit_slack_mm: 0 },
+      { slot_index: 4, cycle_code: 'PV', crop_id: 'sunflower', water_need_mm: 380, profit_mxn_ha: 1750, is_legume: false, deficit_slack_mm: 0 },
+      { slot_index: 5, cycle_code: 'OI', crop_id: 'barley', water_need_mm: 370, profit_mxn_ha: 1500, is_legume: false, deficit_slack_mm: 0 }
+    ];
+  }
+  if (presetId.includes('punjab')) {
+    return [
+      { slot_index: 0, cycle_code: 'PV', crop_id: 'maize', water_need_mm: 480, profit_mxn_ha: 1800, is_legume: false, deficit_slack_mm: 0 },
+      { slot_index: 1, cycle_code: 'OI', crop_id: 'wheat', water_need_mm: 440, profit_mxn_ha: 2000, is_legume: false, deficit_slack_mm: 0 },
+      { slot_index: 2, cycle_code: 'PV', crop_id: 'soybean', water_need_mm: 430, profit_mxn_ha: 1950, is_legume: true, deficit_slack_mm: 0 },
+      { slot_index: 3, cycle_code: 'OI', crop_id: 'canola', water_need_mm: 350, profit_mxn_ha: 1600, is_legume: false, deficit_slack_mm: 0 },
+      { slot_index: 4, cycle_code: 'PV', crop_id: 'maize', water_need_mm: 480, profit_mxn_ha: 1800, is_legume: false, deficit_slack_mm: 0 },
+      { slot_index: 5, cycle_code: 'OI', crop_id: 'chickpea', water_need_mm: 280, profit_mxn_ha: 2150, is_legume: true, deficit_slack_mm: 0 }
+    ];
+  }
+  if (presetId.includes('colon')) {
+    return [
+      { slot_index: 0, cycle_code: 'PV', crop_id: 'sorghum', water_need_mm: 360, profit_mxn_ha: 1550, is_legume: false, deficit_slack_mm: 0 },
+      { slot_index: 1, cycle_code: 'OI', crop_id: 'chickpea', water_need_mm: 270, profit_mxn_ha: 2100, is_legume: true, deficit_slack_mm: 0 },
+      { slot_index: 2, cycle_code: 'PV', crop_id: 'beans', water_need_mm: 310, profit_mxn_ha: 1850, is_legume: true, deficit_slack_mm: 0 },
+      { slot_index: 3, cycle_code: 'OI', crop_id: 'oats', water_need_mm: 300, profit_mxn_ha: 1200, is_legume: false, deficit_slack_mm: 0 },
+      { slot_index: 4, cycle_code: 'PV', crop_id: 'sorghum', water_need_mm: 360, profit_mxn_ha: 1550, is_legume: false, deficit_slack_mm: 0 },
+      { slot_index: 5, cycle_code: 'OI', crop_id: 'barley', water_need_mm: 330, profit_mxn_ha: 1400, is_legume: false, deficit_slack_mm: 0 }
+    ];
+  }
+  return [
+    { slot_index: 0, cycle_code: 'PV', crop_id: 'maize', water_need_mm: 500, profit_mxn_ha: 2100, is_legume: false, deficit_slack_mm: 0 },
+    { slot_index: 1, cycle_code: 'OI', crop_id: 'chickpea', water_need_mm: 290, profit_mxn_ha: 2350, is_legume: true, deficit_slack_mm: 0 },
+    { slot_index: 2, cycle_code: 'PV', crop_id: 'beans', water_need_mm: 330, profit_mxn_ha: 1950, is_legume: true, deficit_slack_mm: 0 },
+    { slot_index: 3, cycle_code: 'OI', crop_id: 'wheat', water_need_mm: 440, profit_mxn_ha: 1900, is_legume: false, deficit_slack_mm: 0 },
+    { slot_index: 4, cycle_code: 'PV', crop_id: 'sunflower', water_need_mm: 390, profit_mxn_ha: 1750, is_legume: false, deficit_slack_mm: 0 },
+    { slot_index: 5, cycle_code: 'OI', crop_id: 'barley', water_need_mm: 360, profit_mxn_ha: 1500, is_legume: false, deficit_slack_mm: 0 }
+  ];
+}
+
 export function getMockAnalysis(presetId: string = 'el_marques_qro'): AnalysisResponse {
   const isUS = presetId.includes('iowa');
   const isAR = presetId.includes('pampa');
@@ -123,7 +204,7 @@ export function getMockAnalysis(presetId: string = 'el_marques_qro'): AnalysisRe
 
   const lat = isUS ? 42.0850
     : isAR ? -33.9500
-    : isBR ? -12.5425
+    : isBR ? -12.4850
     : isES ? 37.4520
     : isIN ? 30.8250
     : isSonora ? 27.3684
@@ -133,7 +214,7 @@ export function getMockAnalysis(presetId: string = 'el_marques_qro'): AnalysisRe
 
   const lon = isUS ? -93.5850
     : isAR ? -60.5500
-    : isBR ? -55.7212
+    : isBR ? -55.8250
     : isES ? -5.6120
     : isIN ? 75.7500
     : isSonora ? -109.9280
@@ -279,14 +360,7 @@ export function getMockAnalysis(presetId: string = 'el_marques_qro'): AnalysisRe
           }
         ]
       },
-      selected_rotation: [
-        { slot_index: 0, cycle_code: 'PV', crop_id: 'maize', water_need_mm: 480, profit_mxn_ha: 1650, is_legume: false, deficit_slack_mm: 0 },
-        { slot_index: 1, cycle_code: 'OI', crop_id: isUS || isBR ? 'soybean' : 'chickpea', water_need_mm: 310, profit_mxn_ha: 1420, is_legume: true, deficit_slack_mm: 0 },
-        { slot_index: 2, cycle_code: 'PV', crop_id: isUS ? 'canola' : 'broccoli', water_need_mm: 390, profit_mxn_ha: 2100, is_legume: false, deficit_slack_mm: 0 },
-        { slot_index: 3, cycle_code: 'OI', crop_id: isUS || isBR ? 'soybean' : 'bean', water_need_mm: 330, profit_mxn_ha: 1350, is_legume: true, deficit_slack_mm: 0 },
-        { slot_index: 4, cycle_code: 'PV', crop_id: 'wheat', water_need_mm: 420, profit_mxn_ha: 1200, is_legume: false, deficit_slack_mm: 0 },
-        { slot_index: 5, cycle_code: 'OI', crop_id: isUS || isBR ? 'soybean' : 'chickpea', water_need_mm: 300, profit_mxn_ha: 1450, is_legume: true, deficit_slack_mm: 0 }
-      ],
+      selected_rotation: getRegionalRotation(presetId),
       pareto_front: [
         { lambda_weight: 0.0, profit_mxn_ha: 6800, water_saved_mm: 480, n_fixed_kg_ha: 240, water_shadow_price_mxn_mm: 0.45, n_shadow_price_mxn_kg_ha: 1.10, schedule: [] },
         { lambda_weight: 0.25, profit_mxn_ha: 7600, water_saved_mm: 390, n_fixed_kg_ha: 220, water_shadow_price_mxn_mm: 0.65, n_shadow_price_mxn_kg_ha: 1.10, schedule: [] },

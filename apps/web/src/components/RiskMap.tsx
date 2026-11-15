@@ -60,7 +60,7 @@ const GLOBAL_BREADBASKETS: GlobalBreadbasket[] = [
   { id: 'andalucia', flag: '🇪🇸', label: { es: 'Andalucía (España)', en: 'Andalusia (Spain)' }, region: { es: 'Cuenca del Guadalquivir', en: 'Guadalquivir basin' }, lat: 37.4520, lon: -5.6120, presetId: 'andalucia_guadalquivir_es' },
   { id: 'corn_belt', flag: '🇺🇸', label: { es: 'Corn Belt (Iowa)', en: 'Corn Belt (Iowa)' }, region: { es: 'Maíz y soya intensivos', en: 'Intensive corn-soy' }, lat: 42.0850, lon: -93.5850, presetId: 'iowa_corn_belt_us' },
   { id: 'pampa', flag: '🇦🇷', label: { es: 'Pampa Húmeda (Arg)', en: 'Pampa (Argentina)' }, region: { es: 'Hemisferio Sur austral', en: 'Southern Hemisphere austral' }, lat: -33.9500, lon: -60.5500, presetId: 'pampa_pergamino_ar' },
-  { id: 'cerrado', flag: '🇧🇷', label: { es: 'Cerrado (Brasil)', en: 'Cerrado (Brazil)' }, region: { es: 'Zafra tropical austral', en: 'Tropical austral double-crop' }, lat: -12.5425, lon: -55.7212, presetId: 'mato_grosso_cerrado_br' },
+  { id: 'cerrado', flag: '🇧🇷', label: { es: 'Cerrado (Brasil)', en: 'Cerrado (Brazil)' }, region: { es: 'Zafra tropical austral', en: 'Tropical austral double-crop' }, lat: -12.4850, lon: -55.8250, presetId: 'mato_grosso_cerrado_br' },
   { id: 'punjab', flag: '🇮🇳', label: { es: 'Punjab (India)', en: 'Punjab (India)' }, region: { es: 'Estrés hídrico subterráneo', en: 'Groundwater stress crisis' }, lat: 30.8250, lon: 75.7500, presetId: 'punjab_ludhiana_in' },
   { id: 'celaya', flag: '🇲🇽', label: { es: 'Celaya (Gto)', en: 'Celaya (Gto)' }, region: { es: 'Vertisoles arcillosos', en: 'Clay vertisols' }, lat: 20.5650, lon: -100.7450, presetId: 'celaya_gto' },
   { id: 'semiarid', flag: '🇲🇽', label: { es: 'Semidesierto (Colón)', en: 'Semiarid (Colón)' }, region: { es: 'Secano y nopal/sorgo', en: 'Rainfed & drought-tolerant' }, lat: 20.7250, lon: -100.0450, presetId: 'colon_qro_semiarid' }
@@ -339,51 +339,16 @@ export const RiskMap: React.FC<RiskMapProps> = ({
     const map = mapInstanceRef.current;
     if (!map) return;
 
-    // Pan map to new parcel center if coordinates shifted
+    // Pan map to new parcel center if coordinates shifted (snap instantly without animation lag)
     const center = map.getCenter();
     const distanceMoved = Math.hypot(center.lat - lat, center.lng - lon);
-    if (distanceMoved > 0.005) {
-      map.setView([lat, lon], map.getZoom() < 12 ? 14 : map.getZoom(), { animate: true });
+    if (distanceMoved > 0.001) {
+      map.setView([lat, lon], map.getZoom() < 12 ? 14 : map.getZoom(), { animate: false });
       map.invalidateSize();
     }
 
-    if (markerRef.current) {
-      markerRef.current.remove();
-    }
-    if (haloRef.current) {
-      haloRef.current.remove();
-    }
-    if (polygonRef.current) {
-      polygonRef.current.remove();
-    }
-
-    const selectionHalo = L.circleMarker([lat, lon], {
-      radius: 18,
-      color: '#2f6b4f',
-      weight: 2,
-      fillColor: '#d4ec79',
-      fillOpacity: 0.22,
-      interactive: false
-    }).addTo(map);
-    haloRef.current = selectionHalo;
-
-    const parcelIcon = L.divIcon({
-      className: 'field-marker-icon',
-      html: '<svg class="field-marker-svg" viewBox="0 0 40 48" aria-hidden="true"><path d="M20 2.5C10.6 2.5 3 10 3 19.2c0 12.1 17 26.3 17 26.3s17-14.2 17-26.3C37 10 29.4 2.5 20 2.5Z" fill="#1e583d" stroke="#ffffff" stroke-width="2.5"/><circle cx="20" cy="19" r="5" fill="#d4ec79"/></svg>',
-      iconSize: [40, 48],
-      iconAnchor: [20, 44]
-    });
-
-    const marker = L.marker([lat, lon], { icon: parcelIcon }).addTo(map);
-    marker.bindPopup(`<b>${parcelName}</b><br/>${lang === 'es' ? 'Superficie' : 'Area'}: ${areaHa} ha (~${sideMeters} m × ${sideMeters} m)<br/>Lat: ${lat.toFixed(5)}, Lon: ${lon.toFixed(5)}`);
-    marker.bindTooltip(`${parcelName} · ${areaHa} ha`, {
-      permanent: true,
-      direction: 'top',
-      offset: [0, -44],
-      className: 'field-tooltip'
-    });
-    marker.getElement()?.setAttribute('aria-label', `${lang === 'es' ? 'Centro de parcela' : 'Field center'}: ${lat.toFixed(4)}, ${lon.toFixed(4)}`);
-    markerRef.current = marker;
+    const popupHtml = `<b>${parcelName}</b><br/>${lang === 'es' ? 'Superficie' : 'Area'}: ${areaHa} ha (~${sideMeters} m × ${sideMeters} m)<br/>Lat: ${lat.toFixed(5)}, Lon: ${lon.toFixed(5)}`;
+    const tooltipText = `${parcelName} · ${areaHa} ha`;
 
     // Draw scaled parcel polygon around the center point (1 ha = 10,000 m2)
     const sideKm = Math.sqrt(areaHa * 0.01) / 2.0;
@@ -399,16 +364,62 @@ export const RiskMap: React.FC<RiskMapProps> = ({
       [lat + dLat, lon - dLon]
     ];
 
-    const poly = L.polygon(polygonCoords, {
-      color: '#2f6b4f',
-      fillColor: '#d4ec79',
-      fillOpacity: 0.16,
-      weight: 2,
-      dashArray: '5 4'
-    }).addTo(map);
-    polygonRef.current = poly;
-    poly.bringToFront();
-    marker.setZIndexOffset(1000);
+    if (haloRef.current) {
+      haloRef.current.setLatLng([lat, lon]);
+    } else {
+      haloRef.current = L.circleMarker([lat, lon], {
+        radius: 18,
+        color: '#2f6b4f',
+        weight: 2,
+        fillColor: '#d4ec79',
+        fillOpacity: 0.22,
+        interactive: false
+      }).addTo(map);
+    }
+
+    if (markerRef.current) {
+      markerRef.current.setLatLng([lat, lon]);
+      markerRef.current.setPopupContent(popupHtml);
+      markerRef.current.setTooltipContent(tooltipText);
+      markerRef.current.getElement()?.setAttribute('aria-label', `${lang === 'es' ? 'Centro de parcela' : 'Field center'}: ${lat.toFixed(4)}, ${lon.toFixed(4)}`);
+    } else {
+      const parcelIcon = L.divIcon({
+        className: 'field-marker-icon',
+        html: '<svg class="field-marker-svg" viewBox="0 0 40 48" aria-hidden="true"><path d="M20 2.5C10.6 2.5 3 10 3 19.2c0 12.1 17 26.3 17 26.3s17-14.2 17-26.3C37 10 29.4 2.5 20 2.5Z" fill="#1e583d" stroke="#ffffff" stroke-width="2.5"/><circle cx="20" cy="19" r="5" fill="#d4ec79"/></svg>',
+        iconSize: [40, 48],
+        iconAnchor: [20, 44]
+      });
+
+      const marker = L.marker([lat, lon], { icon: parcelIcon }).addTo(map);
+      marker.bindPopup(popupHtml);
+      marker.bindTooltip(tooltipText, {
+        permanent: true,
+        direction: 'top',
+        offset: [0, -44],
+        className: 'field-tooltip'
+      });
+      marker.getElement()?.setAttribute('aria-label', `${lang === 'es' ? 'Centro de parcela' : 'Field center'}: ${lat.toFixed(4)}, ${lon.toFixed(4)}`);
+      markerRef.current = marker;
+    }
+
+    if (polygonRef.current) {
+      polygonRef.current.setLatLngs(polygonCoords);
+    } else {
+      polygonRef.current = L.polygon(polygonCoords, {
+        color: '#2f6b4f',
+        fillColor: '#d4ec79',
+        fillOpacity: 0.16,
+        weight: 2,
+        dashArray: '5 4'
+      }).addTo(map);
+    }
+
+    polygonRef.current.bringToFront();
+    markerRef.current.setZIndexOffset(1000);
+
+    requestAnimationFrame(() => {
+      mapInstanceRef.current?.invalidateSize();
+    });
 
     // Clear old EONET alerts and redraw
     alertLayersRef.current.forEach((l) => l.remove());
@@ -442,7 +453,7 @@ export const RiskMap: React.FC<RiskMapProps> = ({
     setSearchError('');
     const map = mapInstanceRef.current;
     if (map) {
-      map.setView([b.lat, b.lon], 14, { animate: true });
+      map.setView([b.lat, b.lon], 14, { animate: false });
       map.invalidateSize();
     }
     onLocationSearch(b.lat, b.lon, null);
