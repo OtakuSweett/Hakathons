@@ -125,3 +125,4 @@
 - [x] D-18: Remove the redundant parcel-review screen from the normal flow; map selection now continues directly to crop selection, with a recovery screen only for soil errors.
 - [x] D-19: Localize remaining mixed-language UI and API errors; promote failures to visible alerts/toasts and explain irrigation timing and water depth in plain language.
 - [x] D-20: Keep routine same-location cache reuse internal; omit it from the visible provenance warnings.
+- [x] D-21: UX Overhaul for NASA Space Apps 2026 Rubric — Zoom controls (parcel focus zoom 16 vs region zoom 11), high-visibility parcel representation with calculated dimensions, modern orbital loading modal, large-format error dialogs with resolution paths, single-point chart diagnostic widgets, and 3D biophysical stratum digital twin (AgroLayers3D).

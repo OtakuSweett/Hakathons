@@ -43,7 +43,11 @@ export const CropMonitor: React.FC<CropMonitorProps> = ({ data, lang }) => {
       summaryNdvi: 'NDVI Máximo',
       sectionLabel: 'SEGUIMIENTO · CULTIVO',
       powerSource: 'Datos diarios de NASA POWER',
-      ndviSource: 'Spline TDMA de MODIS'
+      ndviSource: 'Spline TDMA de MODIS',
+      singlePointWater: 'Registro Puntual de Humedad en Suelo',
+      singlePointWaterDesc: 'Visualización de estratigrafía hídrica actual calculada por el modelo edafológico Saxton-Rawls sobre 600 mm de profundidad radicular.',
+      singlePointNdvi: 'Observación Satelital MODIS Actual',
+      singlePointNdviDesc: 'Índice de Vegetación de Diferencia Normalizada muestreado para las coordenadas centrales de tu parcela.'
     },
     en: {
       title: 'Dynamic Crop & Soil Moisture Monitoring',
@@ -68,7 +72,11 @@ export const CropMonitor: React.FC<CropMonitorProps> = ({ data, lang }) => {
       summaryNdvi: 'Peak NDVI',
       sectionLabel: 'CROP MONITORING · FIELD',
       powerSource: 'NASA POWER daily data',
-      ndviSource: 'MODIS TDMA spline'
+      ndviSource: 'MODIS TDMA spline',
+      singlePointWater: 'Single-Point Soil Moisture Record',
+      singlePointWaterDesc: 'Current hydrologic stratigraphy calculated by Saxton-Rawls pedotransfer over 600 mm effective root depth.',
+      singlePointNdvi: 'Current MODIS Satellite Observation',
+      singlePointNdviDesc: 'Normalized Difference Vegetation Index sampled at the center coordinates of your parcel.'
     }
   }[lang];
 
@@ -100,6 +108,9 @@ export const CropMonitor: React.FC<CropMonitorProps> = ({ data, lang }) => {
   const latestW = wb?.w_mm?.[wb.w_mm.length - 1] ?? 120;
   const isStressed = sh ? latestW < sh.critical_water_mm : false;
   const maxNdvi = Math.max(...(spline?.ndvi_filled || [0.65]));
+
+  const isSingleWaterPoint = waterChartData.length <= 1;
+  const isSingleNdviPoint = ndviChartData.length <= 1;
 
   return (
     <div className="bento-card overflow-hidden">
@@ -191,100 +202,168 @@ export const CropMonitor: React.FC<CropMonitorProps> = ({ data, lang }) => {
       {/* Main Chart Body */}
       <div className="p-5">
         {activeTab === 'water' ? (
-          <div>
-            <div className="h-64 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={waterChartData} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
-                  <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#71717a' }} stroke="#3f3f46" />
-                  <YAxis tick={{ fontSize: 11, fill: '#71717a' }} stroke="#3f3f46" unit="mm" domain={[0, 'auto']} />
-                  <Tooltip
-                    contentStyle={{ backgroundColor: '#18181b', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', fontSize: '12px', color: '#f4f4f5' }}
-                  />
-                  <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
+          isSingleWaterPoint ? (
+            /* Visual Gauge / Stratigraphic Tank Card when 1 point exists */
+            <div className="p-6 bg-zinc-950/60 rounded-2xl border border-white/[0.08]">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+                <h4 className="text-sm font-bold text-white">{t.singlePointWater}</h4>
+              </div>
+              <p className="text-xs text-zinc-400 mb-6">{t.singlePointWaterDesc}</p>
 
-                  {/* Saxton-Rawls Reference Thresholds */}
-                  {sh?.field_capacity_mm && (
-                    <ReferenceLine
-                      y={sh.field_capacity_mm}
-                      stroke="#10b981"
-                      strokeDasharray="4 4"
-                      label={{ value: `${t.fcLabel} (${sh.field_capacity_mm.toFixed(0)} mm)`, fill: '#10b981', fontSize: 10 }}
+              <div className="space-y-4 max-w-md mx-auto">
+                <div>
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="text-emerald-400 font-bold">{t.fcLabel}</span>
+                    <span className="font-mono text-white">{sh?.field_capacity_mm.toFixed(0) || 165} mm</span>
+                  </div>
+                  <div className="w-full bg-zinc-800 rounded-full h-2">
+                    <div className="bg-emerald-500 h-2 rounded-full" style={{ width: '100%' }} />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="text-cyan-300 font-bold">{t.wLabel}</span>
+                    <span className="font-mono text-cyan-300 font-bold">{latestW.toFixed(1)} mm</span>
+                  </div>
+                  <div className="w-full bg-zinc-800 rounded-full h-3 overflow-hidden">
+                    <div
+                      className="bg-cyan-400 h-3 rounded-full transition-all duration-700"
+                      style={{ width: `${Math.min(100, (latestW / (sh?.field_capacity_mm || 180)) * 100)}%` }}
                     />
-                  )}
-                  {sh?.critical_water_mm && (
-                    <ReferenceLine
-                      y={sh.critical_water_mm}
-                      stroke="#f59e0b"
-                      strokeDasharray="3 3"
-                      label={{ value: `${t.critLabel} (${sh.critical_water_mm.toFixed(0)} mm)`, fill: '#f59e0b', fontSize: 10 }}
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="text-amber-400 font-bold">{t.critLabel}</span>
+                    <span className="font-mono text-white">{sh?.critical_water_mm.toFixed(0) || 122} mm</span>
+                  </div>
+                  <div className="w-full bg-zinc-800 rounded-full h-2">
+                    <div className="bg-amber-500 h-2 rounded-full" style={{ width: `${((sh?.critical_water_mm || 122) / (sh?.field_capacity_mm || 180)) * 100}%` }} />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="text-rose-400 font-bold">{t.wpLabel}</span>
+                    <span className="font-mono text-white">{sh?.wilting_point_mm.toFixed(0) || 80} mm</span>
+                  </div>
+                  <div className="w-full bg-zinc-800 rounded-full h-2">
+                    <div className="bg-rose-500 h-2 rounded-full" style={{ width: `${((sh?.wilting_point_mm || 80) / (sh?.field_capacity_mm || 180)) * 100}%` }} />
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div>
+              <div className="h-64 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={waterChartData} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
+                    <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#71717a' }} stroke="#3f3f46" />
+                    <YAxis tick={{ fontSize: 11, fill: '#71717a' }} stroke="#3f3f46" unit="mm" domain={[0, 'auto']} />
+                    <Tooltip
+                      contentStyle={{ backgroundColor: '#18181b', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', fontSize: '12px', color: '#f4f4f5' }}
                     />
-                  )}
-                  {sh?.wilting_point_mm && (
-                    <ReferenceLine
-                      y={sh.wilting_point_mm}
-                      stroke="#f43f5e"
+                    <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
+
+                    {/* Saxton-Rawls Reference Thresholds */}
+                    {sh?.field_capacity_mm && (
+                      <ReferenceLine
+                        y={sh.field_capacity_mm}
+                        stroke="#10b981"
+                        strokeDasharray="4 4"
+                        label={{ value: `${t.fcLabel} (${sh.field_capacity_mm.toFixed(0)} mm)`, fill: '#10b981', fontSize: 10 }}
+                      />
+                    )}
+                    {sh?.critical_water_mm && (
+                      <ReferenceLine
+                        y={sh.critical_water_mm}
+                        stroke="#f59e0b"
+                        strokeDasharray="3 3"
+                        label={{ value: `${t.critLabel} (${sh.critical_water_mm.toFixed(0)} mm)`, fill: '#f59e0b', fontSize: 10 }}
+                      />
+                    )}
+                    {sh?.wilting_point_mm && (
+                      <ReferenceLine
+                        y={sh.wilting_point_mm}
+                        stroke="#f43f5e"
+                        strokeDasharray="2 2"
+                        label={{ value: `${t.wpLabel} (${sh.wilting_point_mm.toFixed(0)} mm)`, fill: '#f43f5e', fontSize: 10 }}
+                      />
+                    )}
+
+                    <Line
+                      type="monotone"
+                      dataKey="w_mm"
+                      name={t.wLabel}
+                      stroke="#38bdf8"
+                      strokeWidth={2.5}
+                      dot={{ r: 3, fill: '#38bdf8' }}
+                      activeDot={{ r: 6, fill: '#38bdf8' }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="precip_mm"
+                      name={t.precipLabel}
+                      stroke="#818cf8"
+                      strokeWidth={1.5}
                       strokeDasharray="2 2"
-                      label={{ value: `${t.wpLabel} (${sh.wilting_point_mm.toFixed(0)} mm)`, fill: '#f43f5e', fontSize: 10 }}
+                      dot={false}
                     />
-                  )}
-
-                  <Line
-                    type="monotone"
-                    dataKey="w_mm"
-                    name={t.wLabel}
-                    stroke="#38bdf8"
-                    strokeWidth={2.5}
-                    dot={false}
-                    activeDot={{ r: 5, fill: '#38bdf8' }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="precip_mm"
-                    name={t.precipLabel}
-                    stroke="#818cf8"
-                    strokeWidth={1.5}
-                    strokeDasharray="2 2"
-                    dot={false}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
             </div>
-          </div>
+          )
         ) : (
-          <div>
-            <div className="h-64 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={ndviChartData} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
-                  <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#71717a' }} stroke="#3f3f46" />
-                  <YAxis tick={{ fontSize: 11, fill: '#71717a' }} stroke="#3f3f46" domain={[0, 1]} />
-                  <Tooltip
-                    contentStyle={{ backgroundColor: '#18181b', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', fontSize: '12px', color: '#f4f4f5' }}
-                  />
-                  <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
-
-                  <Line
-                    type="monotone"
-                    dataKey="ndvi_spline"
-                    name={t.ndviContinuous}
-                    stroke="#10b981"
-                    strokeWidth={2.5}
-                    dot={false}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="ndvi_raw"
-                    name={t.ndviObs}
-                    stroke="#fb923c"
-                    strokeWidth={0}
-                    dot={{ r: 4, fill: '#fb923c' }}
-                    connectNulls={false}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
+          isSingleNdviPoint ? (
+            <div className="p-6 bg-zinc-950/60 rounded-2xl border border-white/[0.08] text-center">
+              <span className="text-3xl mb-2 inline-block">🌿</span>
+              <h4 className="text-sm font-bold text-white mb-1">{t.singlePointNdvi}</h4>
+              <p className="text-xs text-zinc-400 max-w-sm mx-auto mb-4">{t.singlePointNdviDesc}</p>
+              <div className="inline-flex items-baseline gap-2 bg-zinc-900 px-4 py-2 rounded-xl border border-emerald-500/30">
+                <span className="text-xs text-zinc-400">NDVI:</span>
+                <span className="text-2xl font-black text-emerald-400 font-mono">{maxNdvi.toFixed(2)}</span>
+                <span className="text-xs text-emerald-500 font-semibold">Vigor Fuerte</span>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div>
+              <div className="h-64 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={ndviChartData} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
+                    <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#71717a' }} stroke="#3f3f46" />
+                    <YAxis tick={{ fontSize: 11, fill: '#71717a' }} stroke="#3f3f46" domain={[0, 1]} />
+                    <Tooltip
+                      contentStyle={{ backgroundColor: '#18181b', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', fontSize: '12px', color: '#f4f4f5' }}
+                    />
+                    <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
+
+                    <Line
+                      type="monotone"
+                      dataKey="ndvi_spline"
+                      name={t.ndviContinuous}
+                      stroke="#10b981"
+                      strokeWidth={2.5}
+                      dot={false}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="ndvi_raw"
+                      name={t.ndviObs}
+                      stroke="#fb923c"
+                      strokeWidth={0}
+                      dot={{ r: 4, fill: '#fb923c' }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          )
         )}
       </div>
     </div>

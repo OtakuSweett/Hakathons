@@ -12,6 +12,9 @@ import { EconomicEvaluation } from './components/EconomicEvaluation.js';
 import { ShiftingLands } from './components/ShiftingLands.js';
 import { FarmerReportsModal } from './components/FarmerReportsModal.js';
 import { PrivacyPage } from './components/PrivacyPage.js';
+import { ModernLoadingModal } from './components/ModernLoadingModal.js';
+import { ErrorDialogModal } from './components/ErrorDialogModal.js';
+import { AgroLayers3D } from './components/AgroLayers3D.js';
 import { apiFetch } from './services/api.js';
 
 type WaterRegime = 'temporal' | 'goteo' | 'gravedad';
@@ -110,6 +113,9 @@ export const App: React.FC = () => {
   const [languageMenuOpen, setLanguageMenuOpen] = useState(false);
   const languageMenuRef = useRef<HTMLDivElement>(null);
   const [manualSoilProfile, setManualSoilProfile] = useState({ clay_pct: '', sand_pct: '', soil_ph: '', soc_g_kg: '', nitrogen_g_kg: '' });
+  const [errorModalOpen, setErrorModalOpen] = useState(false);
+  const [errorModalCode, setErrorModalCode] = useState<string | undefined>(undefined);
+  const [errorModalMessage, setErrorModalMessage] = useState('');
 
   useEffect(() => {
     localStorage.setItem('agro-dss-language', lang);
@@ -279,13 +285,17 @@ export const App: React.FC = () => {
         const localizedValidationMessage = code === 'INVALID_SOIL_PROFILE'
           ? text('El análisis requiere arcilla, arena, pH y carbono orgánico válidos; el nitrógeno es opcional.', 'The soil test needs valid clay, sand, pH, and organic carbon values; nitrogen is optional.')
           : body?.error?.message;
-        setLocationMessage(code === 'NON_ARABLE_LAND'
+        const finalMsg = code === 'NON_ARABLE_LAND'
           ? (lang === 'es'
-            ? `SoilGrids no tiene datos de suelo para este punto (${requestCoordinates.lat.toFixed(4)}, ${requestCoordinates.lon.toFixed(4)}). Puede ser una zona urbana o sin cobertura; esto no descarta las parcelas agrícolas cercanas. Mueve el marcador al campo o continúa con un análisis de suelo.`
-            : `SoilGrids has no soil data for this point (${requestCoordinates.lat.toFixed(4)}, ${requestCoordinates.lon.toFixed(4)}). It may be urban or uncovered; nearby fields may still be valid. Move the marker to the field or continue with a soil test.`)
+            ? `SoilGrids no tiene datos de suelo para este punto (${requestCoordinates.lat.toFixed(4)}, ${requestCoordinates.lon.toFixed(4)}). Puede ser una zona urbana, cuerpo de agua o roca desnuda. Mueve el marcador a una parcela agrícola o proporciona un análisis de suelo de laboratorio.`
+            : `SoilGrids has no soil data for this point (${requestCoordinates.lat.toFixed(4)}, ${requestCoordinates.lon.toFixed(4)}). It may be urban, water, or bedrock. Move the marker to an agricultural field or provide a laboratory soil test.`)
           : (localizedValidationMessage || (code
             ? text(`No se pudo validar la parcela (${code}).`, `The field could not be validated (${code}).`)
-            : text('No se pudo validar la parcela.', 'The field could not be validated.'))));
+            : text('No se pudo validar la parcela.', 'The field could not be validated.')));
+        setLocationMessage(finalMsg);
+        setErrorModalCode(code);
+        setErrorModalMessage(finalMsg);
+        setErrorModalOpen(true);
         setStep(1);
         return;
       }
@@ -306,7 +316,11 @@ export const App: React.FC = () => {
             ? `${code}: ${localizedErrors[code][lang === 'es' ? 0 : 1]}`
             : code ? text(`El servidor devolvió el error ${code}.`, `The server returned error ${code}.`) : message;
         } catch { /* The gateway may return an empty or non-JSON error. */ }
-        throw new Error(detail || `HTTP ${response.status}`);
+        const errMsg = detail || `HTTP ${response.status}`;
+        setErrorModalCode(apiErrorCode || `HTTP_${response.status}`);
+        setErrorModalMessage(errMsg);
+        setErrorModalOpen(true);
+        throw new Error(errMsg);
       }
       const analysis = await response.json() as AnalysisResponse;
       setData(analysis);
@@ -321,19 +335,27 @@ export const App: React.FC = () => {
         setManualSoilOpen(true);
         setMapRequestFailed(false);
         setStep(1);
-        setLocationMessage(text(
+        const soilMsg = text(
           'SoilGrids no está disponible ahora para esta parcela. Puedes capturar un análisis de suelo y volver a consultar el clima y las alertas.',
           'SoilGrids is unavailable for this field right now. Enter a soil test to continue querying climate and hazard data.'
-        ));
+        );
+        setLocationMessage(soilMsg);
+        setErrorModalCode('SOILGRIDS_UNAVAILABLE');
+        setErrorModalMessage(soilMsg);
+        setErrorModalOpen(true);
         return;
       }
       setMapRequestFailed(true);
       const reason = error instanceof TypeError
         ? (lang === 'es' ? 'no hay conexión con el servicio de análisis' : 'the analysis service is unreachable')
         : error instanceof Error ? error.message : '';
-      setLocationMessage(lang === 'es'
+      const failureMsg = lang === 'es'
         ? `El servicio de análisis no respondió${reason ? ` (${reason})` : ''}. Conservamos tu ubicación y cultivos; puedes reintentar.`
-        : `The analysis service did not respond${reason ? ` (${reason})` : ''}. Your location and crops are saved; you can retry.`);
+        : `The analysis service did not respond${reason ? ` (${reason})` : ''}. Your location and crops are saved; you can retry.`;
+      setLocationMessage(failureMsg);
+      setErrorModalCode(apiErrorCode || 'SERVICE_UNAVAILABLE');
+      setErrorModalMessage(failureMsg);
+      setErrorModalOpen(true);
     } finally {
       setIsLoading(false);
     }
@@ -550,6 +572,7 @@ export const App: React.FC = () => {
           {provenanceMessages(data, lang).length > 0 && <aside className="data-quality-notice" role="status"><b>{text('Origen y disponibilidad de los datos', 'Data source and availability')}</b>{provenanceMessages(data, lang).map((message) => <p key={message}>{message}</p>)}</aside>}
           <EarlyWarningBanner trigger={data.physics?.irrigation_trigger || { t_star_days: null, delta_i_mm: null, reason: null }} eonetCount={data.eonet_hazard_alerts?.length || 0} meanTempC={data.climate_summary?.mean_temperature_c || 21} lang={lang} />
           <ShiftingLands data={data} areaHa={areaHa} waterRegime={waterRegime} lang={lang} />
+          <AgroLayers3D data={data} lang={lang} areaHa={areaHa} />
           <section className="analysis-grid main-analysis-grid">
             <div className="span-7"><RiskMap lat={data.coordinates.lat} lon={data.coordinates.lon} regionLat={mapRegionCenter.lat} regionLon={mapRegionCenter.lon} selectionBounds={mapSelectionBounds} parcelName={currentPresetName} eonetAlerts={data.eonet_hazard_alerts || []} areaHa={areaHa} selectedCropIds={selectedCrops} onAreaChange={setAreaHa} waterRegime={waterRegime} onWaterRegimeChange={setWaterRegime} lang={lang} onMapClick={(lat, lon) => { handleMapCoordinateSelect(lat, lon); setStep(0); }} onLocationSearch={(lat, lon, bounds) => { handleLocationSearch(lat, lon, bounds); setStep(0); }} /></div>
             <div className="span-5"><CropAdvisor viableCropIds={data.optimization?.presolver_summary?.feasible_crop_ids || []} discarded={data.optimization?.presolver_summary?.discarded || []} soilPh={data.soil_hydraulics?.soil_ph || 6.8} lang={lang} /></div>
@@ -564,6 +587,18 @@ export const App: React.FC = () => {
       {cookieNotice && currentPage === 'app' && <aside className="consent-note" aria-label={text('Aviso de privacidad', 'Privacy notice')}><p>{text('Guardamos tu idioma y que cerraste este aviso. Si buscas un lugar, la consulta se envía al geocodificador; las coordenadas y cultivos se envían cuando solicitas el análisis. Consulta nuestro', 'We store your language and that you dismissed this notice. Place searches go to the geocoder; coordinates and crops are sent when you request an analysis. Read our')} <button type="button" className="inline-link" onClick={openPrivacyPage}>{text('aviso de datos y privacidad', 'data and privacy notice')}</button>.</p><button type="button" className="consent-accept" onClick={() => { localStorage.setItem('agro-dss-notice', 'accepted'); setCookieNotice(false); }}>{text('Entendido', 'Got it')}</button></aside>}
       <footer className="site-footer"><span>NASA Agro-DSS <span>·</span> {text('Planificación agrícola informada', 'Evidence-led field planning')}</span><span>NASA POWER · SoilGrids · EONET · FAO-56</span><button type="button" onClick={openPrivacyPage}>{text('Datos, privacidad y uso', 'Data, privacy & terms')}</button></footer>
       <FarmerReportsModal isOpen={isReportModalOpen} onClose={() => setIsReportModalOpen(false)} lat={selectedCoordinates.lat} lon={selectedCoordinates.lon} parcelId={dataSource === 'live' && sameAsAnalyzed ? data.parcel_id : isOfflineMode ? data.parcel_id : `custom_${selectedCoordinates.lat.toFixed(4)}_${selectedCoordinates.lon.toFixed(4)}`} cropOptions={orderedCropOptions} lang={lang} />
+      <ModernLoadingModal isOpen={isLoading} lang={lang} onCancel={() => setIsLoading(false)} />
+      <ErrorDialogModal
+        isOpen={errorModalOpen}
+        errorCode={errorModalCode}
+        errorMessage={errorModalMessage}
+        lang={lang}
+        onClose={() => setErrorModalOpen(false)}
+        onRetry={() => { setErrorModalOpen(false); void applyCropSelection(); }}
+        onEnterManualSoil={() => { setErrorModalOpen(false); setManualSoilOpen(true); setStep(1); }}
+        onUseBenchmark={() => { setErrorModalOpen(false); useRegionalBenchmark(); }}
+        onMoveMap={() => { setErrorModalOpen(false); setStep(0); }}
+      />
       {locationMessage && ((step === 0 && !hasStarted) || step > 1) && <div className={`toast-message ${mapRequestFailed ? 'toast-error' : ''}`} role={mapRequestFailed ? 'alert' : 'status'}><span>{locationMessage}</span><button type="button" onClick={() => setLocationMessage('')} aria-label={text('Cerrar aviso', 'Dismiss notice')}>×</button></div>}
     </div>
   );

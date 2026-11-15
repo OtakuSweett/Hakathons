@@ -123,4 +123,22 @@ describe('Track D (Web Frontend) Core Suite', () => {
       expect(pt.water_shadow_price_mxn_mm).toBeGreaterThan(0);
     });
   });
+
+  it('D-12: single-point Pareto frontier is safely handled with deterministic focus', () => {
+    const singlePointList = [
+      {
+        lambda_weight: 1.0,
+        profit_mxn_ha: 42500,
+        water_saved_mm: 88,
+        n_fixed_kg_ha: 35,
+        water_shadow_price_mxn_mm: 31.5,
+        n_shadow_price_mxn_kg_ha: 14.2,
+        schedule: [{ slot_index: 1, cycle_code: 'PV' as const, crop_id: 'beans' }]
+      }
+    ];
+    const resolved = findClosestParetoPoint(singlePointList, 0.2);
+    expect(resolved).toBeDefined();
+    expect(resolved?.profit_mxn_ha).toBe(42500);
+    expect(resolved?.n_fixed_kg_ha).toBe(35);
+  });
 });

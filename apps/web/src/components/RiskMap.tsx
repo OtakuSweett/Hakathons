@@ -43,11 +43,6 @@ interface RiskMapProps {
   onLocationSearch: (lat: number, lon: number, bounds?: GeoBounds | null) => void;
 }
 
-const fieldBounds = (lat: number, lon: number): [[number, number], [number, number]] => [
-  [Math.max(-90, lat - 0.025), Math.max(-180, lon - 0.03)],
-  [Math.min(90, lat + 0.025), Math.min(180, lon + 0.03)]
-];
-
 export const RiskMap: React.FC<RiskMapProps> = ({
   lat,
   lon,
@@ -85,6 +80,8 @@ export const RiskMap: React.FC<RiskMapProps> = ({
   const baseLayerRef = useRef<L.TileLayer | null>(null);
   const gibsLayerRef = useRef<L.TileLayer | null>(null);
 
+  const sideMeters = Math.round(Math.sqrt(areaHa * 10000));
+
   const t = {
     es: {
       title: 'Delimitación de Parcela y Mapa de Riesgos',
@@ -100,14 +97,18 @@ export const RiskMap: React.FC<RiskMapProps> = ({
       coordsLabel: 'Coordenadas:',
       satellite: 'Satelital HD',
       streets: 'Calles / Relieve',
-      clickHint: 'Busca un lugar, pega coordenadas o marca el punto en el mapa.',
+      clickHint: 'Toca el mapa para marcar tu parcela o usa el buscador de localidades.',
       searchPlaceholder: 'Ej. El Marqués, Querétaro',
       searchButton: 'Buscar',
       resultLabel: 'Elige el lugar correcto',
       noResults: 'No encontramos ese lugar. Prueba con ciudad y país o marca el mapa.',
       searchHelp: 'La búsqueda se envía solo al pulsar Buscar. También acepta latitud, longitud.',
       alertLegend: 'Círculo rojo: radio de referencia de 60 km alrededor de una alerta EONET activa.',
-      mapTileError: 'No se pudieron cargar algunas imágenes del mapa. Prueba Calles / Relieve o revisa tu conexión.'
+      mapTileError: 'No se pudieron cargar algunas imágenes del mapa. Prueba Calles / Relieve o revisa tu conexión.',
+      btnFocusField: '🎯 Enfocar Parcela (Zoom 16)',
+      btnRegionView: '🗺️ Visión Regional (Zoom 11)',
+      btnCenter: '↺ Centrar',
+      dimensionsLabel: 'Dimensiones estimadas:'
     },
     en: {
       title: 'Parcel Delimitation & Multi-Hazard Map',
@@ -123,14 +124,18 @@ export const RiskMap: React.FC<RiskMapProps> = ({
       coordsLabel: 'Coordinates:',
       satellite: 'Satellite HD',
       streets: 'Streets / Terrain',
-      clickHint: 'Search for a place, enter coordinates, or click the map.',
+      clickHint: 'Tap anywhere on the map to place your field or use the location search.',
       searchPlaceholder: 'e.g. Ames, Iowa',
       searchButton: 'Search',
       resultLabel: 'Choose the right place',
       noResults: 'We could not find that place. Try city and country or select the map.',
       searchHelp: 'Your search is sent only when you press Search. Coordinates are accepted too.',
       alertLegend: 'Red circle: 60 km reference radius around an active EONET alert.',
-      mapTileError: 'Some map imagery could not load. Try Streets / Terrain or check your connection.'
+      mapTileError: 'Some map imagery could not load. Try Streets / Terrain or check your connection.',
+      btnFocusField: '🎯 Focus Field (Zoom 16)',
+      btnRegionView: '🗺️ Regional View (Zoom 11)',
+      btnCenter: '↺ Center',
+      dimensionsLabel: 'Estimated dimensions:'
     }
   }[lang];
 
@@ -149,7 +154,7 @@ export const RiskMap: React.FC<RiskMapProps> = ({
         return;
       }
       setLocationQuery(`${searchedLat.toFixed(5)}, ${searchedLon.toFixed(5)}`);
-      mapInstanceRef.current?.setView([searchedLat, searchedLon], 13);
+      mapInstanceRef.current?.setView([searchedLat, searchedLon], 16);
       onLocationSearch(searchedLat, searchedLon);
       return;
     }
@@ -162,7 +167,7 @@ export const RiskMap: React.FC<RiskMapProps> = ({
       const results = Array.isArray(body.results) ? body.results as GeocodePlace[] : [];
       if (!results.length) setSearchError(t.noResults);
       else setSearchResults(results);
-    } catch (error) {
+    } catch {
       setSearchError(lang === 'es' ? 'No se pudo buscar el lugar. Revisa tu conexión e inténtalo de nuevo.' : 'Place search failed. Check your connection and try again.');
     } finally {
       setIsSearching(false);
@@ -175,29 +180,47 @@ export const RiskMap: React.FC<RiskMapProps> = ({
     setSearchError('');
     const map = mapInstanceRef.current;
     if (place.bounds) {
-      map?.fitBounds(place.bounds, { padding: [28, 28], maxZoom: 13 });
+      map?.fitBounds(place.bounds, { padding: [28, 28], maxZoom: 15 });
     } else {
-      map?.setView([place.lat, place.lon], 13);
+      map?.setView([place.lat, place.lon], 15);
     }
     onLocationSearch(place.lat, place.lon, place.bounds);
   };
 
-  // Initialize Leaflet map
+  const zoomToParcel = () => {
+    mapInstanceRef.current?.setView([lat, lon], 16, { animate: true });
+  };
+
+  const zoomToRegion = () => {
+    mapInstanceRef.current?.setView([lat, lon], 11, { animate: true });
+  };
+
+  const recenterMap = () => {
+    mapInstanceRef.current?.panTo([lat, lon], { animate: true });
+  };
+
+  // Initialize Leaflet map with optimal field zoom
   useEffect(() => {
     if (!mapContainerRef.current) return;
 
     if (!mapInstanceRef.current) {
       const map = L.map(mapContainerRef.current, {
         center: [lat, lon],
-        zoom: 13,
-        zoomControl: true,
-        maxBounds: selectionBounds || fieldBounds(regionLat, regionLon),
-        maxBoundsViscosity: 1
+        zoom: 15,
+        zoomControl: true
       });
-      selectionBoundsRef.current = L.rectangle(
-        selectionBounds || fieldBounds(regionLat, regionLon),
-        { color: '#d4ec79', weight: 2, opacity: 0.95, fillColor: '#d4ec79', fillOpacity: 0.035, dashArray: '6 6', interactive: false }
-      ).addTo(map);
+
+      if (selectionBounds) {
+        selectionBoundsRef.current = L.rectangle(selectionBounds, {
+          color: '#d4ec79',
+          weight: 1.5,
+          opacity: 0.7,
+          fillColor: '#d4ec79',
+          fillOpacity: 0.03,
+          dashArray: '5 5',
+          interactive: false
+        }).addTo(map);
+      }
 
       // NASA GIBS WMTS NDVI Layer
       const gibs = L.tileLayer(
@@ -212,10 +235,9 @@ export const RiskMap: React.FC<RiskMapProps> = ({
 
       mapInstanceRef.current = map;
     } else {
-      const activeBounds = selectionBounds || fieldBounds(regionLat, regionLon);
-      mapInstanceRef.current.setMaxBounds(activeBounds);
-      mapInstanceRef.current.setView([lat, lon], mapInstanceRef.current.getZoom());
-      selectionBoundsRef.current?.setBounds(activeBounds);
+      if (selectionBounds && selectionBoundsRef.current) {
+        selectionBoundsRef.current.setBounds(selectionBounds);
+      }
     }
   }, [lat, lon, regionLat, regionLon, selectionBounds]);
 
@@ -292,7 +314,7 @@ export const RiskMap: React.FC<RiskMapProps> = ({
     }
   }, [showGibs]);
 
-  // Update Parcel Marker & Sized Polygon (NO auto-opening popup to prevent clutter)
+  // Update Parcel Marker & High-Visibility Sized Polygon
   useEffect(() => {
     const map = mapInstanceRef.current;
     if (!map) return;
@@ -308,28 +330,34 @@ export const RiskMap: React.FC<RiskMapProps> = ({
     }
 
     const selectionHalo = L.circleMarker([lat, lon], {
-      radius: 19,
-      color: '#ffffff',
-      weight: 3,
-      fillColor: '#42c789',
-      fillOpacity: 0.18,
+      radius: 22,
+      color: '#10b981',
+      weight: 2,
+      fillColor: '#34d399',
+      fillOpacity: 0.25,
       interactive: false
     }).addTo(map);
     haloRef.current = selectionHalo;
+
     const parcelIcon = L.divIcon({
       className: 'field-marker-icon',
-      html: '<svg class="field-marker-svg" viewBox="0 0 40 48" aria-hidden="true"><path d="M20 2.5C10.6 2.5 3 10 3 19.2c0 12.1 17 26.3 17 26.3s17-14.2 17-26.3C37 10 29.4 2.5 20 2.5Z" fill="#23774f" stroke="#ffffff" stroke-width="3"/><circle cx="20" cy="19" r="5.5" fill="#ffffff"/></svg>',
+      html: '<svg class="field-marker-svg" viewBox="0 0 40 48" aria-hidden="true"><path d="M20 2.5C10.6 2.5 3 10 3 19.2c0 12.1 17 26.3 17 26.3s17-14.2 17-26.3C37 10 29.4 2.5 20 2.5Z" fill="#059669" stroke="#ffffff" stroke-width="3"/><circle cx="20" cy="19" r="5.5" fill="#ffffff"/></svg>',
       iconSize: [44, 52],
       iconAnchor: [22, 47]
     });
 
     const marker = L.marker([lat, lon], { icon: parcelIcon }).addTo(map);
-    marker.bindPopup(`<b>${parcelName}</b><br/>${lang === 'es' ? 'Superficie' : 'Area'}: ${areaHa} ha<br/>Lat: ${lat.toFixed(4)}, Lon: ${lon.toFixed(4)}`);
-    marker.bindTooltip(parcelName, { permanent: true, direction: 'right', offset: [10, -20], className: 'field-tooltip' });
+    marker.bindPopup(`<b>${parcelName}</b><br/>${lang === 'es' ? 'Superficie' : 'Area'}: ${areaHa} ha (~${sideMeters} m × ${sideMeters} m)<br/>Lat: ${lat.toFixed(5)}, Lon: ${lon.toFixed(5)}`);
+    marker.bindTooltip(`${parcelName} · ${areaHa} ha`, {
+      permanent: true,
+      direction: 'top',
+      offset: [0, -48],
+      className: 'field-tooltip'
+    });
     marker.getElement()?.setAttribute('aria-label', `${lang === 'es' ? 'Centro de parcela' : 'Field center'}: ${lat.toFixed(4)}, ${lon.toFixed(4)}`);
     markerRef.current = marker;
 
-    // Draw scaled parcel polygon around the center point (approx 1 ha = 100x100m)
+    // Draw scaled parcel polygon around the center point (1 ha = 10,000 m2)
     const sideKm = Math.sqrt(areaHa * 0.01) / 2.0;
     const dLat = sideKm / 111.0;
     const dLon = sideKm / (111.0 * Math.cos((lat * Math.PI) / 180.0));
@@ -342,11 +370,11 @@ export const RiskMap: React.FC<RiskMapProps> = ({
     ];
 
     const poly = L.polygon(polygonCoords, {
-      color: '#f6d85c',
-      fillColor: '#ffe77c',
-      fillOpacity: 0.13,
-      weight: 3,
-      dashArray: '7 5'
+      color: '#10b981',
+      fillColor: '#34d399',
+      fillOpacity: 0.18,
+      weight: 2.5,
+      dashArray: '5 5'
     }).addTo(map);
     polygonRef.current = poly;
     poly.bringToFront();
@@ -369,7 +397,7 @@ export const RiskMap: React.FC<RiskMapProps> = ({
 
       alertLayersRef.current.push(stormCircle);
     });
-  }, [lat, lon, parcelName, areaHa, eonetAlerts, lang]);
+  }, [lat, lon, parcelName, areaHa, sideMeters, eonetAlerts, lang]);
 
   const cropDemandMm: Record<string, number> = { maize: 550, sorghum: 450, wheat: 450, barley: 400, beans: 350, chickpea: 300, alfalfa: 600, broccoli: 380, tomato: 600, onion: 450, garlic: 400, strawberry: 500, oats: 380, vetch: 260, chili_pepper: 580, asparagus: 480, soybean: 450, sunflower: 400, potato: 500, canola: 380 };
   const irrigationEfficiency = waterRegime === 'goteo' ? 0.9 : waterRegime === 'gravedad' ? 0.6 : 1;
@@ -391,8 +419,29 @@ export const RiskMap: React.FC<RiskMapProps> = ({
             <p className="text-slate-400 text-[11px]">{t.subtitle}</p>
           </div>
 
-          {/* Base map layer switcher */}
+          {/* Perspective & Layer Switcher Controls */}
           <div className="flex flex-wrap items-center gap-2">
+            {/* Quick Zoom Actions */}
+            <div className="flex bg-slate-800 p-0.5 rounded-lg border border-slate-700">
+              <button
+                type="button"
+                onClick={zoomToParcel}
+                className="px-2 py-1 rounded text-[11px] font-semibold text-emerald-300 hover:text-white hover:bg-slate-700 transition-colors"
+                title={t.btnFocusField}
+              >
+                {t.btnFocusField}
+              </button>
+              <button
+                type="button"
+                onClick={zoomToRegion}
+                className="px-2 py-1 rounded text-[11px] font-semibold text-slate-300 hover:text-white hover:bg-slate-700 transition-colors"
+                title={t.btnRegionView}
+              >
+                {t.btnRegionView}
+              </button>
+            </div>
+
+            {/* Base map layer switcher */}
             <div className="map-toggle-group flex bg-slate-800 p-0.5 rounded-lg border border-slate-700">
               <button
                 type="button"
@@ -413,7 +462,6 @@ export const RiskMap: React.FC<RiskMapProps> = ({
                 {t.streets}
               </button>
             </div>
-
           </div>
         </div>
 
@@ -490,18 +538,30 @@ export const RiskMap: React.FC<RiskMapProps> = ({
       </div>
 
       {/* Map Viewport */}
-      <div className="relative h-80 w-full">
+      <div className="relative h-88 sm:h-96 w-full">
         <div ref={mapContainerRef} className="h-full w-full z-10" />
 
         {/* Clean HUD Status Overlay in bottom-left */}
-        <div className="map-selection-readout absolute bottom-3 left-3 z-20 bg-slate-900/90 backdrop-blur-md p-3 rounded-xl border border-slate-800 text-[11px] text-slate-300 shadow-xl space-y-1 max-w-xs">
-          <div className="flex items-center gap-2 font-bold text-white">
-            <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
-            <span className="truncate">{parcelName}</span>
+        <div className="map-selection-readout absolute bottom-3 left-3 z-20 bg-slate-900/90 backdrop-blur-md p-3 rounded-xl border border-slate-800 text-[11px] text-slate-300 shadow-xl space-y-1.5 max-w-xs">
+          <div className="flex items-center justify-between gap-2 font-bold text-white">
+            <div className="flex items-center gap-2 truncate">
+              <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+              <span className="truncate">{parcelName}</span>
+            </div>
+            <button
+              type="button"
+              onClick={recenterMap}
+              className="text-[10px] text-emerald-400 hover:text-white px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 cursor-pointer"
+            >
+              {t.btnCenter}
+            </button>
           </div>
           <div className="text-[10px] text-slate-400 flex items-center justify-between">
             <span>{t.coordsLabel} {lat.toFixed(4)}°, {lon.toFixed(4)}°</span>
             <span className="text-emerald-400 font-bold">{areaHa} ha</span>
+          </div>
+          <div className="text-[10px] text-emerald-300 font-mono">
+            {t.dimensionsLabel} ~{sideMeters} m × {sideMeters} m
           </div>
           {eonetAlerts.length > 0 && (
             <div className="flex items-center gap-1.5 text-rose-400 font-semibold text-[10px] pt-1 border-t border-slate-800">
