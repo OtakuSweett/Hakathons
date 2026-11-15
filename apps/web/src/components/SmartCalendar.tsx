@@ -170,6 +170,22 @@ const getPhenologyForCrop = (cropId: string, waterNeedMm: number): CropPhenology
   };
 };
 
+const getLegumeBadgeLabel = (isLegume: boolean, spanish: boolean) => {
+  if (isLegume) return spanish ? '🌱 Leguminosa (+N)' : '🌱 Legume (+N)';
+  return spanish ? '🌾 Extractor / Cereal' : '🌾 Depleting / Non-Legume';
+};
+
+const getStageBoxClass = (current: boolean, completed: boolean) => {
+  if (current) return 'bg-[#f4f8f5] border-[#1e583d] ring-1 ring-[#1e583d]';
+  if (completed) return 'bg-white border-[#dbe5e0]';
+  return 'bg-[#fafbfa] border-[#e8ecea] opacity-80';
+};
+
+const getCycleActionLabel = (selected: boolean, spanish: boolean) => {
+  if (selected) return spanish ? 'Visualizando' : 'Active';
+  return spanish ? 'Ver GDD' : 'View GDD';
+};
+
 export const SmartCalendar: React.FC<SmartCalendarProps> = ({ data, lang }) => {
   const [selectedSlotIndex, setSelectedSlotIndex] = useState<number>(0);
   const [activeInfoTopic, setActiveInfoTopic] = useState<'gdd' | 'irrigation' | 'rotation' | null>(null);
@@ -181,74 +197,41 @@ export const SmartCalendar: React.FC<SmartCalendarProps> = ({ data, lang }) => {
     sunflower: ['Girasol', 'Sunflower'], potato: ['Papa', 'Potato'], canola: ['Canola', 'Canola']
   };
 
+  const isEs = lang === 'es';
+
   const t = {
-    es: {
-      title: 'Calendario Inteligente de Cultivos y Riegos',
-      subtitle: 'Secuencia de rotación multianual (M6), fenología térmica GDD (M2) y momentos críticos de riego (M4).',
-      sectionLabel: 'PLANIFICACIÓN · ROTACIÓN · GDD',
-      cyclePV: 'Primavera - Verano (PV)',
-      cycleOI: 'Otoño - Invierno (OI)',
-      crop: 'Cultivo Asignado',
-      waterNeed: 'Demanda Hídrica',
-      profit: 'Margen Esperado',
-      legumeFixation: 'Fijación de Nitrógeno',
-      legumeYes: 'Leguminosa (+40 a +80 kg N/ha al suelo)',
-      legumeNo: 'Extractor / No leguminosa',
-      gddMilestones: 'Etapas de Crecimiento Térmico (GDD)',
-      irrigationSchedule: 'Fechas de Riego Predictivo (Newton-Raphson)',
-      recommendedIrrigation: 'Riego Sugerido Requerido',
-      irrigationDetail: 'Para evitar que la reserva de humedad del suelo caiga por debajo del umbral crítico:',
-      legumeTag: 'Leguminosa · +N',
-      noStressDetected: 'Régimen hídrico seguro: sin estrés crítico',
-      depthMm: 'Lámina por Aplicar',
-      dayLabel: 'Regar en',
-      tableTitle: 'Tabla Resumen de Rotación Agronómica Multianual',
-      colCycle: 'Ciclo / Año',
-      colCrop: 'Cultivo',
-      colWater: 'Demanda Hídrica',
-      colMargin: 'Margen Neto Estimado',
-      colSoil: 'Efecto Edáfico',
-      colAction: 'Ver Fases GDD',
-      activeCropBannerLabel: 'Detalle Dinámico del Cultivo Seleccionado',
-      gddBaseTemp: 'Temperatura Base',
-      gddRequirement: 'Requerimiento Total',
-      gddAccumulatedLabel: 'Energía Térmica Acumulada',
-      gddProgress: 'Progreso del Ciclo Biológico'
-    },
-    en: {
-      title: 'Smart Crop & Irrigation Calendar',
-      subtitle: 'Multi-year rotation schedule (M6), GDD thermal phenology (M2), and predictive irrigation triggers (M4).',
-      sectionLabel: 'PLANNING · ROTATION · GDD',
-      cyclePV: 'Spring - Summer (PV)',
-      cycleOI: 'Fall - Winter (OI)',
-      crop: 'Assigned Crop',
-      waterNeed: 'Water Demand',
-      profit: 'Expected Margin',
-      legumeFixation: 'Nitrogen Fixation',
-      legumeYes: 'Legume (+40 to +80 kg N/ha to soil)',
-      legumeNo: 'Depleting / Non-legume',
-      gddMilestones: 'Thermal Crop Growth Stages (GDD)',
-      irrigationSchedule: 'Predictive Irrigation Timing (Newton-Raphson)',
-      recommendedIrrigation: 'Suggested Irrigation Needed',
-      irrigationDetail: 'To prevent stored soil moisture from dipping below critical wilting threshold:',
-      legumeTag: 'Legume · +N',
-      noStressDetected: 'Safe moisture regime: no critical stress',
-      depthMm: 'Water Depth to Apply',
-      dayLabel: 'Irrigate In',
-      tableTitle: 'Multi-Year Agronomic Rotation Summary Table',
-      colCycle: 'Cycle / Year',
-      colCrop: 'Crop',
-      colWater: 'Water Demand',
-      colMargin: 'Estimated Net Margin',
-      colSoil: 'Soil Effect',
-      colAction: 'View GDD Stages',
-      activeCropBannerLabel: 'Dynamic View for Selected Crop',
-      gddBaseTemp: 'Base Temperature',
-      gddRequirement: 'Total GDD Target',
-      gddAccumulatedLabel: 'Accumulated Thermal Energy',
-      gddProgress: 'Biological Stage Progress'
-    }
-  }[lang];
+    title: isEs ? 'Calendario Inteligente de Cultivos y Riegos' : 'Smart Crop & Irrigation Calendar',
+    subtitle: isEs ? 'Secuencia de rotación multianual (M6), fenología térmica GDD (M2) y momentos críticos de riego (M4).' : 'Multi-year rotation schedule (M6), GDD thermal phenology (M2), and predictive irrigation triggers (M4).',
+    sectionLabel: isEs ? 'PLANIFICACIÓN · ROTACIÓN · GDD' : 'PLANNING · ROTATION · GDD',
+    cyclePV: isEs ? 'Primavera - Verano (PV)' : 'Spring - Summer (PV)',
+    cycleOI: isEs ? 'Otoño - Invierno (OI)' : 'Fall - Winter (OI)',
+    crop: isEs ? 'Cultivo Asignado' : 'Assigned Crop',
+    waterNeed: isEs ? 'Demanda Hídrica' : 'Water Demand',
+    profit: isEs ? 'Margen Esperado' : 'Expected Margin',
+    legumeFixation: isEs ? 'Fijación de Nitrógeno' : 'Nitrogen Fixation',
+    legumeYes: isEs ? 'Leguminosa (+40 a +80 kg N/ha al suelo)' : 'Legume (+40 to +80 kg N/ha to soil)',
+    legumeNo: isEs ? 'Extractor / No leguminosa' : 'Depleting / Non-legume',
+    gddMilestones: isEs ? 'Etapas de Crecimiento Térmico (GDD)' : 'Thermal Crop Growth Stages (GDD)',
+    irrigationSchedule: isEs ? 'Fechas de Riego Predictivo (Newton-Raphson)' : 'Predictive Irrigation Timing (Newton-Raphson)',
+    recommendedIrrigation: isEs ? 'Riego Sugerido Requerido' : 'Suggested Irrigation Needed',
+    irrigationDetail: isEs ? 'Para evitar que la reserva de humedad del suelo caiga por debajo del umbral crítico:' : 'To prevent stored soil moisture from dipping below critical wilting threshold:',
+    legumeTag: isEs ? 'Leguminosa · +N' : 'Legume · +N',
+    noStressDetected: isEs ? 'Régimen hídrico seguro: sin estrés crítico' : 'Safe moisture regime: no critical stress',
+    depthMm: isEs ? 'Lámina por Aplicar' : 'Water Depth to Apply',
+    dayLabel: isEs ? 'Regar en' : 'Irrigate In',
+    tableTitle: isEs ? 'Tabla Resumen de Rotación Agronómica Multianual' : 'Multi-Year Agronomic Rotation Summary Table',
+    colCycle: isEs ? 'Ciclo / Año' : 'Cycle / Year',
+    colCrop: isEs ? 'Cultivo' : 'Crop',
+    colWater: isEs ? 'Demanda Hídrica' : 'Water Demand',
+    colMargin: isEs ? 'Margen Neto Estimado' : 'Estimated Net Margin',
+    colSoil: isEs ? 'Efecto Edáfico' : 'Soil Effect',
+    colAction: isEs ? 'Ver Fases GDD' : 'View GDD Stages',
+    activeCropBannerLabel: isEs ? 'Detalle Dinámico del Cultivo Seleccionado' : 'Dynamic View for Selected Crop',
+    gddBaseTemp: isEs ? 'Temperatura Base' : 'Base Temperature',
+    gddRequirement: isEs ? 'Requerimiento Total' : 'Total GDD Target',
+    gddAccumulatedLabel: isEs ? 'Energía Térmica Acumulada' : 'Accumulated Thermal Energy',
+    gddProgress: isEs ? 'Progreso del Ciclo Biológico' : 'Biological Stage Progress'
+  };
 
   const rotation: RotationSlot[] = data.optimization?.selected_rotation || [];
   const activeSlot = rotation[selectedSlotIndex] || rotation[0];
@@ -405,7 +388,7 @@ export const SmartCalendar: React.FC<SmartCalendarProps> = ({ data, lang }) => {
                 style={activeSlot.is_legume ? { backgroundColor: '#1e583d', color: '#ffffff' } : { backgroundColor: '#fff5df', color: '#805600', borderColor: '#d6ba78' }}
                 className="px-2.5 py-1 rounded-full text-xs font-bold border"
               >
-                {activeSlot.is_legume ? (lang === 'es' ? '🌱 Leguminosa (+N)' : '🌱 Legume (+N)') : (lang === 'es' ? '🌾 Extractor / Cereal' : '🌾 Depleting / Non-Legume')}
+                {getLegumeBadgeLabel(Boolean(activeSlot.is_legume), isEs)}
               </span>
               <span className="text-xs font-mono font-bold text-[#173d30] bg-white px-2.5 py-1 rounded-lg border border-[#cbd8cf]">
                 ${Math.round(activeSlot.profit_mxn_ha).toLocaleString()} MXN/ha
@@ -479,14 +462,8 @@ export const SmartCalendar: React.FC<SmartCalendarProps> = ({ data, lang }) => {
 
                   return (
                     <div
-                      key={`pheno-stage-${sIdx}`}
-                      className={`flex items-start gap-3 p-2.5 rounded-lg border transition-all ${
-                        isCurrent
-                          ? 'bg-[#f4f8f5] border-[#1e583d] ring-1 ring-[#1e583d]'
-                          : isCompleted
-                            ? 'bg-white border-[#dbe5e0]'
-                            : 'bg-[#fafbfa] border-[#e8ecea] opacity-80'
-                      }`}
+                      key={`stage-${stage.name[0]}`}
+                      className={`flex items-start gap-3 p-2.5 rounded-lg border transition-all ${getStageBoxClass(isCurrent, isCompleted)}`}
                     >
                       <div
                         style={isCompleted || isCurrent ? { backgroundColor: '#1e583d', color: '#ffffff' } : { backgroundColor: '#e2eae5', color: '#526a5c' }}
@@ -672,7 +649,7 @@ export const SmartCalendar: React.FC<SmartCalendarProps> = ({ data, lang }) => {
                           className="px-2.5 py-1 rounded text-[10px] font-bold border cursor-pointer inline-flex items-center gap-1 shadow-2xs"
                         >
                           {isSelected && <span>✓</span>}
-                          <span>{isSelected ? (lang === 'es' ? 'Visualizando' : 'Active') : (lang === 'es' ? 'Ver GDD' : 'View GDD')}</span>
+                          <span>{getCycleActionLabel(isSelected, isEs)}</span>
                         </button>
                       </td>
                     </tr>

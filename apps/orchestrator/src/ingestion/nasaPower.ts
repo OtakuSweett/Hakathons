@@ -67,7 +67,7 @@ export async function fetchNasaPowerDaily(
     const data = await res.json() as Record<string, any>;
     const p = data.properties?.parameter || {};
 
-    const rawDates = Object.keys(p.T2M || {}).sort();
+    const rawDates = Object.keys(p.T2M || {}).sort((a, b) => a.localeCompare(b));
     if (rawDates.length === 0) {
       throw new Error('Empty parameters object in NASA POWER response');
     }

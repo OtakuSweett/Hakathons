@@ -87,7 +87,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <span className="hidden md:inline">
               {isOfflineMode
                 ? (lang === 'es' ? 'Modo Offline Benchmark' : 'Offline Mode')
-                : (lang === 'es' ? 'Live Satellites' : 'Live Satellites')}
+                : (lang === 'es' ? 'Satélites en Vivo' : 'Live Satellites')}
             </span>
           </button>
 

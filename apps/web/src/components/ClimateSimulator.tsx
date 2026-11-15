@@ -58,7 +58,7 @@ export const ClimateSimulator: React.FC<ClimateSimulatorProps> = ({
             />
             <div className="flex justify-between text-[10px] text-zinc-500 mt-1">
               <span>{lang === 'es' ? '-40% (Sequía severa)' : '-40% (Severe drought)'}</span>
-              <span>{lang === 'es' ? 'Normal' : 'Normal'}</span>
+              <span>{lang === 'es' ? '0% (Normal)' : '0% (Baseline)'}</span>
               <span>{lang === 'es' ? '+40% (Lluvias extra)' : '+40% (Extra rainfall)'}</span>
             </div>
           </div>

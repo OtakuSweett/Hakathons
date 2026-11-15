@@ -280,11 +280,11 @@ export function getMockAnalysis(presetId: string = 'el_marques_qro'): AnalysisRe
         ]
       },
       selected_rotation: [
-        { slot_index: 0, cycle_code: 'PV', crop_id: isUS ? 'maize' : 'maize', water_need_mm: 480, profit_mxn_ha: 1650, is_legume: false, deficit_slack_mm: 0 },
+        { slot_index: 0, cycle_code: 'PV', crop_id: 'maize', water_need_mm: 480, profit_mxn_ha: 1650, is_legume: false, deficit_slack_mm: 0 },
         { slot_index: 1, cycle_code: 'OI', crop_id: isUS || isBR ? 'soybean' : 'chickpea', water_need_mm: 310, profit_mxn_ha: 1420, is_legume: true, deficit_slack_mm: 0 },
         { slot_index: 2, cycle_code: 'PV', crop_id: isUS ? 'canola' : 'broccoli', water_need_mm: 390, profit_mxn_ha: 2100, is_legume: false, deficit_slack_mm: 0 },
         { slot_index: 3, cycle_code: 'OI', crop_id: isUS || isBR ? 'soybean' : 'bean', water_need_mm: 330, profit_mxn_ha: 1350, is_legume: true, deficit_slack_mm: 0 },
-        { slot_index: 4, cycle_code: 'PV', crop_id: isUS ? 'wheat' : 'wheat', water_need_mm: 420, profit_mxn_ha: 1200, is_legume: false, deficit_slack_mm: 0 },
+        { slot_index: 4, cycle_code: 'PV', crop_id: 'wheat', water_need_mm: 420, profit_mxn_ha: 1200, is_legume: false, deficit_slack_mm: 0 },
         { slot_index: 5, cycle_code: 'OI', crop_id: isUS || isBR ? 'soybean' : 'chickpea', water_need_mm: 300, profit_mxn_ha: 1450, is_legume: true, deficit_slack_mm: 0 }
       ],
       pareto_front: [

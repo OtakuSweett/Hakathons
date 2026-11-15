@@ -14,33 +14,21 @@ export const ModernLoadingModal: React.FC<ModernLoadingModalProps> = ({
 }) => {
   const [currentStep, setCurrentStep] = useState(0);
 
-  const steps = useMemo(() => [
-    {
-      id: 'power',
-      title: lang === 'es' ? 'Descargando Telemetría NASA POWER' : 'Downloading NASA POWER Telemetry',
-      desc: lang === 'es' ? 'Radiación solar global (MJ/m²), viento a 2 m, humedad relativa y temperaturas extremas.' : 'Global solar radiation (MJ/m²), 2 m wind, relative humidity, and daily temperatures.'
-    },
-    {
-      id: 'soil',
-      title: lang === 'es' ? 'Muestreando Perfil Edáfico ISRIC SoilGrids v2.0' : 'Sampling ISRIC SoilGrids v2.0 Profile',
-      desc: lang === 'es' ? 'Fracciones de arcilla, arena, carbono orgánico y pH hasta 60 cm de profundidad.' : 'Clay, sand, organic carbon fractions, and pH up to 60 cm effective depth.'
-    },
-    {
-      id: 'eonet',
-      title: lang === 'es' ? 'Escaneando Alertas de Peligro NASA EONET v3' : 'Scanning NASA EONET v3 Hazard Alerts',
-      desc: lang === 'es' ? 'Ciclones tropicales, tormentas severas y anomalías hidrometeorológicas activas.' : 'Tropical cyclones, severe storms, and active hydrometeorological events.'
-    },
-    {
-      id: 'physics',
-      title: lang === 'es' ? 'Resolviendo Balance Hídrico RK4 & Newton-Raphson' : 'Solving RK4 Water Balance & Newton-Raphson',
-      desc: lang === 'es' ? 'Integración numérica de dW/dt y detección analítica del día crítico de estrés hídrico t*.' : 'Numerical integration of dW/dt and analytical root-crossing of water stress day t*.'
-    },
-    {
-      id: 'optimizer',
-      title: lang === 'es' ? 'Optimizando Rotación con Solver MILP (HiGHS)' : 'Optimizing Rotation with MILP Solver (HiGHS)',
-      desc: lang === 'es' ? 'Construyendo frontera de Pareto multiobjetivo (ganancia financiera vs resiliencia de agua y nitrógeno).' : 'Building multi-objective Pareto trade-off frontier (net profit vs water conservation).'
-    }
-  ], [lang]);
+  const steps = useMemo(() => {
+    const isEs = lang === 'es';
+    const stepData: Array<[string, [string, string], [string, string]]> = [
+      ['power', ['Descargando Telemetría NASA POWER', 'Downloading NASA POWER Telemetry'], ['Radiación solar global (MJ/m²), viento a 2 m, humedad relativa y temperaturas extremas.', 'Global solar radiation (MJ/m²), 2 m wind, relative humidity, and daily temperatures.']],
+      ['soil', ['Muestreando Perfil Edáfico ISRIC SoilGrids v2.0', 'Sampling ISRIC SoilGrids v2.0 Profile'], ['Fracciones de arcilla, arena, carbono orgánico y pH hasta 60 cm de profundidad.', 'Clay, sand, organic carbon fractions, and pH up to 60 cm effective depth.']],
+      ['eonet', ['Escaneando Alertas de Peligro NASA EONET v3', 'Scanning NASA EONET v3 Hazard Alerts'], ['Ciclones tropicales, tormentas severas y anomalías hidrometeorológicas activas.', 'Tropical cyclones, severe storms, and active hydrometeorological events.']],
+      ['physics', ['Resolviendo Balance Hídrico RK4 & Newton-Raphson', 'Solving RK4 Water Balance & Newton-Raphson'], ['Integración numérica de dW/dt y detección analítica del día crítico de estrés hídrico t*.', 'Numerical integration of dW/dt and analytical root-crossing of water stress day t*.']],
+      ['optimizer', ['Optimizando Rotación con Solver MILP (HiGHS)', 'Optimizing Rotation with MILP Solver (HiGHS)'], ['Construyendo frontera de Pareto multiobjetivo (ganancia financiera vs resiliencia de agua y nitrógeno).', 'Building multi-objective Pareto trade-off frontier (net profit vs water conservation).']]
+    ];
+    return stepData.map(([id, title, desc]) => ({
+      id,
+      title: isEs ? title[0] : title[1],
+      desc: isEs ? desc[0] : desc[1]
+    }));
+  }, [lang]);
 
   useEffect(() => {
     if (!isOpen) {
