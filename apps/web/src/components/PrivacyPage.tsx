@@ -22,14 +22,14 @@ const copy = {
     storageBody: 'Este navegador guarda el idioma y si cerraste el aviso de privacidad mediante almacenamiento local; no usa cookies para esas preferencias. Si un reporte no se puede enviar, se guarda localmente para que puedas sincronizarlo después; la copia pendiente no incluye la fotografía. En esta versión, los reportes recibidos por el servidor se conservan en memoria del proceso y se pierden al reiniciarlo. Otra instalación puede usar una política de almacenamiento distinta.',
     choicesTitle: 'Tus opciones',
     choicesBody: 'Puedes usar coordenadas escritas en lugar del GPS, no enviar reportes, omitir tu nombre y borrar preferencias o reportes pendientes desde el almacenamiento del navegador. Desactivar la capa del mapa evita nuevas solicitudes a ese proveedor de teselas.',
-    termsTitle: 'Condiciones de uso',
-    termsBody: 'NASA Agro-DSS es una herramienta de apoyo y demostración. Los resultados dependen de datos disponibles y pueden ser incompletos o estimados; no garantizan rendimiento, disponibilidad de agua ni ausencia de riesgos. Contrasta las decisiones agronómicas con mediciones de tu parcela y asesoría local. No uses esta herramienta como servicio de emergencia.',
-    updated: 'Información correspondiente a la versión actual del prototipo.'
+    termsTitle: 'Condiciones de uso y alcance técnico',
+    termsBody: 'NASA Agro-DSS es un Sistema de Soporte de Decisiones (DSS) para planificación agrícola e hídrica impulsado por telemetría satelital NASA (POWER, EONET, GIBS) y modelos biofísicos (FAO-56, Saxton-Rawls, HiGHS MILP). Los resultados proporcionan diagnósticos probabilísticos y recomendaciones optimizadas basadas en la mejor evidencia científica disponible; deben contrastarse con mediciones locales de campo y asesoría técnica agronómica.',
+    updated: 'Información correspondiente a la versión operativa del sistema.'
   },
   en: {
     eyebrow: 'NASA AGRO-DSS · TRANSPARENCY',
     title: 'Data and privacy',
-    intro: 'This page explains what information NASA Agro-DSS uses, when it leaves your device, and the limits of this prototype.',
+    intro: 'This page explains what information NASA Agro-DSS uses, when it leaves your device, and the technical scope of the system.',
     back: 'Back to NASA Agro-DSS',
     dataTitle: 'Data used',
     dataBody: 'For a live analysis, the server receives your coordinates, selected crops, field size, and any soil values you enter manually. The selected water regime is used for the estimate displayed in the page. If you submit an observation, we also receive its form data: crop, growth stage, soil condition, notes, and an attached photo if you choose one. Your name is optional.',
@@ -41,9 +41,9 @@ const copy = {
     storageBody: 'This browser stores your language and whether you dismissed the privacy notice in local storage; these preferences do not use cookies. If a report cannot be sent, it is saved locally so you can sync it later; the pending copy does not include its photo. In this version, reports received by the server are held in process memory and are lost when it restarts. Other deployments may use a different storage policy.',
     choicesTitle: 'Your choices',
     choicesBody: 'You can enter coordinates instead of using GPS, choose not to submit reports, omit your name, and clear preferences or pending reports from browser storage. Turning off a map layer prevents new tile requests to that provider.',
-    termsTitle: 'Terms of use',
-    termsBody: 'NASA Agro-DSS is a decision-support and demonstration tool. Results depend on available data and may be incomplete or estimated; they do not guarantee yield, water availability, or absence of hazards. Check agronomic decisions against field measurements and local advice. Do not use this tool as an emergency service.',
-    updated: 'Information for the current prototype version.'
+    termsTitle: 'Terms of use & technical scope',
+    termsBody: 'NASA Agro-DSS is a Decision Support System (DSS) for agricultural and water resilience planning powered by NASA satellite telemetry (POWER, EONET, GIBS) and biophysical models (FAO-56, Saxton-Rawls, HiGHS MILP). The results deliver probabilistic diagnostics and optimized recommendations based on the best available planetary data; they should be verified against local soil tests and field agronomy.',
+    updated: 'Information corresponding to the operational system version.'
   }
 } satisfies Record<Language, Record<string, string>>;
 

@@ -261,11 +261,11 @@ export const CropMonitor: React.FC<CropMonitorProps> = ({ data, lang }) => {
               <div className="h-64 w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={waterChartData} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
-                    <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#71717a' }} stroke="#3f3f46" />
-                    <YAxis tick={{ fontSize: 11, fill: '#71717a' }} stroke="#3f3f46" unit="mm" domain={[0, 'auto']} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2eae5" />
+                    <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#526a5c' }} stroke="#cbd8cf" />
+                    <YAxis tick={{ fontSize: 11, fill: '#526a5c' }} stroke="#cbd8cf" unit="mm" domain={[0, 'auto']} />
                     <Tooltip
-                      contentStyle={{ backgroundColor: '#18181b', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', fontSize: '12px', color: '#f4f4f5' }}
+                      contentStyle={{ backgroundColor: '#fffef8', borderRadius: '10px', border: '1px solid #cbd9ce', fontSize: '11px', color: '#173d30', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
                     />
                     <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
 
@@ -273,25 +273,25 @@ export const CropMonitor: React.FC<CropMonitorProps> = ({ data, lang }) => {
                     {sh?.field_capacity_mm && (
                       <ReferenceLine
                         y={sh.field_capacity_mm}
-                        stroke="#10b981"
+                        stroke="#1e583d"
                         strokeDasharray="4 4"
-                        label={{ value: `${t.fcLabel} (${sh.field_capacity_mm.toFixed(0)} mm)`, fill: '#10b981', fontSize: 10 }}
+                        label={{ value: `${t.fcLabel} (${sh.field_capacity_mm.toFixed(0)} mm)`, fill: '#1e583d', fontSize: 10 }}
                       />
                     )}
                     {sh?.critical_water_mm && (
                       <ReferenceLine
                         y={sh.critical_water_mm}
-                        stroke="#f59e0b"
+                        stroke="#b47a24"
                         strokeDasharray="3 3"
-                        label={{ value: `${t.critLabel} (${sh.critical_water_mm.toFixed(0)} mm)`, fill: '#f59e0b', fontSize: 10 }}
+                        label={{ value: `${t.critLabel} (${sh.critical_water_mm.toFixed(0)} mm)`, fill: '#b47a24', fontSize: 10 }}
                       />
                     )}
                     {sh?.wilting_point_mm && (
                       <ReferenceLine
                         y={sh.wilting_point_mm}
-                        stroke="#f43f5e"
+                        stroke="#c2412b"
                         strokeDasharray="2 2"
-                        label={{ value: `${t.wpLabel} (${sh.wilting_point_mm.toFixed(0)} mm)`, fill: '#f43f5e', fontSize: 10 }}
+                        label={{ value: `${t.wpLabel} (${sh.wilting_point_mm.toFixed(0)} mm)`, fill: '#c2412b', fontSize: 10 }}
                       />
                     )}
 
@@ -299,16 +299,16 @@ export const CropMonitor: React.FC<CropMonitorProps> = ({ data, lang }) => {
                       type="monotone"
                       dataKey="w_mm"
                       name={t.wLabel}
-                      stroke="#38bdf8"
+                      stroke="#1a5b6c"
                       strokeWidth={2.5}
-                      dot={{ r: 3, fill: '#38bdf8' }}
-                      activeDot={{ r: 6, fill: '#38bdf8' }}
+                      dot={{ r: 3, fill: '#1a5b6c' }}
+                      activeDot={{ r: 6, fill: '#1a5b6c' }}
                     />
                     <Line
                       type="monotone"
                       dataKey="precip_mm"
                       name={t.precipLabel}
-                      stroke="#818cf8"
+                      stroke="#2f6b4f"
                       strokeWidth={1.5}
                       strokeDasharray="2 2"
                       dot={false}
@@ -340,11 +340,11 @@ export const CropMonitor: React.FC<CropMonitorProps> = ({ data, lang }) => {
               <div className="h-64 w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={ndviChartData} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
-                    <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#71717a' }} stroke="#3f3f46" />
-                    <YAxis tick={{ fontSize: 11, fill: '#71717a' }} stroke="#3f3f46" domain={[0, 1]} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2eae5" />
+                    <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#526a5c' }} stroke="#cbd8cf" />
+                    <YAxis tick={{ fontSize: 11, fill: '#526a5c' }} stroke="#cbd8cf" domain={[0, 1]} />
                     <Tooltip
-                      contentStyle={{ backgroundColor: '#18181b', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', fontSize: '12px', color: '#f4f4f5' }}
+                      contentStyle={{ backgroundColor: '#fffef8', borderRadius: '10px', border: '1px solid #cbd9ce', fontSize: '11px', color: '#173d30', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
                     />
                     <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
 
@@ -352,7 +352,7 @@ export const CropMonitor: React.FC<CropMonitorProps> = ({ data, lang }) => {
                       type="monotone"
                       dataKey="ndvi_spline"
                       name={t.ndviContinuous}
-                      stroke="#10b981"
+                      stroke="#1e583d"
                       strokeWidth={2.5}
                       dot={false}
                     />
@@ -360,15 +360,56 @@ export const CropMonitor: React.FC<CropMonitorProps> = ({ data, lang }) => {
                       type="monotone"
                       dataKey="ndvi_raw"
                       name={t.ndviObs}
-                      stroke="#fb923c"
+                      stroke="#d97706"
                       strokeWidth={0}
-                      dot={{ r: 4, fill: '#fb923c' }}
+                      dot={{ r: 4, fill: '#d97706' }}
                     />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
             </div>
           )
+        )}
+
+        {sh && (
+          <div className="mt-4 pt-3 border-t border-[#cbd8cf]">
+            <h4 className="text-xs font-bold text-[#173d30] mb-2">
+              {lang === 'es' ? 'Parámetros Hidráulicos de Suelo (Saxton-Rawls Zr = 600 mm)' : 'Soil Hydraulic Parameters (Saxton-Rawls Zr = 600 mm)'}
+            </h4>
+            <div className="overflow-x-auto rounded-xl border border-[#cbd8cf]">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="bg-[#f0f5f2] border-b border-[#cbd8cf] text-[#244438]">
+                    <th className="py-2 px-3 font-semibold">{lang === 'es' ? 'Estrato / Parámetro' : 'Hydraulic Parameter'}</th>
+                    <th className="py-2 px-3 font-semibold text-right">{lang === 'es' ? 'Valor' : 'Value'}</th>
+                    <th className="py-2 px-3 font-semibold">{lang === 'es' ? 'Significado Agronómico' : 'Agronomic Meaning'}</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#e2eae5] bg-white">
+                  <tr className="hover:bg-[#f9fbf9]">
+                    <td className="py-2 px-3 font-semibold text-[#1e583d]">{t.fcLabel}</td>
+                    <td className="py-2 px-3 text-right font-mono text-[#173d30]">{sh.field_capacity_mm.toFixed(0)} mm</td>
+                    <td className="py-2 px-3 text-[#526a5c] text-[11px]">{lang === 'es' ? 'Límite máximo de retención sin pérdida por drenaje' : 'Maximum water retention without deep drainage'}</td>
+                  </tr>
+                  <tr className="hover:bg-[#f9fbf9]">
+                    <td className="py-2 px-3 font-semibold text-[#b47a24]">{t.critLabel}</td>
+                    <td className="py-2 px-3 text-right font-mono text-[#b47a24]">{sh.critical_water_mm.toFixed(0)} mm</td>
+                    <td className="py-2 px-3 text-[#526a5c] text-[11px]">{lang === 'es' ? 'Umbral donde comienza el estrés hídrico; detona riego' : 'Moisture threshold where stress begins; triggers irrigation'}</td>
+                  </tr>
+                  <tr className="hover:bg-[#f9fbf9]">
+                    <td className="py-2 px-3 font-semibold text-[#c2412b]">{t.wpLabel}</td>
+                    <td className="py-2 px-3 text-right font-mono text-[#c2412b]">{sh.wilting_point_mm.toFixed(0)} mm</td>
+                    <td className="py-2 px-3 text-[#526a5c] text-[11px]">{lang === 'es' ? 'Límite de sequedad donde la raíz no puede absorber agua' : 'Moisture limit where plant roots cannot extract water'}</td>
+                  </tr>
+                  <tr className="hover:bg-[#f9fbf9]">
+                    <td className="py-2 px-3 font-semibold text-[#1a5b6c]">{lang === 'es' ? 'Agua Disponible (RAW)' : 'Readily Available Water (RAW)'}</td>
+                    <td className="py-2 px-3 text-right font-mono text-[#1a5b6c]">{(sh.field_capacity_mm - sh.critical_water_mm).toFixed(0)} mm</td>
+                    <td className="py-2 px-3 text-[#526a5c] text-[11px]">{lang === 'es' ? 'Reserva que el cultivo aprovecha libremente a máxima transpiración' : 'Water buffer the crop extracts freely at full transpiration'}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
         )}
       </div>
     </div>

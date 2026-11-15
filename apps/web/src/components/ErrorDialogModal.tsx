@@ -43,7 +43,7 @@ export const ErrorDialogModal: React.FC<ErrorDialogModalProps> = ({
       btnMove: 'Mover marcador al campo',
       btnManual: 'Ingresar análisis de suelo',
       btnRetry: 'Reintentar consulta',
-      btnBenchmark: 'Abrir ejemplo guardado (Offline)',
+      btnBenchmark: 'Usar benchmark calibrado (Offline)',
       btnClose: 'Cerrar'
     },
     en: {
@@ -59,7 +59,7 @@ export const ErrorDialogModal: React.FC<ErrorDialogModalProps> = ({
       btnMove: 'Move marker to field',
       btnManual: 'Enter soil test',
       btnRetry: 'Retry query',
-      btnBenchmark: 'Open saved benchmark (Offline)',
+      btnBenchmark: 'Use calibrated benchmark (Offline)',
       btnClose: 'Dismiss'
     }
   }[lang];
