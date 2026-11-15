@@ -57,14 +57,15 @@ interface GlobalBreadbasket {
 
 const GLOBAL_BREADBASKETS: GlobalBreadbasket[] = [
   { id: 'bajio', flag: '🇲🇽', label: { es: 'El Bajío (Qro)', en: 'El Bajio (Qro)' }, region: { es: 'Acuífero sobreexplotado', en: 'Depleted aquifer' }, lat: 20.5922, lon: -100.1972, presetId: 'el_marques_qro' },
+  { id: 'san_juan', flag: '🇲🇽', label: { es: 'San Juan del Río (Qro)', en: 'San Juan del Rio (Qro)' }, region: { es: 'Valle agrícola intensivo', en: 'Intensive agricultural valley' }, lat: 20.4480, lon: -99.9650, presetId: 'san_juan_del_rio_qro' },
+  { id: 'celaya', flag: '🇲🇽', label: { es: 'Celaya (Gto)', en: 'Celaya (Gto)' }, region: { es: 'Vertisoles arcillosos', en: 'Clay vertisols' }, lat: 20.5650, lon: -100.7450, presetId: 'celaya_gto' },
+  { id: 'semiarid', flag: '🇲🇽', label: { es: 'Semidesierto (Colón)', en: 'Semiarid (Colón)' }, region: { es: 'Secano y nopal/sorgo', en: 'Rainfed & drought-tolerant' }, lat: 20.7250, lon: -100.0450, presetId: 'colon_qro_semiarid' },
   { id: 'yaqui', flag: '🇲🇽', label: { es: 'Valle del Yaqui (Son)', en: 'Yaqui Valley (Son)' }, region: { es: 'Riego gravedad en desierto', en: 'Desert gravity irrigation' }, lat: 27.3684, lon: -109.9280, presetId: 'valle_yaqui_sonora_mx' },
-  { id: 'andalucia', flag: '🇪🇸', label: { es: 'Andalucía (España)', en: 'Andalusia (Spain)' }, region: { es: 'Cuenca del Guadalquivir', en: 'Guadalquivir basin' }, lat: 37.4520, lon: -5.6120, presetId: 'andalucia_guadalquivir_es' },
   { id: 'corn_belt', flag: '🇺🇸', label: { es: 'Corn Belt (Iowa)', en: 'Corn Belt (Iowa)' }, region: { es: 'Maíz y soya intensivos', en: 'Intensive corn-soy' }, lat: 42.0850, lon: -93.5850, presetId: 'iowa_corn_belt_us' },
   { id: 'pampa', flag: '🇦🇷', label: { es: 'Pampa Húmeda (Arg)', en: 'Pampa (Argentina)' }, region: { es: 'Hemisferio Sur austral', en: 'Southern Hemisphere austral' }, lat: -33.9500, lon: -60.5500, presetId: 'pampa_pergamino_ar' },
   { id: 'cerrado', flag: '🇧🇷', label: { es: 'Cerrado (Brasil)', en: 'Cerrado (Brazil)' }, region: { es: 'Zafra tropical austral', en: 'Tropical austral double-crop' }, lat: -12.4850, lon: -55.8250, presetId: 'mato_grosso_cerrado_br' },
-  { id: 'punjab', flag: '🇮🇳', label: { es: 'Punjab (India)', en: 'Punjab (India)' }, region: { es: 'Estrés hídrico subterráneo', en: 'Groundwater stress crisis' }, lat: 30.8250, lon: 75.7500, presetId: 'punjab_ludhiana_in' },
-  { id: 'celaya', flag: '🇲🇽', label: { es: 'Celaya (Gto)', en: 'Celaya (Gto)' }, region: { es: 'Vertisoles arcillosos', en: 'Clay vertisols' }, lat: 20.5650, lon: -100.7450, presetId: 'celaya_gto' },
-  { id: 'semiarid', flag: '🇲🇽', label: { es: 'Semidesierto (Colón)', en: 'Semiarid (Colón)' }, region: { es: 'Secano y nopal/sorgo', en: 'Rainfed & drought-tolerant' }, lat: 20.7250, lon: -100.0450, presetId: 'colon_qro_semiarid' }
+  { id: 'andalucia', flag: '🇪🇸', label: { es: 'Andalucía (España)', en: 'Andalusia (Spain)' }, region: { es: 'Cuenca del Guadalquivir', en: 'Guadalquivir basin' }, lat: 37.4520, lon: -5.6120, presetId: 'andalucia_guadalquivir_es' },
+  { id: 'punjab', flag: '🇮🇳', label: { es: 'Punjab (India)', en: 'Punjab (India)' }, region: { es: 'Estrés hídrico subterráneo', en: 'Groundwater stress crisis' }, lat: 30.8250, lon: 75.7500, presetId: 'punjab_ludhiana_in' }
 ];
 
 export const RiskMap: React.FC<RiskMapProps> = ({

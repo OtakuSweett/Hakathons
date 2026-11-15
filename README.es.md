@@ -151,16 +151,16 @@ pnpm test:py
 ## 🗺️ 7. Casos de Estudio y Demostración
 
 La plataforma incluye 10 presets calibrados como benchmarks de verdad de terreno (`data/presets/`) que cubren los principales graneros del mundo afectados por estrés hídrico:
-1. **El Marqués, Querétaro (México):** Parcela de 12.5 ha con acuífero sobreexplotado, rotación maíz $\rightarrow$ garbanzo $\rightarrow$ frijol.
-2. **San Juan del Río, Querétaro (México):** Parcela de 25 ha en valle intensivo bajo déficit de temporal.
-3. **Celaya, Guanajuato (México):** Parcela de 20 ha en suelos vertisoles de alta productividad agrícola bajo riego.
-4. **Colón Semidesierto, Querétaro (México):** Parcela de 15 ha semiárida con cultivos de alta tolerancia a sequía (nopal, sorgo).
-5. **Valle del Yaqui, Sonora (México):** Parcela de 45 ha en el desierto sonorense con riego por gravedad (canales).
-6. **Prairie View, Iowa (Corn Belt, EE. UU.):** Parcela de 65 ha demostrando adaptación en el hemisferio norte (maíz-soya).
-7. **Pergamino, Pampa Húmeda (Argentina):** Parcela de 120 ha con desfase estacional de 6 meses (Hemisferio Sur / Austral).
-8. **Sorriso, Mato Grosso (Brasil):** Parcela de 120 ha en sabana tropical (Cerrado) con suelos oxisoles y doble zafra.
-9. **Valle del Guadalquivir, Andalucía (España):** Parcela de 35 ha en cuenca mediterránea europea con sequía severa prolongada.
-10. **Ludhiana, Punjab (India):** Parcela de 18 ha en la llanura indogangética con agotamiento crítico por bombeo de pozos profundos.
+1. **El Marqués, Querétaro (México):** Parcela de 12.5 ha con acuífero sobreexplotado (`20.5922°, -100.1972°`), rotación trigo $\rightarrow$ garbanzo $\rightarrow$ frijol.
+2. **San Juan del Río, Querétaro (México):** Parcela de 20.0 ha en valle intensivo bajo déficit de temporal (`20.4480°, -99.9650°`), rotación maíz $\rightarrow$ avena $\rightarrow$ frijol.
+3. **Celaya, Guanajuato (México):** Parcela de 45.0 ha en suelos vertisoles de alta productividad agrícola bajo riego por gravedad (`20.5650°, -100.7450°`), rotación jitomate $\rightarrow$ trigo $\rightarrow$ garbanzo.
+4. **Colón Semidesierto, Querétaro (México):** Parcela de 6.5 ha semiárida con cultivos de alta tolerancia a sequía (`20.7250°, -100.0450°`), rotación sorgo $\rightarrow$ garbanzo $\rightarrow$ frijol.
+5. **Valle del Yaqui, Sonora (México):** Parcela de 45.0 ha en el desierto sonorense con riego por gravedad en canales CENEB (`27.3684°, -109.9280°`), rotación trigo $\rightarrow$ soya $\rightarrow$ garbanzo.
+6. **Prairie View, Iowa (Corn Belt, EE. UU.):** Parcela de 65.0 ha demostrando adaptación en el hemisferio norte (`42.0850°, -93.5850°`), rotación maíz $\rightarrow$ soya.
+7. **Pergamino, Pampa Húmeda (Argentina):** Parcela de 120.0 ha con desfase estacional de 6 meses (Hemisferio Sur / Austral, `-33.9500°, -60.5500°`), rotación girasol $\rightarrow$ trigo.
+8. **Fazenda Santa Helena, Mato Grosso (Brasil):** Parcela de 120.0 ha en sabana tropical (Cerrado) con suelos oxisoles y doble zafra (`-12.4850°, -55.8250°`), rotación soya $\rightarrow$ maíz.
+9. **Finca Las Marismas, Andalucía (España):** Parcela de 35.0 ha en cuenca mediterránea del Guadalquivir con sequía severa prolongada (`37.4520°, -5.6120°`), rotación trigo $\rightarrow$ garbanzo.
+10. **Ludhiana, Punjab (India):** Parcela de 18.0 ha en la llanura indogangética con agotamiento crítico por bombeo de pozos profundos (`30.8250°, 75.7500°`), rotación trigo $\rightarrow$ canola.
 
 ---
 

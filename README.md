@@ -151,16 +151,16 @@ pnpm test:py
 ## 🗺️ 7. Calibration Benchmarks & Ground-Truth Presets
 
 The repository ships with 10 offline demonstration presets calibrated with ground truth (`data/presets/`) representing major global breadbaskets facing water stress:
-1. **El Marqués, Querétaro (Mexico):** 12.5-ha parcel over an over-exploited aquifer; maize $\rightarrow$ chickpea $\rightarrow$ common bean rotation.
-2. **San Juan del Río, Querétaro (Mexico):** 25-ha intensive agricultural valley under severe rainfed deficit.
-3. **Celaya, Guanajuato (Mexico):** 20-ha highly productive vertisol soils under gravity irrigation.
-4. **Colón Semidesert, Querétaro (Mexico):** 15-ha semiarid parcel with drought-tolerant crops (nopal, sorghum).
-5. **Valle del Yaqui, Sonora (Mexico):** 45-ha Sonoran Desert breadbasket with canal gravity irrigation.
-6. **Prairie View, Iowa (Corn Belt, USA):** 65-ha extensive field demonstrating Northern Hemisphere corn-soybean rotation.
-7. **Pergamino, Pampa Húmeda (Argentina):** 120-ha Southern Hemisphere parcel with a 6-month seasonal shift (Austral seasons).
-8. **Sorriso, Mato Grosso (Brazil):** 120-ha tropical savanna (Cerrado) parcel with oxisol soils and double-cropping.
-9. **Valle del Guadalquivir, Andalucía (Spain):** 35-ha European Mediterranean basin under severe multi-year drought.
-10. **Ludhiana, Punjab Plains (India):** 18-ha Indo-Gangetic basin parcel facing critical groundwater tubewell depletion.
+1. **El Marqués, Querétaro (Mexico):** 12.5-ha parcel over an over-exploited aquifer (`20.5922°, -100.1972°`); wheat $\rightarrow$ chickpea $\rightarrow$ common bean rotation.
+2. **San Juan del Río, Querétaro (Mexico):** 20.0-ha intensive agricultural valley under severe rainfed deficit (`20.4480°, -99.9650°`); maize $\rightarrow$ oats $\rightarrow$ common bean rotation.
+3. **Celaya, Guanajuato (Mexico):** 45.0-ha highly productive vertisol soils under gravity canal irrigation (`20.5650°, -100.7450°`); tomato $\rightarrow$ wheat $\rightarrow$ chickpea rotation.
+4. **Colón Semidesert, Querétaro (Mexico):** 6.5-ha semiarid parcel with drought-tolerant crops (`20.7250°, -100.0450°`); sorghum $\rightarrow$ chickpea $\rightarrow$ common bean rotation.
+5. **Valle del Yaqui, Sonora (Mexico):** 45.0-ha Sonoran Desert breadbasket with canal gravity irrigation (`27.3684°, -109.9280°`); wheat $\rightarrow$ soybean $\rightarrow$ chickpea rotation.
+6. **Prairie View, Iowa (Corn Belt, USA):** 65.0-ha extensive field demonstrating Northern Hemisphere corn-soybean rotation (`42.0850°, -93.5850°`).
+7. **Pergamino, Pampa Húmeda (Argentina):** 120.0-ha Southern Hemisphere parcel with a 6-month seasonal shift (Austral seasons, ` -33.9500°, -60.5500°`).
+8. **Fazenda Santa Helena, Mato Grosso (Brazil):** 120.0-ha tropical savanna (Cerrado) parcel with oxisol soils and double-cropping (`-12.4850°, -55.8250°`).
+9. **Finca Las Marismas, Andalucía (Spain):** 35.0-ha European Mediterranean basin under severe multi-year drought (`37.4520°, -5.6120°`).
+10. **Ludhiana, Punjab Plains (India):** 18.0-ha Indo-Gangetic basin parcel facing critical groundwater tubewell depletion (`30.8250°, 75.7500°`).
 
 ---
 

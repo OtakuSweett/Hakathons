@@ -20,13 +20,13 @@ export const DEMO_PRESETS_LIST = [
     cropId: 'wheat'
   },
   {
-    presetId: 'san_juan_del_rio',
-    parcelName: 'Parcela Ejidal San Juan',
+    presetId: 'san_juan_del_rio_qro',
+    parcelName: 'Ejido Santa Cruz - San Juan del Río',
     country: 'Mexico',
     region: 'Querétaro (San Juan del Río)',
     lat: 20.4480,
     lon: -99.9650,
-    areaHa: 25.0,
+    areaHa: 20.0,
     cropId: 'maize'
   },
   {
@@ -172,6 +172,26 @@ function getRegionalRotation(presetId: string): RotationSlot[] {
       { slot_index: 5, cycle_code: 'OI', crop_id: 'chickpea', water_need_mm: 280, profit_mxn_ha: 2150, is_legume: true, deficit_slack_mm: 0 }
     ];
   }
+  if (presetId.includes('celaya')) {
+    return [
+      { slot_index: 0, cycle_code: 'PV', crop_id: 'tomato', water_need_mm: 520, profit_mxn_ha: 2900, is_legume: false, deficit_slack_mm: 0 },
+      { slot_index: 1, cycle_code: 'OI', crop_id: 'wheat', water_need_mm: 440, profit_mxn_ha: 2100, is_legume: false, deficit_slack_mm: 0 },
+      { slot_index: 2, cycle_code: 'PV', crop_id: 'beans', water_need_mm: 330, profit_mxn_ha: 2200, is_legume: true, deficit_slack_mm: 0 },
+      { slot_index: 3, cycle_code: 'OI', crop_id: 'garlic', water_need_mm: 380, profit_mxn_ha: 2600, is_legume: false, deficit_slack_mm: 0 },
+      { slot_index: 4, cycle_code: 'PV', crop_id: 'maize', water_need_mm: 490, profit_mxn_ha: 2050, is_legume: false, deficit_slack_mm: 0 },
+      { slot_index: 5, cycle_code: 'OI', crop_id: 'chickpea', water_need_mm: 280, profit_mxn_ha: 2300, is_legume: true, deficit_slack_mm: 0 }
+    ];
+  }
+  if (presetId.includes('san_juan')) {
+    return [
+      { slot_index: 0, cycle_code: 'PV', crop_id: 'maize', water_need_mm: 480, profit_mxn_ha: 1950, is_legume: false, deficit_slack_mm: 0 },
+      { slot_index: 1, cycle_code: 'OI', crop_id: 'oats', water_need_mm: 310, profit_mxn_ha: 1350, is_legume: false, deficit_slack_mm: 0 },
+      { slot_index: 2, cycle_code: 'PV', crop_id: 'beans', water_need_mm: 320, profit_mxn_ha: 1900, is_legume: true, deficit_slack_mm: 0 },
+      { slot_index: 3, cycle_code: 'OI', crop_id: 'chickpea', water_need_mm: 270, profit_mxn_ha: 2250, is_legume: true, deficit_slack_mm: 0 },
+      { slot_index: 4, cycle_code: 'PV', crop_id: 'sorghum', water_need_mm: 370, profit_mxn_ha: 1600, is_legume: false, deficit_slack_mm: 0 },
+      { slot_index: 5, cycle_code: 'OI', crop_id: 'barley', water_need_mm: 340, profit_mxn_ha: 1450, is_legume: false, deficit_slack_mm: 0 }
+    ];
+  }
   if (presetId.includes('colon')) {
     return [
       { slot_index: 0, cycle_code: 'PV', crop_id: 'sorghum', water_need_mm: 360, profit_mxn_ha: 1550, is_legume: false, deficit_slack_mm: 0 },
@@ -201,6 +221,7 @@ export function getMockAnalysis(presetId: string = 'el_marques_qro'): AnalysisRe
   const isSonora = presetId.includes('yaqui');
   const isCelaya = presetId.includes('celaya');
   const isColon = presetId.includes('colon');
+  const isSanJuan = presetId.includes('san_juan');
 
   const lat = isUS ? 42.0850
     : isAR ? -33.9500
@@ -210,6 +231,7 @@ export function getMockAnalysis(presetId: string = 'el_marques_qro'): AnalysisRe
     : isSonora ? 27.3684
     : isCelaya ? 20.5650
     : isColon ? 20.7250
+    : isSanJuan ? 20.4480
     : 20.5922;
 
   const lon = isUS ? -93.5850
@@ -220,6 +242,7 @@ export function getMockAnalysis(presetId: string = 'el_marques_qro'): AnalysisRe
     : isSonora ? -109.9280
     : isCelaya ? -100.7450
     : isColon ? -100.0450
+    : isSanJuan ? -99.9650
     : -100.1972;
 
   const dates: string[] = [];
